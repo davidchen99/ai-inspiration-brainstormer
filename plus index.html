@@ -9,20 +9,24 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
     :root {
-      --bg: #f7f6f2;
+      --bg: #f3f1eb;
       --panel: #fffdf8;
-      --ink: #20252b;
-      --muted: #66717d;
-      --line: #ddd8cd;
-      --accent: #256b5d;
-      --accent-dark: #1d574c;
-      --warm: #b64a32;
-      --soft: #e8f0eb;
-      --note: #fff3d8;
-      --shadow: 0 12px 28px rgba(24, 28, 33, .08);
+      --paper: #fbfaf6;
+      --ink: #272b2f;
+      --muted: #73746f;
+      --line: #d9d2c6;
+      --accent: #7a8f83;
+      --accent-dark: #5f7469;
+      --clay: #b58b73;
+      --mist: #e7ebe4;
+      --blue: #8798a5;
+      --warn: #f5ead2;
+      --shadow: 0 14px 34px rgba(42, 39, 34, .08);
     }
 
     * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
@@ -32,43 +36,33 @@
       font-family: "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    button, input, textarea, select {
-      font: inherit;
-    }
+    button, input, textarea, select { font: inherit; }
 
     button {
-      min-height: 40px;
+      min-height: 38px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 9px 14px;
+      padding: 8px 13px;
       background: #fff;
       color: var(--ink);
       cursor: pointer;
     }
 
-    button:hover:not(:disabled) {
-      border-color: rgba(37, 107, 93, .55);
-    }
+    button:hover:not(:disabled) { border-color: rgba(122, 143, 131, .7); }
 
     button:disabled {
-      opacity: .55;
+      opacity: .48;
       cursor: not-allowed;
     }
 
     button.primary {
-      background: var(--accent);
-      border-color: var(--accent);
+      border-color: var(--accent-dark);
+      background: var(--accent-dark);
       color: #fff;
       font-weight: 700;
     }
 
-    button.primary:hover:not(:disabled) {
-      background: var(--accent-dark);
-      border-color: var(--accent-dark);
-    }
-
-    button.text {
-      border-color: transparent;
+    button.ghost {
       background: transparent;
       color: var(--muted);
     }
@@ -78,29 +72,29 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 10px 11px;
-      outline: none;
       background: #fff;
       color: var(--ink);
+      outline: none;
       transition: border-color .15s, box-shadow .15s;
     }
 
     input:focus, textarea:focus, select:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 107, 93, .12);
+      box-shadow: 0 0 0 3px rgba(122, 143, 131, .16);
     }
 
     textarea {
-      min-height: 132px;
-      line-height: 1.65;
+      min-height: 126px;
       resize: vertical;
+      line-height: 1.65;
     }
 
     label {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       margin-bottom: 7px;
-      color: #3b444d;
+      color: #3d423f;
       font-size: 13px;
       font-weight: 700;
     }
@@ -111,21 +105,21 @@
     }
 
     .app {
-      width: min(1180px, calc(100% - 32px));
+      width: min(1280px, calc(100% - 32px));
       margin: 0 auto;
-      padding: 30px 0 40px;
+      padding: 26px 0 42px;
     }
 
     .hero {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 20px;
+      gap: 18px;
       align-items: end;
-      margin-bottom: 22px;
+      margin-bottom: 18px;
     }
 
     h1 {
-      margin: 0 0 8px;
+      margin: 0 0 7px;
       font-size: 28px;
       line-height: 1.22;
       letter-spacing: 0;
@@ -138,41 +132,52 @@
       line-height: 1.65;
     }
 
-    .steps {
+    .stage-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
       margin-bottom: 18px;
+      padding: 8px 0;
+      background: rgba(243, 241, 235, .92);
+      backdrop-filter: blur(8px);
     }
 
-    .step {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 9px 10px;
-      background: #fff;
+    .stage {
+      min-height: 36px;
+      border-color: var(--line);
+      background: #fffdf9;
       color: var(--muted);
       font-size: 13px;
-      text-align: center;
       white-space: nowrap;
     }
 
-    .step.active {
-      background: var(--accent);
-      border-color: var(--accent);
+    .stage.active {
+      border-color: var(--accent-dark);
+      background: var(--accent-dark);
       color: #fff;
       font-weight: 700;
     }
 
-    .step.done {
-      background: var(--soft);
-      color: #28594f;
+    .stage.done {
+      border-color: #c8d2c7;
+      background: var(--mist);
+      color: #53665d;
     }
 
-    .layout {
+    .stage.locked {
+      background: #f5f2eb;
+      color: #aaa49a;
+    }
+
+    .top-grid {
       display: grid;
-      grid-template-columns: minmax(320px, 390px) 1fr;
+      grid-template-columns: minmax(320px, 420px) 1fr;
       gap: 18px;
       align-items: start;
+      margin-bottom: 18px;
     }
 
     .panel {
@@ -183,14 +188,10 @@
     }
 
     .composer {
-      position: sticky;
-      top: 18px;
       padding: 18px;
     }
 
-    .field {
-      margin-bottom: 15px;
-    }
+    .field { margin-bottom: 14px; }
 
     .examples {
       display: grid;
@@ -201,15 +202,17 @@
     .example {
       min-height: 0;
       padding: 8px 10px;
-      text-align: left;
-      color: #40505c;
       background: #fff;
+      color: #4f5a55;
+      text-align: left;
+      line-height: 1.45;
     }
 
-    .row {
+    .compact {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(120px, 160px) 1fr;
       gap: 10px;
+      align-items: end;
     }
 
     .toolbar {
@@ -217,38 +220,37 @@
       flex-wrap: wrap;
       gap: 9px;
       align-items: center;
+    }
+
+    details.settings {
       margin-top: 16px;
-    }
-
-    .toolbar button {
-      flex: 0 0 auto;
-    }
-
-    details.advanced {
-      margin-top: 18px;
       border-top: 1px solid var(--line);
-      padding-top: 14px;
+      padding-top: 13px;
     }
 
-    details.advanced summary {
+    details.settings summary {
       cursor: pointer;
-      color: #38434c;
+      color: #3f4743;
       font-size: 14px;
       font-weight: 700;
     }
 
-    .advanced-body {
-      padding-top: 14px;
-    }
+    .settings-body { padding-top: 13px; }
 
     .note {
-      border: 1px solid #efdcae;
+      border: 1px solid #e3d3b3;
       border-radius: 8px;
       padding: 10px 11px;
-      background: var(--note);
-      color: #5a4b24;
+      background: var(--warn);
+      color: #5a4d39;
       font-size: 13px;
       line-height: 1.6;
+    }
+
+    .note a {
+      color: #526e63;
+      font-weight: 700;
+      text-decoration: none;
     }
 
     .status {
@@ -259,57 +261,59 @@
       line-height: 1.55;
     }
 
-    .status strong {
-      color: var(--warm);
-    }
+    .status strong { color: #9c664f; }
 
-    .results {
+    .intro-panel {
+      min-height: 100%;
       padding: 18px;
-      min-height: 560px;
+      display: grid;
+      align-content: center;
+      gap: 12px;
+      background: linear-gradient(180deg, #fffdf8, #f7f5ef);
     }
 
-    .result-head {
+    .intro-panel h2 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    .intro-list {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: #59615d;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .workbench {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .ideas {
+      padding: 18px;
+      min-height: 520px;
+    }
+
+    .section-head {
       display: flex;
       justify-content: space-between;
-      gap: 16px;
+      gap: 14px;
       align-items: flex-start;
       margin-bottom: 14px;
     }
 
-    .result-head h2 {
+    .section-head h2 {
       margin: 0 0 5px;
       font-size: 20px;
       line-height: 1.35;
       letter-spacing: 0;
-    }
-
-    .selected-bar {
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-    }
-
-    .selected-bar.active {
-      display: flex;
-    }
-
-    .selected-count {
-      color: var(--muted);
-      font-size: 13px;
-      white-space: nowrap;
-    }
-
-    .selected-actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 8px;
     }
 
     .prompt-box {
@@ -326,49 +330,58 @@
       font-size: 13px;
     }
 
-    .list {
-      display: grid;
-      gap: 12px;
+    .masonry {
+      column-count: 3;
+      column-gap: 12px;
     }
 
-    .empty {
-      display: grid;
-      place-items: center;
-      min-height: 360px;
-      border: 1px dashed #cfc8bb;
-      border-radius: 8px;
-      padding: 32px;
-      color: var(--muted);
-      text-align: center;
-      line-height: 1.7;
-      background: #fffdfa;
-    }
-
-    .card {
+    .idea-card {
+      display: inline-block;
+      width: 100%;
+      margin: 0 0 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 14px;
+      padding: 13px;
       background: #fff;
+      break-inside: avoid;
+      cursor: pointer;
+      transition: transform .12s, border-color .12s, background .12s, opacity .12s;
     }
 
-    .card.selected {
-      border-color: rgba(37, 107, 93, .65);
-      background: #fbfffc;
+    .idea-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(122, 143, 131, .68);
+    }
+
+    .idea-card.active {
+      border-color: var(--accent-dark);
+      background: #fbfff9;
+      box-shadow: 0 0 0 2px rgba(122, 143, 131, .14);
+    }
+
+    .idea-card.dimmed {
+      opacity: .56;
+      background: #f7f5ef;
+    }
+
+    .idea-card.checked {
+      border-color: #9cae9f;
     }
 
     .card-top {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       align-items: flex-start;
-      margin-bottom: 9px;
+      margin-bottom: 8px;
     }
 
     .check {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
       margin: 0;
+      color: #4d5a55;
       cursor: pointer;
       user-select: none;
     }
@@ -377,59 +390,110 @@
       width: 17px;
       height: 17px;
       margin: 0;
-      accent-color: var(--accent);
+      accent-color: var(--accent-dark);
+    }
+
+    .score {
+      color: var(--clay);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .idea-title {
+      margin: 0 0 8px;
+      font-size: 17px;
+      line-height: 1.42;
+      letter-spacing: 0;
+    }
+
+    .idea-card.checked .idea-title,
+    .idea-card.active .idea-title {
+      font-weight: 900;
+    }
+
+    .idea-summary {
+      margin: 0 0 8px;
+      color: #56615c;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .idea-rec {
+      margin: 0 0 10px;
+      color: #73746f;
+      font-size: 13px;
+      line-height: 1.55;
     }
 
     .badges {
       display: flex;
       flex-wrap: wrap;
-      gap: 7px;
+      gap: 6px;
       align-items: center;
     }
 
     .badge {
       border-radius: 999px;
       padding: 4px 8px;
-      background: var(--soft);
-      color: #2d5d51;
+      background: var(--mist);
+      color: #53665d;
       font-size: 12px;
       line-height: 1.2;
     }
 
-    .score {
-      color: var(--warm);
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
+    .badge.selected {
+      background: #ded4c9;
+      color: #6d574a;
     }
 
-    .direction {
-      margin: 0 0 7px;
-      font-size: 19px;
-      line-height: 1.42;
-      letter-spacing: 0;
-    }
-
-    .title {
-      margin: 0 0 7px;
-      color: #34404a;
-      font-size: 15px;
-      line-height: 1.55;
-      font-weight: 700;
-    }
-
-    .summary, .brief, .reason {
-      margin: 0;
-      color: #4a5661;
-      line-height: 1.65;
-      font-size: 14px;
-    }
-
-    .brief {
-      margin-top: 10px;
-      padding: 10px 11px;
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 340px;
+      border: 1px dashed #cfc7bb;
       border-radius: 8px;
-      background: #f5f7f4;
+      padding: 30px;
+      background: #fffdfa;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .detail {
+      position: sticky;
+      top: 70px;
+      padding: 18px;
+      max-height: calc(100vh - 86px);
+      overflow: auto;
+    }
+
+    .detail h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    .detail-title {
+      margin: 0 0 8px;
+      color: #3f4743;
+      font-weight: 700;
+      line-height: 1.55;
+    }
+
+    .detail-summary,
+    .detail-line {
+      margin: 0 0 9px;
+      color: #56615c;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .detail-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 14px 0;
     }
 
     .generated {
@@ -442,21 +506,20 @@
       margin: 0 0 8px;
       font-size: 15px;
       line-height: 1.4;
-      letter-spacing: 0;
     }
 
     .generated dl {
       display: grid;
       gap: 7px;
       margin: 0;
-      color: #45515c;
+      color: #48534f;
       font-size: 14px;
       line-height: 1.6;
     }
 
     .generated dt {
       display: inline;
-      color: #2f3b44;
+      color: #303733;
       font-weight: 700;
     }
 
@@ -466,73 +529,90 @@
     }
 
     .mini-list {
-      margin: 4px 0 0;
+      margin: 5px 0 0;
       padding-left: 20px;
+      color: #48534f;
+      font-size: 14px;
+      line-height: 1.65;
     }
 
-    .meta {
-      margin-top: 10px;
+    .batch {
+      margin-top: 18px;
+      padding: 16px 18px;
     }
 
-    .meta summary {
+    .batch summary {
       cursor: pointer;
+      color: #3f4743;
+      font-weight: 800;
+    }
+
+    .batch-body {
+      padding-top: 14px;
+    }
+
+    .batch-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
       color: var(--muted);
       font-size: 13px;
     }
 
-    .meta-body {
-      display: grid;
-      gap: 5px;
-      margin-top: 8px;
-      color: #56636f;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .card-actions {
+    .batch-actions {
       display: flex;
-      justify-content: flex-end;
+      flex-wrap: wrap;
       gap: 8px;
-      margin-top: 12px;
     }
 
-    @media (max-width: 960px) {
-      .hero, .layout {
+    @media (min-width: 1180px) {
+      .masonry { column-count: 4; }
+    }
+
+    @media (max-width: 1020px) {
+      .top-grid,
+      .workbench {
         grid-template-columns: 1fr;
       }
 
-      .composer {
+      .detail {
         position: static;
+        max-height: none;
       }
 
-      .steps {
-        grid-template-columns: 1fr;
-      }
-
-      .step {
-        text-align: left;
-      }
+      .masonry { column-count: 2; }
     }
 
-    @media (max-width: 620px) {
+    @media (max-width: 680px) {
       .app {
-        width: min(100% - 24px, 1180px);
-        padding-top: 20px;
+        width: min(100% - 24px, 1280px);
+        padding-top: 18px;
       }
 
-      .row, .result-head {
-        grid-template-columns: 1fr;
+      .hero,
+      .compact,
+      .section-head,
+      .batch-head {
         display: block;
       }
 
-      .toolbar, .selected-bar, .selected-actions, .card-actions {
+      .stage-nav {
+        grid-template-columns: 1fr;
+        position: static;
+      }
+
+      .masonry { column-count: 1; }
+
+      .toolbar,
+      .detail-actions,
+      .batch-actions {
         display: grid;
         grid-template-columns: 1fr;
       }
 
-      button {
-        width: 100%;
-      }
+      button { width: 100%; }
     }
   </style>
 </head>
@@ -541,20 +621,20 @@
     <header class="hero">
       <div>
         <h1>AI 灵感脑暴器</h1>
-        <p class="sub">输入一句想法，先发散成可写选题，再继续扩写为公众号或小红书内容方案。</p>
+        <p class="sub">把一句想法发散成一面点子墙，点中一个再深入成公众号、小红书或朋友圈内容。</p>
       </div>
-      <button class="text" id="resetBtn" type="button">清空本次脑暴</button>
+      <button class="ghost" id="resetBtn" type="button">清空本次脑暴</button>
     </header>
 
-    <nav class="steps" aria-label="流程">
-      <div class="step active" data-step="1">1 输入想法</div>
-      <div class="step" data-step="2">2 选择点子</div>
-      <div class="step" data-step="3">3 深入发散</div>
-      <div class="step" data-step="4">4 生成内容</div>
-      <div class="step" data-step="5">5 导出</div>
+    <nav class="stage-nav" aria-label="流程导航">
+      <button class="stage active" data-stage="input" type="button">1 输入想法</button>
+      <button class="stage locked" data-stage="ideas" type="button">2 点子墙</button>
+      <button class="stage locked" data-stage="detail" type="button">3 深入发散</button>
+      <button class="stage locked" data-stage="content" type="button">4 内容方案</button>
+      <button class="stage locked" data-stage="export" type="button">5 导出</button>
     </nav>
 
-    <div class="layout">
+    <section class="top-grid" id="inputSection">
       <aside class="panel composer">
         <div class="field">
           <label for="seedIdea">你现在脑子里有什么想法？</label>
@@ -566,7 +646,7 @@
           </div>
         </div>
 
-        <div class="row">
+        <div class="compact">
           <div class="field">
             <label for="ideaCount">生成数量</label>
             <select id="ideaCount">
@@ -577,21 +657,20 @@
               <option>30</option>
             </select>
           </div>
-          <div class="field">
-            <label for="contentWords">公众号字数</label>
-            <input id="contentWords" type="number" min="500" max="3000" step="100" value="1000">
+          <div class="toolbar field">
+            <button class="primary" id="brainstormBtn" type="button">开始脑暴</button>
+            <button id="promptBtn" type="button">生成提示词</button>
           </div>
         </div>
 
-        <div class="toolbar">
-          <button class="primary" id="brainstormBtn" type="button">开始脑暴</button>
-          <button id="promptBtn" type="button">生成提示词</button>
-        </div>
-
-        <details class="advanced">
-          <summary>高级设置</summary>
-          <div class="advanced-body">
-            <div class="note field">默认接入 DeepSeek。Kimi 和其他模型先保留入口，后续再接通。</div>
+        <details class="settings">
+          <summary>接入 AI / 高级设置</summary>
+          <div class="settings-body">
+            <div class="note field">
+              当前版本默认接入 DeepSeek。还没有 API Key？去
+              <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">DeepSeek 官网</a>
+              获取后填入下方。
+            </div>
             <div class="field">
               <label for="provider">AI 服务商</label>
               <select id="provider">
@@ -608,7 +687,7 @@
               <label for="apiUrl">接口地址</label>
               <input id="apiUrl" value="https://api.deepseek.com/chat/completions">
             </div>
-            <div class="row">
+            <div class="compact">
               <div class="field">
                 <label for="model">模型</label>
                 <select id="model">
@@ -624,6 +703,10 @@
                   <option value="1">更发散</option>
                 </select>
               </div>
+            </div>
+            <div class="field">
+              <label for="contentWords">公众号目标字数</label>
+              <input id="contentWords" type="number" min="500" max="3000" step="100" value="1000">
             </div>
             <div class="field">
               <label for="styleHint">风格偏好 <span class="hint">可不填</span></label>
@@ -643,23 +726,22 @@
         <div class="status" id="status"></div>
       </aside>
 
-      <main class="panel results">
-        <div class="result-head">
-          <div>
-            <h2>脑暴结果</h2>
-            <p class="sub" id="resultSub">先输入一个想法，生成 10 个可写方向。</p>
-          </div>
-        </div>
+      <div class="panel intro-panel">
+        <h2>先打开横向思路，再决定深入哪一个。</h2>
+        <ul class="intro-list">
+          <li>点子墙会尽量一屏展示更多方向，方便你快速扫过。</li>
+          <li>点击卡片看详情；勾选框只用于批量导出。</li>
+          <li>单个点子可以继续扩写，也可以转公众号、小红书或朋友圈。</li>
+        </ul>
+      </div>
+    </section>
 
-        <div class="selected-bar" id="selectedBar">
-          <div class="selected-count" id="selectedCount">已选 0 个点子</div>
-          <div class="selected-actions">
-            <button id="expandBtn" type="button">继续发散</button>
-            <button id="officialBtn" type="button">转公众号方案</button>
-            <button id="xhsBtn" type="button">转小红书方案</button>
-            <button id="copyBtn" type="button">复制已选</button>
-            <button id="excelBtn" type="button">导出 Excel</button>
-            <button id="wordZipBtn" type="button">批量导出 Word</button>
+    <section class="workbench">
+      <main class="panel ideas" id="ideasSection">
+        <div class="section-head">
+          <div>
+            <h2>点子墙</h2>
+            <p class="sub" id="ideasSub">生成后点击任意卡片查看详情，勾选用于批量导出。</p>
           </div>
         </div>
 
@@ -671,29 +753,56 @@
           </div>
         </div>
 
-        <section class="list" id="resultList">
-          <div class="empty">还没有结果。先输入一句想法，然后点击“开始脑暴”。</div>
-        </section>
+        <div id="ideaWall">
+          <div class="empty">还没有点子。先输入一个想法，然后点击“开始脑暴”。</div>
+        </div>
       </main>
-    </div>
+
+      <aside class="panel detail" id="detailSection">
+        <div id="detailContent">
+          <h2>点一个想法，继续深入</h2>
+          <p class="sub">详情面板会显示完整信息和下一步操作。点子墙保持轻，方便你继续浏览。</p>
+        </div>
+      </aside>
+    </section>
+
+    <details class="panel batch" id="exportSection">
+      <summary>批量导出与高级操作</summary>
+      <div class="batch-body">
+        <div class="batch-head">
+          <div id="selectedCount">已选择 0 个点子</div>
+          <div>默认路径是点一个深入一个，这里保留批量能力。</div>
+        </div>
+        <div class="batch-actions">
+          <button id="batchBriefBtn" type="button">批量继续发散</button>
+          <button id="batchOfficialBtn" type="button">批量转公众号</button>
+          <button id="batchXhsBtn" type="button">批量转小红书</button>
+          <button id="batchMomentsBtn" type="button">批量转朋友圈</button>
+          <button id="copyBtn" type="button">复制已选</button>
+          <button id="excelBtn" type="button">导出 Excel</button>
+          <button id="wordZipBtn" type="button">批量导出 Word</button>
+        </div>
+      </div>
+    </details>
   </div>
 
   <script>
     const state = {
       ideas: [],
+      activeId: null,
       lastPrompt: "",
       busy: false
     };
 
     const $ = (id) => document.getElementById(id);
 
-    const stageLabels = [
-      "1 输入想法",
-      "2 选择点子",
-      "3 深入发散",
-      "4 生成内容",
-      "5 导出"
-    ];
+    const stageTargets = {
+      input: "inputSection",
+      ideas: "ideasSection",
+      detail: "detailSection",
+      content: "detailSection",
+      export: "exportSection"
+    };
 
     function getForm() {
       return {
@@ -715,6 +824,10 @@
       if (!form.seedIdea) throw new Error("先输入一句想法、一个名称或几个关键词。");
     }
 
+    function activeItem() {
+      return state.ideas.find(item => item.id === state.activeId) || null;
+    }
+
     function selectedItems() {
       return state.ideas.filter(item => item.selected);
     }
@@ -725,378 +838,135 @@
 
     function setBusy(isBusy, text = "") {
       state.busy = isBusy;
-      ["brainstormBtn", "promptBtn"].forEach(id => {
-        $(id).disabled = isBusy;
-      });
-      updateSelectedBar();
+      ["brainstormBtn", "promptBtn"].forEach(id => $(id).disabled = isBusy);
+      updateButtons();
       if (text) setStatus(text);
     }
 
-    function updateSteps() {
+    function updateStageNav() {
       const hasIdeas = state.ideas.length > 0;
+      const hasActive = Boolean(activeItem());
+      const hasContent = state.ideas.some(item => item.official || item.xhs || item.moments);
+      const activeStage = hasContent ? "content" : hasActive ? "detail" : hasIdeas ? "ideas" : "input";
+      const order = ["input", "ideas", "detail", "content", "export"];
+      const activeIndex = order.indexOf(activeStage);
+
+      document.querySelectorAll(".stage").forEach(button => {
+        const stage = button.dataset.stage;
+        const unlocked = stage === "input"
+          || (stage === "ideas" && hasIdeas)
+          || (stage === "detail" && hasActive)
+          || (stage === "content" && hasActive)
+          || (stage === "export" && hasIdeas);
+        const stageIndex = order.indexOf(stage);
+        button.disabled = !unlocked;
+        button.classList.toggle("locked", !unlocked);
+        button.classList.toggle("active", stage === activeStage);
+        button.classList.toggle("done", unlocked && stageIndex < activeIndex);
+      });
+    }
+
+    function updateButtons() {
       const hasSelected = selectedItems().length > 0;
-      const hasBrief = state.ideas.some(item => item.brief);
-      const hasContent = state.ideas.some(item => item.official || item.xhs);
-      const current = hasContent ? 5 : hasBrief ? 4 : hasSelected ? 3 : hasIdeas ? 2 : 1;
-
-      document.querySelectorAll(".step").forEach((node, index) => {
-        const step = index + 1;
-        node.textContent = stageLabels[index];
-        node.classList.toggle("active", step === current);
-        node.classList.toggle("done", step < current);
+      const hasActive = Boolean(activeItem());
+      ["batchBriefBtn", "batchOfficialBtn", "batchXhsBtn", "batchMomentsBtn", "copyBtn", "excelBtn", "wordZipBtn"].forEach(id => {
+        $(id).disabled = state.busy || !hasSelected;
       });
-    }
-
-    function updateSelectedBar() {
-      const count = selectedItems().length;
-      $("selectedBar").classList.toggle("active", state.ideas.length > 0);
-      $("selectedCount").textContent = `已选 ${count} 个点子 / 共 ${state.ideas.length} 个`;
-      ["expandBtn", "officialBtn", "xhsBtn", "copyBtn", "excelBtn", "wordZipBtn"].forEach(id => {
-        $(id).disabled = state.busy || count === 0;
+      ["singleBriefBtn", "singleOfficialBtn", "singleXhsBtn", "singleMomentsBtn", "copyActiveBtn"].forEach(id => {
+        const button = $(id);
+        if (button) button.disabled = state.busy || !hasActive;
       });
-    }
-
-    function buildIdeaPrompt(form) {
-      return `你是一个擅长内容选题发散的中文内容策划。用户会给你一个名称、一句话、几个关键词或模糊想法。请把这个点发散成 ${form.ideaCount} 个可写的内容选题方向。
-
-要求：
-1. 每个结果都要能发展成公众号长文或小红书图文内容。
-2. 首要输出是“选题方向”，不要只给标题。
-3. 推荐标题要适合公众号或小红书，克制但有点击欲。
-4. 一句话简介控制在 20-45 个中文字符。
-5. 切入角度要具体，能指导下一步写作。
-6. 适合平台只能写：公众号、小红书、都适合。
-7. 推荐指数 score 用 1-5 的数字。
-8. 结果必须返回 JSON 数组，不要 Markdown，不要解释。
-9. 每个对象必须包含字段：category、direction、title、summary、angle、audience、platform、score、reason。
-10. category 必须从这个分类库中选择一个：${form.categories.join("、") || "未分类"}。
-
-输入想法：
-${form.seedIdea}
-
-风格偏好：
-${form.styleHint || "未填写"}
-
-不想要的内容：
-${form.avoidHint || "未填写"}`;
-    }
-
-    function buildBriefPrompt(items) {
-      const payload = items.map(item => ({
-        id: item.id,
-        direction: item.direction,
-        title: item.title,
-        summary: item.summary,
-        angle: item.angle,
-        audience: item.audience
-      }));
-      return `你是一个内容策划编辑。请把用户勾选的选题方向扩写成 150 字以内的内容介绍，帮助用户判断这个点是否值得继续做。
-
-要求：
-1. 每个选题生成一段 brief，控制在 150 个中文字符以内。
-2. 介绍要说明这篇内容可以讲什么、为什么有人愿意看。
-3. 不要直接生成完整文章。
-4. 必须返回 JSON 数组，不要 Markdown，不要解释。
-5. 每个对象必须包含字段：id、brief。
-
-已选选题：
-${JSON.stringify(payload, null, 2)}`;
-    }
-
-    function buildOfficialPrompt(items, form) {
-      const payload = items.map(item => ({
-        id: item.id,
-        direction: item.direction,
-        title: item.title,
-        summary: item.summary,
-        brief: item.brief,
-        angle: item.angle,
-        audience: item.audience
-      }));
-      return `你是一个公众号内容策划编辑。请把用户勾选的选题转成公众号写作方案。公众号内容定位是长文本、知识科普、少量图片。
-
-要求：
-1. 默认目标字数是 ${form.contentWords} 字。
-2. 每个选题生成一套公众号方案，不要生成完整正文。
-3. 文章大纲 outline 返回 4-6 个要点。
-4. 适合配图建议 imageIdeas 必须返回 3 条。
-5. 必须返回 JSON 数组，不要 Markdown，不要解释。
-6. 每个对象必须包含字段：id、officialTitle、abstract、corePoint、outline、opening、imageIdeas、audience、tone、targetWords。
-
-已选选题：
-${JSON.stringify(payload, null, 2)}`;
-    }
-
-    function buildXhsPrompt(items) {
-      const payload = items.map(item => ({
-        id: item.id,
-        direction: item.direction,
-        title: item.title,
-        summary: item.summary,
-        brief: item.brief,
-        angle: item.angle,
-        audience: item.audience
-      }));
-      return `你是一个小红书图文内容策划。请把用户勾选的选题转成小红书方案。小红书内容定位是图片有趣、多图、文字少、视觉抓人。
-
-要求：
-1. 正文 body 控制在 150 个中文字符以内。
-2. imageIdeas 必须返回 3 条，每条说明一张图片的创意构思、画面内容和文字钩子。
-3. tags 返回 4-8 个标签。
-4. 必须返回 JSON 数组，不要 Markdown，不要解释。
-5. 每个对象必须包含字段：id、xhsTitle、body、imageIdeas、tags、commentGuide。
-
-已选选题：
-${JSON.stringify(payload, null, 2)}`;
-    }
-
-    async function callDeepSeek(prompt, form) {
-      if (form.provider !== "deepseek") {
-        throw new Error("当前版本只接入 DeepSeek，其他模型先作为高级设置预留。");
-      }
-      if (!form.apiKey) {
-        state.lastPrompt = prompt;
-        showPrompt(prompt);
-        throw new Error("未填写 DeepSeek API Key，已生成可复制提示词。");
-      }
-
-      const response = await fetch(form.apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${form.apiKey}`
-        },
-        body: JSON.stringify({
-          model: form.model,
-          messages: [
-            { role: "system", content: "你只输出可解析 JSON，不输出 Markdown。你擅长中文内容选题、公众号和小红书策划。" },
-            { role: "user", content: prompt }
-          ],
-          temperature: form.temperature
-        })
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`DeepSeek 返回错误：${response.status} ${errText.slice(0, 160)}`);
-      }
-
-      const data = await response.json();
-      return data.choices?.[0]?.message?.content || "";
-    }
-
-    function parseJsonArray(content) {
-      const cleaned = String(content || "")
-        .replace(/^```json\s*/i, "")
-        .replace(/^```\s*/i, "")
-        .replace(/```$/i, "")
-        .trim();
-      const start = cleaned.indexOf("[");
-      const end = cleaned.lastIndexOf("]");
-      const jsonText = start >= 0 && end >= start ? cleaned.slice(start, end + 1) : cleaned;
-      const parsed = JSON.parse(jsonText);
-      if (!Array.isArray(parsed)) throw new Error("模型返回的不是数组 JSON。");
-      return parsed;
-    }
-
-    async function generateIdeas() {
-      const form = getForm();
-      try {
-        validateSeed(form);
-        const prompt = buildIdeaPrompt(form);
-        state.lastPrompt = prompt;
-        $("promptText").value = prompt;
-        setBusy(true, "正在脑暴选题方向...");
-        const content = await callDeepSeek(prompt, form);
-        const parsed = parseJsonArray(content);
-        state.ideas = parsed.map((item, index) => ({
-          id: index + 1,
-          category: String(item.category || "未分类").trim(),
-          direction: String(item.direction || item.topic || item.title || "").trim(),
-          title: String(item.title || "").trim(),
-          summary: String(item.summary || item.description || "").trim(),
-          angle: String(item.angle || "").trim(),
-          audience: String(item.audience || "").trim(),
-          platform: String(item.platform || "都适合").trim(),
-          score: Number(item.score || 3),
-          reason: String(item.reason || "").trim(),
-          selected: false,
-          brief: "",
-          official: null,
-          xhs: null
-        })).filter(item => item.direction || item.title);
-        $("promptBox").style.display = "none";
-        render();
-        setStatus(`已生成 ${state.ideas.length} 个点子，勾选你觉得有潜力的方向。`);
-      } catch (error) {
-        render();
-        setStatus(error.message, true);
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    async function expandBriefs() {
-      const items = selectedItems();
-      if (!items.length) return setStatus("先勾选要继续发散的点子。", true);
-      const form = getForm();
-      try {
-        const prompt = buildBriefPrompt(items);
-        state.lastPrompt = prompt;
-        $("promptText").value = prompt;
-        setBusy(true, "正在把已选点子扩写成 150 字介绍...");
-        const content = await callDeepSeek(prompt, form);
-        const parsed = parseJsonArray(content);
-        parsed.forEach(row => {
-          const item = state.ideas.find(x => String(x.id) === String(row.id));
-          if (item) item.brief = String(row.brief || "").trim();
-        });
-        $("promptBox").style.display = "none";
-        render();
-        setStatus(`已为 ${parsed.length} 个点子生成内容介绍。`);
-      } catch (error) {
-        render();
-        setStatus(error.message, true);
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    async function generateOfficial() {
-      const items = selectedItems();
-      if (!items.length) return setStatus("先勾选要转成公众号方案的点子。", true);
-      const form = getForm();
-      try {
-        const prompt = buildOfficialPrompt(items, form);
-        state.lastPrompt = prompt;
-        $("promptText").value = prompt;
-        setBusy(true, "正在生成公众号方案...");
-        const content = await callDeepSeek(prompt, form);
-        const parsed = parseJsonArray(content);
-        parsed.forEach(row => {
-          const item = state.ideas.find(x => String(x.id) === String(row.id));
-          if (item) {
-            item.official = {
-              officialTitle: String(row.officialTitle || "").trim(),
-              abstract: String(row.abstract || "").trim(),
-              corePoint: String(row.corePoint || "").trim(),
-              outline: normalizeList(row.outline),
-              opening: String(row.opening || "").trim(),
-              imageIdeas: normalizeList(row.imageIdeas).slice(0, 3),
-              audience: String(row.audience || item.audience || "").trim(),
-              tone: String(row.tone || "").trim(),
-              targetWords: Number(row.targetWords || form.contentWords)
-            };
-          }
-        });
-        $("promptBox").style.display = "none";
-        render();
-        setStatus(`已生成 ${parsed.length} 套公众号方案。`);
-      } catch (error) {
-        render();
-        setStatus(error.message, true);
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    async function generateXhs() {
-      const items = selectedItems();
-      if (!items.length) return setStatus("先勾选要转成小红书方案的点子。", true);
-      const form = getForm();
-      try {
-        const prompt = buildXhsPrompt(items);
-        state.lastPrompt = prompt;
-        $("promptText").value = prompt;
-        setBusy(true, "正在生成小红书方案...");
-        const content = await callDeepSeek(prompt, form);
-        const parsed = parseJsonArray(content);
-        parsed.forEach(row => {
-          const item = state.ideas.find(x => String(x.id) === String(row.id));
-          if (item) {
-            item.xhs = {
-              xhsTitle: String(row.xhsTitle || "").trim(),
-              body: String(row.body || "").trim(),
-              imageIdeas: normalizeList(row.imageIdeas).slice(0, 3),
-              tags: normalizeList(row.tags),
-              commentGuide: String(row.commentGuide || "").trim()
-            };
-          }
-        });
-        $("promptBox").style.display = "none";
-        render();
-        setStatus(`已生成 ${parsed.length} 套小红书方案。`);
-      } catch (error) {
-        render();
-        setStatus(error.message, true);
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    function normalizeList(value) {
-      if (Array.isArray(value)) return value.map(item => String(item).trim()).filter(Boolean);
-      if (!value) return [];
-      return String(value).split(/\n|;|；/).map(item => item.trim()).filter(Boolean);
     }
 
     function render() {
-      updateSteps();
-      updateSelectedBar();
-      $("resultSub").textContent = state.ideas.length
-        ? "勾选好点子后，可以继续发散、转公众号方案、转小红书方案或导出。"
-        : "先输入一个想法，生成 10 个可写方向。";
+      renderIdeaWall();
+      renderDetail();
+      updateStageNav();
+      updateButtons();
+      const count = selectedItems().length;
+      $("selectedCount").textContent = `已选择 ${count} 个点子 / 共 ${state.ideas.length} 个`;
+      $("ideasSub").textContent = state.ideas.length
+        ? "点击卡片看详情；勾选用于批量导出。当前打开的点子会高亮。"
+        : "生成后点击任意卡片查看详情，勾选用于批量导出。";
+    }
 
-      const list = $("resultList");
-      list.innerHTML = "";
+    function renderIdeaWall() {
+      const wall = $("ideaWall");
       if (!state.ideas.length) {
-        list.innerHTML = `<div class="empty">还没有结果。先输入一句想法，然后点击“开始脑暴”。</div>`;
+        wall.className = "";
+        wall.innerHTML = `<div class="empty">还没有点子。先输入一个想法，然后点击“开始脑暴”。</div>`;
         return;
       }
 
-      state.ideas
+      const hasChecked = selectedItems().length > 0;
+      wall.className = "masonry";
+      wall.innerHTML = state.ideas
         .slice()
         .sort((a, b) => b.score - a.score)
-        .forEach(item => {
-          const card = document.createElement("article");
-          card.className = "card";
-          card.classList.toggle("selected", Boolean(item.selected));
-          card.innerHTML = cardHtml(item);
-          list.appendChild(card);
-        });
+        .map(item => ideaCardHtml(item, hasChecked))
+        .join("");
     }
 
-    function cardHtml(item) {
+    function ideaCardHtml(item, hasChecked) {
+      const active = item.id === state.activeId;
+      const dimmed = hasChecked && !item.selected && !active;
       return `
-        <div class="card-top">
-          <div class="badges">
-            <label class="check">
+        <article class="idea-card ${active ? "active" : ""} ${item.selected ? "checked" : ""} ${dimmed ? "dimmed" : ""}" data-open="${item.id}">
+          <div class="card-top">
+            <label class="check" data-stop>
               <input type="checkbox" data-select="${item.id}" ${item.selected ? "checked" : ""}>
-              选择
+              ${item.selected ? "已选择" : "选择"}
             </label>
-            <span class="badge">${escapeHtml(item.category || "未分类")}</span>
-            <span class="badge">${escapeHtml(item.platform || "都适合")}</span>
+            <div class="score">${"★".repeat(Math.max(1, Math.min(5, item.score)))}</div>
           </div>
-          <div class="score">${"★".repeat(Math.max(1, Math.min(5, item.score)))}</div>
+          <h3 class="idea-title">${escapeHtml(item.direction || item.title)}</h3>
+          <p class="idea-summary">${escapeHtml(item.summary || "未生成一句话简介")}</p>
+          <p class="idea-rec">${escapeHtml(item.title || "未生成推荐标题")}</p>
+          <div class="badges">
+            <span class="badge">${escapeHtml(item.platform || "都适合")}</span>
+            <span class="badge">${escapeHtml(item.category || "未分类")}</span>
+            ${item.brief ? `<span class="badge selected">已发散</span>` : ""}
+            ${item.official || item.xhs || item.moments ? `<span class="badge selected">有方案</span>` : ""}
+          </div>
+        </article>
+      `;
+    }
+
+    function renderDetail() {
+      const item = activeItem();
+      if (!item) {
+        $("detailContent").innerHTML = `
+          <h2>点一个想法，继续深入</h2>
+          <p class="sub">详情面板会显示完整信息和下一步操作。点子墙保持轻，方便你继续浏览。</p>
+        `;
+        return;
+      }
+
+      $("detailContent").innerHTML = `
+        <h2>${escapeHtml(item.direction || item.title)}</h2>
+        <p class="detail-title">${escapeHtml(item.title || "未生成推荐标题")}</p>
+        <p class="detail-summary">${escapeHtml(item.summary || "未生成一句话简介")}</p>
+        <p class="detail-line"><strong>目标读者：</strong>${escapeHtml(item.audience || "未填写")}</p>
+        <p class="detail-line"><strong>切入角度：</strong>${escapeHtml(item.angle || "未填写")}</p>
+        <p class="detail-line"><strong>推荐理由：</strong>${escapeHtml(item.reason || "未填写")}</p>
+        <div class="detail-actions">
+          <button id="singleBriefBtn" type="button">继续发散</button>
+          <button id="singleOfficialBtn" type="button">转公众号</button>
+          <button id="singleXhsBtn" type="button">转小红书</button>
+          <button id="singleMomentsBtn" type="button">转朋友圈</button>
+          <button id="copyActiveBtn" type="button">复制当前</button>
         </div>
-        <h2 class="direction">${escapeHtml(item.direction || item.title)}</h2>
-        <p class="title">${escapeHtml(item.title || "未生成推荐标题")}</p>
-        <p class="summary">${escapeHtml(item.summary || "未生成一句话简介")}</p>
-        ${item.brief ? `<p class="brief"><strong>150 字介绍：</strong>${escapeHtml(item.brief)}</p>` : ""}
+        ${item.brief ? `<section class="generated"><h3>150 字介绍</h3><p class="detail-summary">${escapeHtml(item.brief)}</p></section>` : ""}
         ${item.official ? officialHtml(item.official) : ""}
         ${item.xhs ? xhsHtml(item.xhs) : ""}
-        <details class="meta">
-          <summary>查看切入角度和推荐理由</summary>
-          <div class="meta-body">
-            <div><strong>目标读者：</strong>${escapeHtml(item.audience || "未填写")}</div>
-            <div><strong>切入角度：</strong>${escapeHtml(item.angle || "未填写")}</div>
-            <div><strong>推荐理由：</strong>${escapeHtml(item.reason || "未填写")}</div>
-          </div>
-        </details>
-        <div class="card-actions">
-          <button type="button" data-copy-one="${item.id}">复制单条</button>
-        </div>
+        ${item.moments ? momentsHtml(item.moments) : ""}
       `;
+
+      $("singleBriefBtn").addEventListener("click", () => expandBriefs([item]));
+      $("singleOfficialBtn").addEventListener("click", () => generateOfficial([item]));
+      $("singleXhsBtn").addEventListener("click", () => generateXhs([item]));
+      $("singleMomentsBtn").addEventListener("click", () => generateMoments([item]));
+      $("copyActiveBtn").addEventListener("click", () => copyText(formatItemText(item)));
     }
 
     function officialHtml(data) {
@@ -1133,14 +1003,319 @@ ${JSON.stringify(payload, null, 2)}`;
       `;
     }
 
+    function momentsHtml(data) {
+      return `
+        <section class="generated">
+          <h3>朋友圈文案</h3>
+          <dl>
+            <div><dt>文案：</dt><dd>${escapeHtml(data.copy)}</dd></div>
+            <div><dt>风格：</dt><dd>${escapeHtml(data.style)}</dd></div>
+            <div><dt>发布场景：</dt><dd>${escapeHtml(data.scene)}</dd></div>
+            <div><dt>互动引导：</dt><dd>${escapeHtml(data.interaction)}</dd></div>
+          </dl>
+          ${listHtml("配图建议", data.imageIdeas)}
+        </section>
+      `;
+    }
+
     function listHtml(title, items) {
       if (!items || !items.length) return "";
       return `
-        <div class="reason"><strong>${escapeHtml(title)}：</strong></div>
+        <div class="detail-line"><strong>${escapeHtml(title)}：</strong></div>
         <ol class="mini-list">
           ${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
         </ol>
       `;
+    }
+
+    function buildIdeaPrompt(form) {
+      return `你是一个擅长内容选题发散的中文内容策划。用户会给你一个名称、一句话、几个关键词或模糊想法。请把这个点发散成 ${form.ideaCount} 个可写的内容选题方向。
+
+要求：
+1. 每个结果都要能发展成公众号长文、小红书图文或朋友圈文案。
+2. 首要输出是“选题方向”，不要只给标题。
+3. 推荐标题要适合公众号或小红书，克制但有点击欲。
+4. 一句话简介控制在 20-45 个中文字符。
+5. 切入角度要具体，能指导下一步写作。
+6. 适合平台只能写：公众号、小红书、朋友圈、都适合。
+7. 推荐指数 score 用 1-5 的数字。
+8. 结果必须返回 JSON 数组，不要 Markdown，不要解释。
+9. 每个对象必须包含字段：category、direction、title、summary、angle、audience、platform、score、reason。
+10. category 必须从这个分类库中选择一个：${form.categories.join("、") || "未分类"}。
+
+输入想法：
+${form.seedIdea}
+
+风格偏好：
+${form.styleHint || "未填写"}
+
+不想要的内容：
+${form.avoidHint || "未填写"}`;
+    }
+
+    function buildBriefPrompt(items) {
+      return `你是一个内容策划编辑。请把用户选中的选题方向扩写成 150 字以内的内容介绍，帮助用户判断这个点是否值得继续做。
+
+要求：
+1. 每个选题生成一段 brief，控制在 150 个中文字符以内。
+2. 介绍要说明这篇内容可以讲什么、为什么有人愿意看。
+3. 不要直接生成完整文章。
+4. 必须返回 JSON 数组，不要 Markdown，不要解释。
+5. 每个对象必须包含字段：id、brief。
+
+已选选题：
+${JSON.stringify(toPromptItems(items), null, 2)}`;
+    }
+
+    function buildOfficialPrompt(items, form) {
+      return `你是一个公众号内容策划编辑。请把用户选中的选题转成公众号写作方案。公众号内容定位是长文本、知识科普、少量图片。
+
+要求：
+1. 默认目标字数是 ${form.contentWords} 字。
+2. 每个选题生成一套公众号方案，不要生成完整正文。
+3. 文章大纲 outline 返回 4-6 个要点。
+4. 适合配图建议 imageIdeas 必须返回 3 条。
+5. 必须返回 JSON 数组，不要 Markdown，不要解释。
+6. 每个对象必须包含字段：id、officialTitle、abstract、corePoint、outline、opening、imageIdeas、audience、tone、targetWords。
+
+已选选题：
+${JSON.stringify(toPromptItems(items), null, 2)}`;
+    }
+
+    function buildXhsPrompt(items) {
+      return `你是一个小红书图文内容策划。请把用户选中的选题转成小红书方案。小红书内容定位是图片有趣、多图、文字少、视觉抓人。
+
+要求：
+1. 正文 body 控制在 150 个中文字符以内。
+2. imageIdeas 必须返回 3 条，每条说明一张图片的创意构思、画面内容和文字钩子。
+3. tags 返回 4-8 个标签。
+4. 必须返回 JSON 数组，不要 Markdown，不要解释。
+5. 每个对象必须包含字段：id、xhsTitle、body、imageIdeas、tags、commentGuide。
+
+已选选题：
+${JSON.stringify(toPromptItems(items), null, 2)}`;
+    }
+
+    function buildMomentsPrompt(items) {
+      return `你是一个朋友圈文案策划。请把用户选中的选题转成朋友圈文案。朋友圈文案应该像真人手写，两三句话，要么有趣，要么利他，让人愿意读完。
+
+要求：
+1. copy 写 2-3 句话，不要像广告，不要过度营销。
+2. style 从这些风格中选择或概括：有趣、利他、轻观点、生活感。
+3. imageIdeas 必须返回 3 条，说明三张配图分别拍什么或生成什么，画面要具体。
+4. scene 写适合发布的场景。
+5. interaction 写一句自然的互动引导，可以为空但不要硬凑。
+6. 必须返回 JSON 数组，不要 Markdown，不要解释。
+7. 每个对象必须包含字段：id、copy、style、imageIdeas、scene、interaction。
+
+已选选题：
+${JSON.stringify(toPromptItems(items), null, 2)}`;
+    }
+
+    function toPromptItems(items) {
+      return items.map(item => ({
+        id: item.id,
+        direction: item.direction,
+        title: item.title,
+        summary: item.summary,
+        brief: item.brief,
+        angle: item.angle,
+        audience: item.audience
+      }));
+    }
+
+    async function callDeepSeek(prompt, form) {
+      if (form.provider !== "deepseek") {
+        throw new Error("当前版本只接入 DeepSeek，其他模型先作为高级设置预留。");
+      }
+      if (!form.apiKey) {
+        state.lastPrompt = prompt;
+        showPrompt(prompt);
+        throw new Error("未填写 DeepSeek API Key，已生成可复制提示词。");
+      }
+
+      const response = await fetch(form.apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${form.apiKey}`
+        },
+        body: JSON.stringify({
+          model: form.model,
+          messages: [
+            { role: "system", content: "你只输出可解析 JSON，不输出 Markdown。你擅长中文内容选题、公众号、小红书和朋友圈文案策划。" },
+            { role: "user", content: prompt }
+          ],
+          temperature: form.temperature
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`DeepSeek 返回错误：${response.status} ${errText.slice(0, 160)}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || "";
+    }
+
+    function parseJsonArray(content) {
+      const cleaned = String(content || "")
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/```$/i, "")
+        .trim();
+      const start = cleaned.indexOf("[");
+      const end = cleaned.lastIndexOf("]");
+      const jsonText = start >= 0 && end >= start ? cleaned.slice(start, end + 1) : cleaned;
+      const parsed = JSON.parse(jsonText);
+      if (!Array.isArray(parsed)) throw new Error("模型返回的不是数组 JSON。");
+      return parsed;
+    }
+
+    async function generateIdeas() {
+      const form = getForm();
+      try {
+        validateSeed(form);
+        const prompt = buildIdeaPrompt(form);
+        state.lastPrompt = prompt;
+        $("promptText").value = prompt;
+        setBusy(true, "正在生成点子墙...");
+        const content = await callDeepSeek(prompt, form);
+        const parsed = parseJsonArray(content);
+        state.ideas = parsed.map((item, index) => ({
+          id: index + 1,
+          category: String(item.category || "未分类").trim(),
+          direction: String(item.direction || item.topic || item.title || "").trim(),
+          title: String(item.title || "").trim(),
+          summary: String(item.summary || item.description || "").trim(),
+          angle: String(item.angle || "").trim(),
+          audience: String(item.audience || "").trim(),
+          platform: String(item.platform || "都适合").trim(),
+          score: Number(item.score || 3),
+          reason: String(item.reason || "").trim(),
+          selected: false,
+          brief: "",
+          official: null,
+          xhs: null,
+          moments: null
+        })).filter(item => item.direction || item.title);
+        state.activeId = state.ideas[0]?.id || null;
+        $("promptBox").style.display = "none";
+        render();
+        $("ideasSection").scrollIntoView({ behavior: "smooth", block: "start" });
+        setStatus(`已生成 ${state.ideas.length} 个点子。点击卡片深入，勾选用于批量导出。`);
+      } catch (error) {
+        render();
+        setStatus(error.message, true);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function runGeneration(items, buildPrompt, applyResult, statusText, doneText) {
+      if (!items.length) return setStatus("先选择一个点子。", true);
+      const form = getForm();
+      try {
+        const prompt = buildPrompt(items, form);
+        state.lastPrompt = prompt;
+        $("promptText").value = prompt;
+        setBusy(true, statusText);
+        const content = await callDeepSeek(prompt, form);
+        const parsed = parseJsonArray(content);
+        parsed.forEach(applyResult);
+        $("promptBox").style.display = "none";
+        render();
+        setStatus(doneText(parsed.length));
+      } catch (error) {
+        render();
+        setStatus(error.message, true);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function expandBriefs(items) {
+      return runGeneration(
+        items,
+        buildBriefPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (item) item.brief = String(row.brief || "").trim();
+        },
+        "正在扩写 150 字介绍...",
+        count => `已为 ${count} 个点子生成内容介绍。`
+      );
+    }
+
+    function generateOfficial(items) {
+      return runGeneration(
+        items,
+        buildOfficialPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (!item) return;
+          item.official = {
+            officialTitle: String(row.officialTitle || "").trim(),
+            abstract: String(row.abstract || "").trim(),
+            corePoint: String(row.corePoint || "").trim(),
+            outline: normalizeList(row.outline),
+            opening: String(row.opening || "").trim(),
+            imageIdeas: normalizeList(row.imageIdeas).slice(0, 3),
+            audience: String(row.audience || item.audience || "").trim(),
+            tone: String(row.tone || "").trim(),
+            targetWords: Number(row.targetWords || getForm().contentWords)
+          };
+        },
+        "正在生成公众号方案...",
+        count => `已生成 ${count} 套公众号方案。`
+      );
+    }
+
+    function generateXhs(items) {
+      return runGeneration(
+        items,
+        buildXhsPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (!item) return;
+          item.xhs = {
+            xhsTitle: String(row.xhsTitle || "").trim(),
+            body: String(row.body || "").trim(),
+            imageIdeas: normalizeList(row.imageIdeas).slice(0, 3),
+            tags: normalizeList(row.tags),
+            commentGuide: String(row.commentGuide || "").trim()
+          };
+        },
+        "正在生成小红书方案...",
+        count => `已生成 ${count} 套小红书方案。`
+      );
+    }
+
+    function generateMoments(items) {
+      return runGeneration(
+        items,
+        buildMomentsPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (!item) return;
+          item.moments = {
+            copy: String(row.copy || "").trim(),
+            style: String(row.style || "").trim(),
+            imageIdeas: normalizeList(row.imageIdeas).slice(0, 3),
+            scene: String(row.scene || "").trim(),
+            interaction: String(row.interaction || "").trim()
+          };
+        },
+        "正在生成朋友圈文案...",
+        count => `已生成 ${count} 条朋友圈文案。`
+      );
+    }
+
+    function normalizeList(value) {
+      if (Array.isArray(value)) return value.map(item => String(item).trim()).filter(Boolean);
+      if (!value) return [];
+      return String(value).split(/\n|;|；/).map(item => item.trim()).filter(Boolean);
     }
 
     function formatItemText(item) {
@@ -1174,6 +1349,14 @@ ${JSON.stringify(payload, null, 2)}`;
         lines.push(`图片创意：${item.xhs.imageIdeas.join("；")}`);
         lines.push(`标签：${item.xhs.tags.join(" ")}`);
         lines.push(`评论引导：${item.xhs.commentGuide}`);
+      }
+      if (item.moments) {
+        lines.push("", "朋友圈文案：");
+        lines.push(`文案：${item.moments.copy}`);
+        lines.push(`风格：${item.moments.style}`);
+        lines.push(`配图建议：${item.moments.imageIdeas.join("；")}`);
+        lines.push(`发布场景：${item.moments.scene}`);
+        lines.push(`互动引导：${item.moments.interaction}`);
       }
       return lines.join("\n");
     }
@@ -1226,6 +1409,8 @@ ${JSON.stringify(payload, null, 2)}`;
         公众号摘要: item.official?.abstract || "",
         小红书标题: item.xhs?.xhsTitle || "",
         小红书正文: item.xhs?.body || "",
+        朋友圈文案: item.moments?.copy || "",
+        朋友圈配图建议: item.moments?.imageIdeas?.join("；") || "",
         创建时间: new Date().toLocaleString("zh-CN")
       }));
     }
@@ -1261,9 +1446,10 @@ ${JSON.stringify(payload, null, 2)}`;
       try {
         setBusy(true, "正在生成 Word 和压缩包...");
         const zip = new JSZip();
+        const ideaFolder = zip.folder("脑暴点子");
         const officialFolder = zip.folder("公众号方案");
         const xhsFolder = zip.folder("小红书方案");
-        const ideaFolder = zip.folder("脑暴点子");
+        const momentsFolder = zip.folder("朋友圈文案");
 
         const overviewSheet = XLSX.utils.json_to_sheet(overviewRows(items));
         const overviewBook = XLSX.utils.book_new();
@@ -1273,16 +1459,10 @@ ${JSON.stringify(payload, null, 2)}`;
 
         for (const [index, item] of items.entries()) {
           const prefix = `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}`;
-          const ideaBlob = await makeDocxBlob(item, "idea");
-          ideaFolder.file(`${prefix}.docx`, ideaBlob);
-          if (item.official) {
-            const officialBlob = await makeDocxBlob(item, "official");
-            officialFolder.file(`${prefix}.docx`, officialBlob);
-          }
-          if (item.xhs) {
-            const xhsBlob = await makeDocxBlob(item, "xhs");
-            xhsFolder.file(`${prefix}.docx`, xhsBlob);
-          }
+          ideaFolder.file(`${prefix}.docx`, await makeDocxBlob(item, "idea"));
+          if (item.official) officialFolder.file(`${prefix}.docx`, await makeDocxBlob(item, "official"));
+          if (item.xhs) xhsFolder.file(`${prefix}.docx`, await makeDocxBlob(item, "xhs"));
+          if (item.moments) momentsFolder.file(`${prefix}.docx`, await makeDocxBlob(item, "moments"));
         }
 
         const blob = await zip.generateAsync({ type: "blob" });
@@ -1313,9 +1493,7 @@ ${JSON.stringify(payload, null, 2)}`;
       const addList = (label, values) => {
         if (!values || !values.length) return;
         addHeading(label, HeadingLevel.HEADING_2);
-        values.forEach((value, index) => {
-          children.push(new Paragraph(`${index + 1}. ${value}`));
-        });
+        values.forEach((value, index) => children.push(new Paragraph(`${index + 1}. ${value}`)));
       };
 
       if (kind === "official" && item.official) {
@@ -1334,6 +1512,13 @@ ${JSON.stringify(payload, null, 2)}`;
         addList("3 张图片创意构思", item.xhs.imageIdeas);
         addLine("标签", item.xhs.tags.join(" "));
         addLine("评论区引导", item.xhs.commentGuide);
+      } else if (kind === "moments" && item.moments) {
+        addHeading(item.direction || "朋友圈文案");
+        addLine("朋友圈文案", item.moments.copy);
+        addLine("风格", item.moments.style);
+        addLine("发布场景", item.moments.scene);
+        addLine("互动引导", item.moments.interaction);
+        addList("3 张配图建议", item.moments.imageIdeas);
       } else {
         addHeading(item.direction || item.title);
         addLine("推荐标题", item.title);
@@ -1347,9 +1532,7 @@ ${JSON.stringify(payload, null, 2)}`;
         addLine("推荐理由", item.reason);
       }
 
-      const doc = new Document({
-        sections: [{ properties: {}, children }]
-      });
+      const doc = new Document({ sections: [{ properties: {}, children }] });
       return Packer.toBlob(doc);
     }
 
@@ -1394,6 +1577,7 @@ ${JSON.stringify(payload, null, 2)}`;
 
     function resetAll() {
       state.ideas = [];
+      state.activeId = null;
       state.lastPrompt = "";
       $("promptText").value = "";
       $("promptBox").style.display = "none";
@@ -1417,16 +1601,34 @@ ${JSON.stringify(payload, null, 2)}`;
       });
     });
 
+    document.querySelectorAll(".stage").forEach(button => {
+      button.addEventListener("click", () => {
+        if (button.disabled) return;
+        const target = $(stageTargets[button.dataset.stage]);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
     $("brainstormBtn").addEventListener("click", generateIdeas);
     $("promptBtn").addEventListener("click", () => showPrompt());
     $("resetBtn").addEventListener("click", resetAll);
-    $("expandBtn").addEventListener("click", expandBriefs);
-    $("officialBtn").addEventListener("click", generateOfficial);
-    $("xhsBtn").addEventListener("click", generateXhs);
+    $("batchBriefBtn").addEventListener("click", () => expandBriefs(selectedItems()));
+    $("batchOfficialBtn").addEventListener("click", () => generateOfficial(selectedItems()));
+    $("batchXhsBtn").addEventListener("click", () => generateXhs(selectedItems()));
+    $("batchMomentsBtn").addEventListener("click", () => generateMoments(selectedItems()));
     $("copyBtn").addEventListener("click", copySelected);
     $("excelBtn").addEventListener("click", () => exportExcel());
     $("wordZipBtn").addEventListener("click", exportWordZip);
     $("copyPromptBtn").addEventListener("click", () => copyText($("promptText").value));
+
+    document.addEventListener("click", event => {
+      if (event.target.closest("[data-stop]")) return;
+      const card = event.target.closest("[data-open]");
+      if (!card) return;
+      state.activeId = Number(card.dataset.open);
+      render();
+      $("detailSection").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
 
     document.addEventListener("change", event => {
       const id = event.target.getAttribute?.("data-select");
@@ -1434,14 +1636,8 @@ ${JSON.stringify(payload, null, 2)}`;
       const item = state.ideas.find(row => String(row.id) === String(id));
       if (!item) return;
       item.selected = event.target.checked;
+      if (item.selected) state.activeId = item.id;
       render();
-    });
-
-    document.addEventListener("click", event => {
-      const id = event.target.getAttribute?.("data-copy-one");
-      if (!id) return;
-      const item = state.ideas.find(row => String(row.id) === String(id));
-      if (item) copyText(formatItemText(item));
     });
 
     render();
