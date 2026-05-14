@@ -308,9 +308,17 @@
 
     .workbench {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+      grid-template-columns: minmax(0, .92fr) minmax(420px, .7fr);
       gap: 18px;
       align-items: start;
+    }
+
+    .app.layout-standard .workbench {
+      grid-template-columns: minmax(0, 1fr) minmax(380px, .55fr);
+    }
+
+    .app.layout-compact .workbench {
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
     }
 
     .ideas {
@@ -340,6 +348,15 @@
       justify-content: flex-end;
     }
 
+    .density-control {
+      display: inline-flex;
+      gap: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 3px;
+      background: #fffdfa;
+    }
+
     .icon-btn {
       min-height: 34px;
       padding: 6px 10px;
@@ -361,9 +378,12 @@
     }
 
     .masonry {
-      column-count: 3;
+      column-count: 2;
       column-gap: 12px;
     }
+
+    .app.layout-standard .masonry { column-count: 3; }
+    .app.layout-compact .masonry { column-count: 4; }
 
     .idea-card {
       display: inline-block;
@@ -701,10 +721,6 @@
       line-height: 1.55;
     }
 
-    @media (min-width: 1180px) {
-      .masonry { column-count: 4; }
-    }
-
     @media (max-width: 1020px) {
       .top-grid,
       .workbench {
@@ -717,6 +733,7 @@
       }
 
       .masonry { column-count: 2; }
+      .density-control { display: none; }
     }
 
     @media (max-width: 680px) {
@@ -886,6 +903,11 @@
             <p class="sub" id="ideasSub">生成后点击任意卡片查看详情，勾选用于批量导出。</p>
           </div>
           <div class="section-tools">
+            <div class="density-control" aria-label="点子墙密度">
+              <button class="icon-btn density-btn active" data-layout="loose" type="button" title="宽松布局，右侧详情更宽">宽松</button>
+              <button class="icon-btn density-btn" data-layout="standard" type="button" title="标准布局">标准</button>
+              <button class="icon-btn density-btn" data-layout="compact" type="button" title="紧凑布局，左侧显示更多点子">紧凑</button>
+            </div>
             <button class="icon-btn" id="selectAllBtn" type="button" title="全选点子">☑ 全选</button>
             <button class="icon-btn" id="clearSelectBtn" type="button" title="取消全部选择">☐ 全不选</button>
           </div>
@@ -1030,7 +1052,8 @@
       lastPrompt: "",
       busy: false,
       exportDirHandle: null,
-      exportDirName: ""
+      exportDirName: "",
+      layoutDensity: "loose"
     };
 
     const $ = (id) => document.getElementById(id);
@@ -1167,6 +1190,8 @@
 
     function render() {
       $("appRoot").classList.toggle("has-ideas", state.ideas.length > 0);
+      $("appRoot").classList.toggle("layout-standard", state.layoutDensity === "standard");
+      $("appRoot").classList.toggle("layout-compact", state.layoutDensity === "compact");
       renderIdeaWall();
       renderDetail();
       updateStageNav();
@@ -1176,6 +1201,9 @@
       $("ideasSub").textContent = state.ideas.length
         ? "点击卡片看详情；勾选用于批量导出。当前打开的点子会高亮。"
         : "生成后点击任意卡片查看详情，勾选用于批量导出。";
+      document.querySelectorAll(".density-btn").forEach(button => {
+        button.classList.toggle("active", button.dataset.layout === state.layoutDensity);
+      });
     }
 
     function renderIdeaWall() {
@@ -2474,6 +2502,14 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
       setStatus("已取消全部选择。");
     });
     $("copyPromptBtn").addEventListener("click", () => copyText($("promptText").value, "已复制提示词。"));
+
+    document.querySelectorAll("[data-layout]").forEach(button => {
+      button.addEventListener("click", () => {
+        state.layoutDensity = button.dataset.layout;
+        render();
+        setStatus(`已切换为${button.textContent.trim()}布局。`);
+      });
+    });
 
     document.addEventListener("click", event => {
       if (event.target.closest("[data-stop]")) return;
