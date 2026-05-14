@@ -1,0 +1,2517 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 灵感脑暴器</title>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f3f1eb;
+      --panel: #fffdf8;
+      --paper: #fbfaf6;
+      --ink: #272b2f;
+      --muted: #73746f;
+      --line: #d9d2c6;
+      --accent: #7a8f83;
+      --accent-dark: #5f7469;
+      --clay: #b58b73;
+      --mist: #e7ebe4;
+      --blue: #8798a5;
+      --warn: #f5ead2;
+      --shadow: 0 14px 34px rgba(42, 39, 34, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input, textarea, select { font: inherit; }
+
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 13px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    button:hover:not(:disabled) { border-color: rgba(122, 143, 131, .7); }
+
+    button:disabled {
+      opacity: .48;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      border-color: var(--accent-dark);
+      background: var(--accent-dark);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    button.ghost {
+      background: transparent;
+      color: var(--muted);
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(122, 143, 131, .16);
+    }
+
+    textarea {
+      min-height: 126px;
+      resize: vertical;
+      line-height: 1.65;
+    }
+
+    #seedIdea {
+      min-height: 150px;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      color: #3d423f;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .app {
+      width: min(1280px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 26px 0 42px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 7px;
+      font-size: 28px;
+      line-height: 1.22;
+      letter-spacing: 0;
+    }
+
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .stage-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 8px 0;
+      background: rgba(243, 241, 235, .92);
+      backdrop-filter: blur(8px);
+    }
+
+    .stage {
+      min-height: 36px;
+      border-color: var(--line);
+      background: #fffdf9;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .stage.active {
+      border-color: var(--accent-dark);
+      background: var(--accent-dark);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .stage.done {
+      border-color: #c8d2c7;
+      background: var(--mist);
+      color: #53665d;
+    }
+
+    .stage.locked {
+      background: #f5f2eb;
+      color: #aaa49a;
+    }
+
+    .app:not(.has-ideas) .stage-nav,
+    .app:not(.has-ideas) .workbench,
+    .app:not(.has-ideas) #exportSection {
+      display: none;
+    }
+
+    .top-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) 1fr;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .app:not(.has-ideas) .top-grid {
+      grid-template-columns: minmax(320px, 680px);
+      justify-content: center;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .composer {
+      padding: 18px;
+    }
+
+    .field { margin-bottom: 14px; }
+
+    .examples {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .example {
+      min-height: 0;
+      padding: 7px 9px;
+      background: #fffdfa;
+      color: #68716c;
+      text-align: left;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .compact {
+      display: grid;
+      grid-template-columns: minmax(120px, 160px) 1fr;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      align-items: center;
+    }
+
+    details.settings {
+      margin-top: 16px;
+      border-top: 1px solid var(--line);
+      padding-top: 13px;
+    }
+
+    details.settings summary {
+      cursor: pointer;
+      color: #3f4743;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .settings-body { padding-top: 13px; }
+
+    .note {
+      border: 1px solid #e3d3b3;
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: var(--warn);
+      color: #5a4d39;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .note a {
+      color: #526e63;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .status {
+      min-height: 22px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .status strong { color: #9c664f; }
+
+    .intro-panel {
+      min-height: 100%;
+      padding: 18px;
+      display: grid;
+      align-content: center;
+      gap: 12px;
+      background: linear-gradient(180deg, #fffdf8, #f7f5ef);
+    }
+
+    .intro-panel h2 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    .intro-list {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: #59615d;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .workbench {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .ideas {
+      padding: 18px;
+      min-height: 520px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .section-head h2 {
+      margin: 0 0 5px;
+      font-size: 20px;
+      line-height: 1.35;
+      letter-spacing: 0;
+    }
+
+    .section-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .icon-btn {
+      min-height: 34px;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .prompt-box {
+      display: none;
+      margin-bottom: 14px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfffc;
+    }
+
+    .prompt-box textarea {
+      min-height: 180px;
+      font-size: 13px;
+    }
+
+    .masonry {
+      column-count: 3;
+      column-gap: 12px;
+    }
+
+    .idea-card {
+      display: inline-block;
+      width: 100%;
+      margin: 0 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+      background: #fff;
+      break-inside: avoid;
+      cursor: pointer;
+      transition: transform .12s, border-color .12s, background .12s, opacity .12s;
+    }
+
+    .idea-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(122, 143, 131, .68);
+    }
+
+    .idea-card.active {
+      border-color: var(--accent-dark);
+      background: #fbfff9;
+      box-shadow: 0 0 0 2px rgba(122, 143, 131, .14);
+    }
+
+    .idea-card.dimmed {
+      opacity: .56;
+      background: #f7f5ef;
+    }
+
+    .idea-card.checked {
+      border-color: #9cae9f;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .check {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0;
+      color: #4d5a55;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .check input {
+      width: 17px;
+      height: 17px;
+      margin: 0;
+      accent-color: var(--accent-dark);
+    }
+
+    .score {
+      color: var(--clay);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .idea-title {
+      margin: 0 0 8px;
+      font-size: 17px;
+      line-height: 1.42;
+      letter-spacing: 0;
+    }
+
+    .idea-card.checked .idea-title,
+    .idea-card.active .idea-title {
+      font-weight: 900;
+    }
+
+    .idea-summary {
+      margin: 0 0 8px;
+      color: #56615c;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .idea-rec {
+      margin: 0 0 10px;
+      color: #73746f;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: var(--mist);
+      color: #53665d;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .badge.selected {
+      background: #ded4c9;
+      color: #6d574a;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 340px;
+      border: 1px dashed #cfc7bb;
+      border-radius: 8px;
+      padding: 30px;
+      background: #fffdfa;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .detail {
+      position: sticky;
+      top: 70px;
+      padding: 18px;
+      max-height: calc(100vh - 86px);
+      overflow: auto;
+    }
+
+    .detail h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    .detail-title {
+      margin: 0 0 8px;
+      color: #3f4743;
+      font-weight: 700;
+      line-height: 1.55;
+    }
+
+    .detail-summary,
+    .detail-line {
+      margin: 0 0 9px;
+      color: #56615c;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .detail-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .detail-pager {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 0 0 12px;
+    }
+
+    .detail-select {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: #fffdfa;
+      color: #3f4743;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .detail-select input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: var(--accent-dark);
+    }
+
+    .edit-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .edit-section {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+
+    .edit-section:first-child { border-top: 0; }
+
+    .edit-section h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .edit-form textarea {
+      min-height: 86px;
+      font-size: 14px;
+    }
+
+    .generated {
+      margin-top: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+
+    .generated h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .generated dl {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      color: #48534f;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .generated dt {
+      display: inline;
+      color: #303733;
+      font-weight: 700;
+    }
+
+    .generated dd {
+      display: inline;
+      margin: 0;
+    }
+
+    .mini-list {
+      margin: 5px 0 0;
+      padding-left: 20px;
+      color: #48534f;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .batch {
+      margin-top: 18px;
+      padding: 16px 18px;
+    }
+
+    .batch summary {
+      cursor: pointer;
+      color: #3f4743;
+      font-weight: 800;
+    }
+
+    .batch-body {
+      padding-top: 14px;
+    }
+
+    .batch-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .batch-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .batch-groups {
+      display: grid;
+      gap: 10px;
+    }
+
+    .batch-group {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdfa;
+      padding: 11px 12px;
+    }
+
+    .batch-group summary {
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .batch-group-body {
+      display: grid;
+      gap: 12px;
+      padding-top: 12px;
+    }
+
+    .settings-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(140px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .advanced-block {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+
+    .advanced-block:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .advanced-block h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .path-line {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    @media (min-width: 1180px) {
+      .masonry { column-count: 4; }
+    }
+
+    @media (max-width: 1020px) {
+      .top-grid,
+      .workbench {
+        grid-template-columns: 1fr;
+      }
+
+      .detail {
+        position: static;
+        max-height: none;
+      }
+
+      .masonry { column-count: 2; }
+    }
+
+    @media (max-width: 680px) {
+      .app {
+        width: min(100% - 24px, 1280px);
+        padding-top: 18px;
+      }
+
+      .hero,
+      .compact,
+      .section-head,
+      .batch-head {
+        display: block;
+      }
+
+      .stage-nav {
+        grid-template-columns: 1fr;
+        position: static;
+      }
+
+      .masonry { column-count: 1; }
+
+      .toolbar,
+      .detail-actions,
+      .batch-actions,
+      .section-tools,
+      .settings-row {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="appRoot">
+    <header class="hero">
+      <div>
+        <h1>AI 灵感脑暴器</h1>
+        <p class="sub">输入一句想法，先生成可选方向，再决定要扩写、导出或批量处理。</p>
+      </div>
+      <button class="ghost" id="resetBtn" type="button">清空本次脑暴</button>
+    </header>
+
+    <nav class="stage-nav" aria-label="流程导航">
+      <button class="stage active" data-stage="input" type="button">1 输入想法</button>
+      <button class="stage locked" data-stage="ideas" type="button">2 点子墙</button>
+      <button class="stage locked" data-stage="detail" type="button">3 深入发散</button>
+      <button class="stage locked" data-stage="content" type="button">4 内容方案</button>
+      <button class="stage locked" data-stage="export" type="button">5 导出</button>
+    </nav>
+
+    <section class="top-grid" id="inputSection">
+      <aside class="panel composer">
+        <div class="field">
+          <label for="seedIdea">你现在脑子里有什么想法？</label>
+          <textarea id="seedIdea" placeholder="输入一句话、一个名称、几个关键词都可以。"></textarea>
+          <div class="examples">
+            <button class="example" data-example="AI 工具太多，普通人不知道怎么开始" type="button">AI 工具太多，普通人不知道怎么开始</button>
+            <button class="example" data-example="普通人怎么用 AI 做公众号日更" type="button">普通人怎么用 AI 做公众号日更</button>
+            <button class="example" data-example="小红书内容如何转成公众号长文" type="button">小红书内容如何转成公众号长文</button>
+          </div>
+        </div>
+
+        <div class="compact">
+          <div class="field">
+            <label for="ideaCount">生成数量</label>
+            <select id="ideaCount">
+              <option>6</option>
+              <option selected>10</option>
+              <option>15</option>
+              <option>20</option>
+              <option>30</option>
+            </select>
+          </div>
+          <div class="toolbar field">
+            <button class="primary" id="brainstormBtn" type="button">开始脑暴</button>
+            <button id="promptBtn" type="button">生成提示词</button>
+          </div>
+        </div>
+
+        <details class="settings">
+          <summary>接入 AI / 高级设置</summary>
+          <div class="settings-body">
+            <div class="note field">
+              当前版本默认接入 DeepSeek。还没有 API Key？去
+              <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">DeepSeek 官网</a>
+              获取后填入下方。
+            </div>
+            <div class="field">
+              <label for="provider">AI 服务商</label>
+              <select id="provider">
+                <option value="deepseek" selected>DeepSeek</option>
+                <option value="kimi" disabled>Kimi（预留）</option>
+                <option value="custom" disabled>自定义模型（预留）</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="apiKey">DeepSeek API Key <span class="hint">默认只保存在当前页面内存</span></label>
+              <input id="apiKey" type="password" placeholder="sk-...">
+            </div>
+            <label class="detail-select" for="rememberApiKey">
+              <span>记住本机 API Key <span class="hint">只保存到当前浏览器，不上传云端</span></span>
+              <input id="rememberApiKey" type="checkbox">
+            </label>
+            <div class="note field">
+              隐私说明：API Key 仅用于从你的浏览器直接请求 DeepSeek API。本站不设置服务器、不收集、不保存、不上传你的 Key。
+            </div>
+            <div class="field">
+              <label for="apiUrl">接口地址</label>
+              <input id="apiUrl" value="https://api.deepseek.com/chat/completions">
+            </div>
+            <div class="compact">
+              <div class="field">
+                <label for="model">模型</label>
+                <select id="model">
+                  <option value="deepseek-v4-flash" selected>deepseek-v4-flash</option>
+                  <option value="deepseek-v4-pro">deepseek-v4-pro</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="temperature">发散程度</label>
+                <select id="temperature">
+                  <option value="0.65">稳一点</option>
+                  <option value="0.85" selected>平衡</option>
+                  <option value="1">更发散</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="contentWords">公众号目标字数</label>
+              <input id="contentWords" type="number" min="500" max="3000" step="100" value="1000">
+            </div>
+            <div class="field">
+              <label for="styleHint">风格偏好 <span class="hint">可不填</span></label>
+              <input id="styleHint" placeholder="例如：克制、实操、反常识、小红书感、知识科普">
+            </div>
+            <div class="field">
+              <label for="avoidHint">不想要的内容 <span class="hint">可不填</span></label>
+              <textarea id="avoidHint" placeholder="例如：不要鸡汤、不要卖课口吻、不要制造焦虑、不要太标题党"></textarea>
+            </div>
+            <div class="field">
+              <label for="categories">分类库 <span class="hint">用中文逗号分隔</span></label>
+              <input id="categories" value="AI工具,公众号日更,小红书转公众号,副业,职场,热点,产品思考">
+            </div>
+          </div>
+        </details>
+
+        <div class="prompt-box" id="promptBox">
+          <label for="promptText">可复制提示词</label>
+          <textarea id="promptText" readonly></textarea>
+          <div class="toolbar">
+            <button id="copyPromptBtn" type="button">复制提示词</button>
+          </div>
+        </div>
+
+        <div class="status" id="status"></div>
+      </aside>
+    </section>
+
+    <section class="workbench">
+      <main class="panel ideas" id="ideasSection">
+        <div class="section-head">
+          <div>
+            <h2>点子墙</h2>
+            <p class="sub" id="ideasSub">生成后点击任意卡片查看详情，勾选用于批量导出。</p>
+          </div>
+          <div class="section-tools">
+            <button class="icon-btn" id="selectAllBtn" type="button" title="全选点子">☑ 全选</button>
+            <button class="icon-btn" id="clearSelectBtn" type="button" title="取消全部选择">☐ 全不选</button>
+          </div>
+        </div>
+
+        <div id="ideaWall">
+          <div class="empty">还没有点子。先输入一个想法，然后点击“开始脑暴”。</div>
+        </div>
+      </main>
+
+      <aside class="panel detail" id="detailSection">
+        <div id="detailContent">
+          <h2>点一个想法，继续深入</h2>
+          <p class="sub">详情面板会显示完整信息和下一步操作。点子墙保持轻，方便你继续浏览。</p>
+        </div>
+      </aside>
+    </section>
+
+    <details class="panel batch" id="exportSection">
+      <summary>批量导出与高级操作</summary>
+      <div class="batch-body">
+        <div class="batch-head">
+          <div id="selectedCount">已选择 0 个点子</div>
+          <div>常用操作默认收起，需要时再展开。</div>
+        </div>
+        <div class="batch-groups">
+          <details class="batch-group" open>
+            <summary>内容与方案</summary>
+            <div class="batch-group-body">
+              <div class="batch-actions">
+                <button id="batchBriefBtn" type="button">批量继续发散</button>
+                <button id="batchOfficialBtn" type="button">批量转公众号</button>
+                <button id="batchXhsBtn" type="button">批量转小红书</button>
+                <button id="batchMomentsBtn" type="button">批量转朋友圈</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="batch-group">
+            <summary>批量导出</summary>
+            <div class="batch-group-body">
+              <div class="settings-row">
+                <div class="field">
+                  <label>导出位置</label>
+                  <button id="chooseFolderBtn" type="button">浏览文件夹</button>
+                </div>
+                <div class="path-line" id="exportPathLabel">未选择导出位置；默认按浏览器下载设置保存，建议设置为桌面。</div>
+              </div>
+              <div class="batch-actions">
+                <button id="copyBtn" type="button">复制已选</button>
+                <button id="excelBtn" type="button">导出 Excel</button>
+                <button id="wordFilesBtn" type="button">批量导出 Word</button>
+                <button id="mdBtn" type="button">批量导出 MD</button>
+                <button id="txtBtn" type="button">批量导出 TXT</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="batch-group">
+            <summary>高级模式</summary>
+            <div class="batch-group-body">
+              <div class="advanced-block">
+                <h3>批量小说</h3>
+                <div class="settings-row">
+                  <div class="field">
+                    <label for="novelWords">小说字数</label>
+                    <input id="novelWords" type="number" min="1000" max="50000" step="500" value="5000">
+                  </div>
+                  <div class="field">
+                    <label for="novelStyle">小说风格</label>
+                    <select id="novelStyle">
+                      <option value="有趣" selected>有趣</option>
+                      <option value="荒诞">荒诞</option>
+                      <option value="爱情">爱情</option>
+                      <option value="纪录片">纪录片</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>执行</label>
+                    <button id="batchNovelBtn" type="button">批量生成小说架构</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="advanced-block">
+                <h3>PPT 文本大纲</h3>
+                <div class="settings-row">
+                  <div class="field">
+                    <label for="pptPages">PPT 页数</label>
+                    <select id="pptPages">
+                      <option value="5" selected>5 页</option>
+                      <option value="10">10 页</option>
+                      <option value="15">15 页</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="pptFormat">导出格式</label>
+                    <select id="pptFormat">
+                      <option value="md" selected>MD</option>
+                      <option value="txt">TXT</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>执行</label>
+                    <button id="pptOutlineBtn" type="button">批量导出 PPT 大纲</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="advanced-block">
+                <h3>批量作曲</h3>
+                <div class="settings-row">
+                  <div class="field">
+                    <label for="musicType">音乐类型</label>
+                    <select id="musicType">
+                      <option value="流行" selected>流行</option>
+                      <option value="美声">美声</option>
+                      <option value="民族">民族</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="musicStyle">歌曲风格</label>
+                    <input id="musicStyle" placeholder="例如：轻快、治愈、热血、复古">
+                  </div>
+                  <div class="field">
+                    <label>执行</label>
+                    <button id="batchSongBtn" type="button">批量作曲</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <script>
+    const state = {
+      ideas: [],
+      activeId: null,
+      lastPrompt: "",
+      busy: false,
+      exportDirHandle: null,
+      exportDirName: ""
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const API_KEY_STORAGE_KEY = "ai_brainstorm_deepseek_api_key";
+
+    const stageTargets = {
+      input: "inputSection",
+      ideas: "ideasSection",
+      detail: "detailSection",
+      content: "detailSection",
+      export: "exportSection"
+    };
+
+    function getForm() {
+      return {
+        seedIdea: $("seedIdea").value.trim(),
+        ideaCount: Number($("ideaCount").value),
+        contentWords: Number($("contentWords").value || 1000),
+        provider: $("provider").value,
+        apiKey: $("apiKey").value.trim(),
+        apiUrl: $("apiUrl").value.trim() || "https://api.deepseek.com/chat/completions",
+        model: $("model").value,
+        temperature: Number($("temperature").value),
+        styleHint: $("styleHint").value.trim(),
+        avoidHint: $("avoidHint").value.trim(),
+        categories: $("categories").value.split(/[,，]/).map(item => item.trim()).filter(Boolean),
+        novelWords: Number($("novelWords").value || 5000),
+        novelStyle: $("novelStyle").value,
+        pptPages: Number($("pptPages").value || 5),
+        pptFormat: $("pptFormat").value,
+        musicType: $("musicType").value,
+        musicStyle: $("musicStyle").value.trim()
+      };
+    }
+
+    function getValue(id) {
+      return $(id)?.value.trim() || "";
+    }
+
+    function validateSeed(form) {
+      if (!form.seedIdea) throw new Error("先输入一句想法、一个名称或几个关键词。");
+    }
+
+    function activeItem() {
+      return state.ideas.find(item => item.id === state.activeId) || null;
+    }
+
+    function selectedItems() {
+      return state.ideas.filter(item => item.selected);
+    }
+
+    function orderedIdeas() {
+      return state.ideas.slice().sort((a, b) => b.score - a.score);
+    }
+
+    function setStatus(text, isError = false) {
+      $("status").innerHTML = isError ? `<strong>${escapeHtml(text)}</strong>` : escapeHtml(text);
+    }
+
+    function setBusy(isBusy, text = "") {
+      state.busy = isBusy;
+      ["brainstormBtn", "promptBtn"].forEach(id => $(id).disabled = isBusy);
+      updateButtons();
+      if (text) setStatus(text);
+    }
+
+    function loadSavedApiKey() {
+      try {
+        const savedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+        if (!savedKey) return;
+        $("apiKey").value = savedKey;
+        $("rememberApiKey").checked = true;
+      } catch (error) {
+        setStatus("当前浏览器不允许读取本机 API Key 保存状态。", true);
+      }
+    }
+
+    function syncApiKeyStorage() {
+      try {
+        if ($("rememberApiKey").checked) {
+          localStorage.setItem(API_KEY_STORAGE_KEY, $("apiKey").value.trim());
+          setStatus("已记住本机 API Key。");
+        } else {
+          localStorage.removeItem(API_KEY_STORAGE_KEY);
+          setStatus("已取消记住本机 API Key。");
+        }
+      } catch (error) {
+        setStatus("当前浏览器不允许保存 API Key 到本机。", true);
+      }
+    }
+
+    function updateStageNav() {
+      const hasIdeas = state.ideas.length > 0;
+      const hasActive = Boolean(activeItem());
+      const hasContent = state.ideas.some(item => item.official || item.xhs || item.moments || item.novel || item.song);
+      const activeStage = hasContent ? "content" : hasActive ? "detail" : hasIdeas ? "ideas" : "input";
+      const order = ["input", "ideas", "detail", "content", "export"];
+      const activeIndex = order.indexOf(activeStage);
+
+      document.querySelectorAll(".stage").forEach(button => {
+        const stage = button.dataset.stage;
+        const unlocked = stage === "input"
+          || (stage === "ideas" && hasIdeas)
+          || (stage === "detail" && hasActive)
+          || (stage === "content" && hasActive)
+          || (stage === "export" && hasIdeas);
+        const stageIndex = order.indexOf(stage);
+        button.disabled = !unlocked;
+        button.classList.toggle("locked", !unlocked);
+        button.classList.toggle("active", stage === activeStage);
+        button.classList.toggle("done", unlocked && stageIndex < activeIndex);
+      });
+    }
+
+    function updateButtons() {
+      const hasSelected = selectedItems().length > 0;
+      const hasActive = Boolean(activeItem());
+      [
+        "batchBriefBtn", "batchOfficialBtn", "batchXhsBtn", "batchMomentsBtn", "batchNovelBtn", "batchSongBtn",
+        "copyBtn", "excelBtn", "wordFilesBtn", "mdBtn", "txtBtn", "pptOutlineBtn"
+      ].forEach(id => {
+        const button = $(id);
+        if (button) button.disabled = state.busy || !hasSelected;
+      });
+      ["selectAllBtn", "clearSelectBtn"].forEach(id => {
+        const button = $(id);
+        if (button) button.disabled = state.busy || !state.ideas.length;
+      });
+      ["singleBriefBtn", "singleOfficialBtn", "singleXhsBtn", "singleMomentsBtn", "copyActiveBtn", "editActiveBtn", "prevIdeaBtn", "nextIdeaBtn"].forEach(id => {
+        const button = $(id);
+        if (button) button.disabled = state.busy || !hasActive;
+      });
+    }
+
+    function render() {
+      $("appRoot").classList.toggle("has-ideas", state.ideas.length > 0);
+      renderIdeaWall();
+      renderDetail();
+      updateStageNav();
+      updateButtons();
+      const count = selectedItems().length;
+      $("selectedCount").textContent = `已选择 ${count} 个点子 / 共 ${state.ideas.length} 个`;
+      $("ideasSub").textContent = state.ideas.length
+        ? "点击卡片看详情；勾选用于批量导出。当前打开的点子会高亮。"
+        : "生成后点击任意卡片查看详情，勾选用于批量导出。";
+    }
+
+    function renderIdeaWall() {
+      const wall = $("ideaWall");
+      if (!state.ideas.length) {
+        wall.className = "";
+        wall.innerHTML = `<div class="empty">还没有点子。先输入一个想法，然后点击“开始脑暴”。</div>`;
+        return;
+      }
+
+      const hasChecked = selectedItems().length > 0;
+      wall.className = "masonry";
+      wall.innerHTML = orderedIdeas()
+        .map(item => ideaCardHtml(item, hasChecked))
+        .join("");
+    }
+
+    function ideaCardHtml(item, hasChecked) {
+      const active = item.id === state.activeId;
+      const dimmed = hasChecked && !item.selected && !active;
+      return `
+        <article class="idea-card ${active ? "active" : ""} ${item.selected ? "checked" : ""} ${dimmed ? "dimmed" : ""}" data-open="${item.id}">
+          <div class="card-top">
+            <label class="check" data-stop>
+              <input type="checkbox" data-select="${item.id}" ${item.selected ? "checked" : ""}>
+              ${item.selected ? "已选择" : "选择"}
+            </label>
+            <div class="score">${"★".repeat(Math.max(1, Math.min(5, item.score)))}</div>
+          </div>
+          <h3 class="idea-title">${escapeHtml(item.direction || item.title)}</h3>
+          <p class="idea-summary">${escapeHtml(item.summary || "未生成一句话简介")}</p>
+          <p class="idea-rec">${escapeHtml(item.title || "未生成推荐标题")}</p>
+          <div class="badges">
+            <span class="badge">${escapeHtml(item.platform || "都适合")}</span>
+            <span class="badge">${escapeHtml(item.category || "未分类")}</span>
+            ${item.brief ? `<span class="badge selected">已发散</span>` : ""}
+            ${item.official || item.xhs || item.moments || item.novel || item.song ? `<span class="badge selected">有方案</span>` : ""}
+          </div>
+        </article>
+      `;
+    }
+
+    function renderDetail() {
+      const item = activeItem();
+      if (!item) {
+        $("detailContent").innerHTML = `
+          <h2>点一个想法，继续深入</h2>
+          <p class="sub">详情面板会显示完整信息和下一步操作。点子墙保持轻，方便你继续浏览。</p>
+        `;
+        return;
+      }
+
+      const ordered = orderedIdeas();
+      const currentIndex = ordered.findIndex(row => row.id === item.id);
+      const positionText = currentIndex >= 0 ? `${currentIndex + 1} / ${ordered.length}` : "";
+
+      $("detailContent").innerHTML = `
+        <div class="detail-pager">
+          <button id="prevIdeaBtn" type="button">上一个</button>
+          <button id="nextIdeaBtn" type="button">下一个</button>
+        </div>
+        <label class="detail-select" for="detailSelect">
+          <span>${item.selected ? "已加入选择" : "加入选择"} ${positionText ? `<span class="hint">${positionText}</span>` : ""}</span>
+          <input id="detailSelect" type="checkbox" data-detail-select="${item.id}" ${item.selected ? "checked" : ""}>
+        </label>
+        <h2>${escapeHtml(item.direction || item.title)}</h2>
+        <p class="detail-title">${escapeHtml(item.title || "未生成推荐标题")}</p>
+        <p class="detail-summary">${escapeHtml(item.summary || "未生成一句话简介")}</p>
+        <p class="detail-line"><strong>目标读者：</strong>${escapeHtml(item.audience || "未填写")}</p>
+        <p class="detail-line"><strong>切入角度：</strong>${escapeHtml(item.angle || "未填写")}</p>
+        <p class="detail-line"><strong>推荐理由：</strong>${escapeHtml(item.reason || "未填写")}</p>
+        <div class="detail-actions">
+          <button id="singleBriefBtn" type="button">继续发散</button>
+          <button id="singleOfficialBtn" type="button">转公众号</button>
+          <button id="singleXhsBtn" type="button">转小红书</button>
+          <button id="singleMomentsBtn" type="button">转朋友圈</button>
+          <button id="copyActiveBtn" type="button">复制当前</button>
+          <button id="editActiveBtn" type="button">编辑内容</button>
+        </div>
+        ${item.brief ? `<section class="generated"><h3>150 字介绍</h3><p class="detail-summary">${escapeHtml(item.brief)}</p></section>` : ""}
+        ${item.official ? officialHtml(item.official) : ""}
+        ${item.xhs ? xhsHtml(item.xhs) : ""}
+        ${item.moments ? momentsHtml(item.moments) : ""}
+        ${item.novel ? novelHtml(item.novel) : ""}
+        ${item.song ? songHtml(item.song) : ""}
+      `;
+
+      $("singleBriefBtn").addEventListener("click", () => expandBriefs([item]));
+      $("singleOfficialBtn").addEventListener("click", () => generateOfficial([item]));
+      $("singleXhsBtn").addEventListener("click", () => generateXhs([item]));
+      $("singleMomentsBtn").addEventListener("click", () => generateMoments([item]));
+      $("copyActiveBtn").addEventListener("click", () => copyText(formatItemText(item), "已复制当前内容。"));
+      $("editActiveBtn").addEventListener("click", () => renderEditDetail(item));
+      $("prevIdeaBtn").addEventListener("click", () => moveActiveIdea(-1));
+      $("nextIdeaBtn").addEventListener("click", () => moveActiveIdea(1));
+    }
+
+    function renderEditDetail(item) {
+      $("detailContent").innerHTML = `
+        <div class="detail-actions">
+          <button class="primary" id="saveEditBtn" type="button">保存修改</button>
+          <button id="cancelEditBtn" type="button">取消</button>
+        </div>
+        <div class="edit-form">
+          <section class="edit-section">
+            <h3>基础信息</h3>
+            ${editInput("editDirection", "选题方向", item.direction)}
+            ${editInput("editTitle", "推荐标题", item.title)}
+            ${editTextarea("editSummary", "一句话简介", item.summary)}
+            ${editInput("editCategory", "分类", item.category)}
+            ${editInput("editPlatform", "适合平台", item.platform)}
+            ${editInput("editAudience", "目标读者", item.audience)}
+            ${editTextarea("editAngle", "切入角度", item.angle)}
+            ${editTextarea("editReason", "推荐理由", item.reason)}
+            ${editInput("editScore", "推荐指数", item.score)}
+            ${editTextarea("editBrief", "150 字介绍", item.brief)}
+          </section>
+          ${item.official ? `
+            <section class="edit-section">
+              <h3>公众号方案</h3>
+              ${editInput("editOfficialTitle", "标题", item.official.officialTitle)}
+              ${editTextarea("editOfficialAbstract", "摘要", item.official.abstract)}
+              ${editTextarea("editOfficialCore", "核心观点", item.official.corePoint)}
+              ${editList("editOfficialOutline", "文章大纲", item.official.outline)}
+              ${editTextarea("editOfficialOpening", "开头切入", item.official.opening)}
+              ${editList("editOfficialImages", "配图建议", item.official.imageIdeas)}
+              ${editInput("editOfficialTone", "写作口吻", item.official.tone)}
+              ${editInput("editOfficialWords", "目标字数", item.official.targetWords)}
+            </section>
+          ` : ""}
+          ${item.xhs ? `
+            <section class="edit-section">
+              <h3>小红书方案</h3>
+              ${editInput("editXhsTitle", "标题", item.xhs.xhsTitle)}
+              ${editTextarea("editXhsBody", "正文", item.xhs.body)}
+              ${editList("editXhsImages", "图片创意", item.xhs.imageIdeas)}
+              ${editInput("editXhsTags", "标签", item.xhs.tags.join(" "))}
+              ${editTextarea("editXhsGuide", "评论引导", item.xhs.commentGuide)}
+            </section>
+          ` : ""}
+          ${item.moments ? `
+            <section class="edit-section">
+              <h3>朋友圈文案</h3>
+              ${editTextarea("editMomentsCopy", "文案", item.moments.copy)}
+              ${editInput("editMomentsStyle", "风格", item.moments.style)}
+              ${editList("editMomentsImages", "配图建议", item.moments.imageIdeas)}
+              ${editInput("editMomentsScene", "发布场景", item.moments.scene)}
+              ${editTextarea("editMomentsInteraction", "互动引导", item.moments.interaction)}
+            </section>
+          ` : ""}
+          ${item.novel ? `
+            <section class="edit-section">
+              <h3>小说架构</h3>
+              ${editInput("editNovelTitle", "标题", item.novel.novelTitle)}
+              ${editTextarea("editNovelLogline", "一句话故事", item.novel.logline)}
+              ${editInput("editNovelTheme", "主题", item.novel.theme)}
+              ${editInput("editNovelStyle", "风格", item.novel.style)}
+              ${editInput("editNovelWords", "目标字数", item.novel.targetWords)}
+              ${editList("editNovelCharacters", "主要人物", item.novel.characters)}
+              ${editList("editNovelStructure", "故事结构", item.novel.structure)}
+              ${editList("editNovelOutline", "章节大纲", item.novel.chapterOutline)}
+              ${editTextarea("editNovelEnding", "结尾", item.novel.ending)}
+            </section>
+          ` : ""}
+          ${item.song ? `
+            <section class="edit-section">
+              <h3>歌曲方案</h3>
+              ${editInput("editSongTitle", "歌名", item.song.songTitle)}
+              ${editInput("editSongType", "音乐类型", item.song.musicType)}
+              ${editInput("editSongStyle", "风格", item.song.style)}
+              ${editTextarea("editSongArrangement", "曲风说明", item.song.arrangement)}
+              ${editList("editSongStructure", "歌曲结构", item.song.structure)}
+              ${editTextarea("editSongLyric", "歌词", item.song.lyric)}
+            </section>
+          ` : ""}
+        </div>
+      `;
+
+      $("saveEditBtn").addEventListener("click", () => saveEditDetail(item.id));
+      $("cancelEditBtn").addEventListener("click", () => render());
+      $("detailSection").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function editInput(id, label, value) {
+      return `<div class="field"><label for="${id}">${escapeHtml(label)}</label><input id="${id}" value="${escapeAttr(value)}"></div>`;
+    }
+
+    function editTextarea(id, label, value) {
+      return `<div class="field"><label for="${id}">${escapeHtml(label)}</label><textarea id="${id}">${escapeHtml(value || "")}</textarea></div>`;
+    }
+
+    function editList(id, label, values) {
+      return editTextarea(id, `${label}（一行一条）`, (values || []).join("\n"));
+    }
+
+    function saveEditDetail(itemId) {
+      const item = state.ideas.find(row => row.id === itemId);
+      if (!item) return;
+
+      item.direction = getValue("editDirection");
+      item.title = getValue("editTitle");
+      item.summary = getValue("editSummary");
+      item.category = getValue("editCategory") || "未分类";
+      item.platform = getValue("editPlatform") || "都适合";
+      item.audience = getValue("editAudience");
+      item.angle = getValue("editAngle");
+      item.reason = getValue("editReason");
+      item.score = Math.max(1, Math.min(5, Number(getValue("editScore") || item.score || 3)));
+      item.brief = getValue("editBrief");
+
+      if (item.official) {
+        item.official.officialTitle = getValue("editOfficialTitle");
+        item.official.abstract = getValue("editOfficialAbstract");
+        item.official.corePoint = getValue("editOfficialCore");
+        item.official.outline = normalizeList(getValue("editOfficialOutline"));
+        item.official.opening = getValue("editOfficialOpening");
+        item.official.imageIdeas = normalizeList(getValue("editOfficialImages"));
+        item.official.tone = getValue("editOfficialTone");
+        item.official.targetWords = Number(getValue("editOfficialWords") || item.official.targetWords || getForm().contentWords);
+      }
+
+      if (item.xhs) {
+        item.xhs.xhsTitle = getValue("editXhsTitle");
+        item.xhs.body = getValue("editXhsBody");
+        item.xhs.imageIdeas = normalizeList(getValue("editXhsImages"));
+        item.xhs.tags = normalizeList(getValue("editXhsTags").replace(/\s+/g, "\n"));
+        item.xhs.commentGuide = getValue("editXhsGuide");
+      }
+
+      if (item.moments) {
+        item.moments.copy = getValue("editMomentsCopy");
+        item.moments.style = getValue("editMomentsStyle");
+        item.moments.imageIdeas = normalizeList(getValue("editMomentsImages"));
+        item.moments.scene = getValue("editMomentsScene");
+        item.moments.interaction = getValue("editMomentsInteraction");
+      }
+
+      if (item.novel) {
+        item.novel.novelTitle = getValue("editNovelTitle");
+        item.novel.logline = getValue("editNovelLogline");
+        item.novel.theme = getValue("editNovelTheme");
+        item.novel.style = getValue("editNovelStyle");
+        item.novel.targetWords = Number(getValue("editNovelWords") || item.novel.targetWords || getForm().novelWords);
+        item.novel.characters = normalizeList(getValue("editNovelCharacters"));
+        item.novel.structure = normalizeList(getValue("editNovelStructure"));
+        item.novel.chapterOutline = normalizeList(getValue("editNovelOutline"));
+        item.novel.ending = getValue("editNovelEnding");
+      }
+
+      if (item.song) {
+        item.song.songTitle = getValue("editSongTitle");
+        item.song.musicType = getValue("editSongType");
+        item.song.style = getValue("editSongStyle");
+        item.song.arrangement = getValue("editSongArrangement");
+        item.song.structure = normalizeList(getValue("editSongStructure"));
+        item.song.lyric = getValue("editSongLyric");
+      }
+
+      render();
+      setStatus("已保存修改。左侧卡片、复制和导出都会使用新版内容。");
+    }
+
+    function moveActiveIdea(offset) {
+      const ordered = orderedIdeas();
+      if (!ordered.length) return;
+      const currentIndex = Math.max(0, ordered.findIndex(item => item.id === state.activeId));
+      const nextIndex = (currentIndex + offset + ordered.length) % ordered.length;
+      state.activeId = ordered[nextIndex].id;
+      render();
+      $("detailSection").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function officialHtml(data) {
+      return `
+        <section class="generated">
+          <h3>公众号方案</h3>
+          <dl>
+            <div><dt>标题：</dt><dd>${escapeHtml(data.officialTitle)}</dd></div>
+            <div><dt>摘要：</dt><dd>${escapeHtml(data.abstract)}</dd></div>
+            <div><dt>核心观点：</dt><dd>${escapeHtml(data.corePoint)}</dd></div>
+            <div><dt>开头切入：</dt><dd>${escapeHtml(data.opening)}</dd></div>
+            <div><dt>目标读者：</dt><dd>${escapeHtml(data.audience)}</dd></div>
+            <div><dt>写作口吻：</dt><dd>${escapeHtml(data.tone)}</dd></div>
+            <div><dt>目标字数：</dt><dd>${escapeHtml(data.targetWords)} 字</dd></div>
+          </dl>
+          ${listHtml("文章大纲", data.outline)}
+          ${listHtml("配图建议", data.imageIdeas)}
+        </section>
+      `;
+    }
+
+    function xhsHtml(data) {
+      return `
+        <section class="generated">
+          <h3>小红书方案</h3>
+          <dl>
+            <div><dt>标题：</dt><dd>${escapeHtml(data.xhsTitle)}</dd></div>
+            <div><dt>正文：</dt><dd>${escapeHtml(data.body)}</dd></div>
+            <div><dt>标签：</dt><dd>${escapeHtml(data.tags.join(" "))}</dd></div>
+            <div><dt>评论引导：</dt><dd>${escapeHtml(data.commentGuide)}</dd></div>
+          </dl>
+          ${listHtml("图片创意", data.imageIdeas)}
+        </section>
+      `;
+    }
+
+    function momentsHtml(data) {
+      return `
+        <section class="generated">
+          <h3>朋友圈文案</h3>
+          <dl>
+            <div><dt>文案：</dt><dd>${escapeHtml(data.copy)}</dd></div>
+            <div><dt>风格：</dt><dd>${escapeHtml(data.style)}</dd></div>
+            <div><dt>发布场景：</dt><dd>${escapeHtml(data.scene)}</dd></div>
+            <div><dt>互动引导：</dt><dd>${escapeHtml(data.interaction)}</dd></div>
+          </dl>
+          ${listHtml("配图建议", data.imageIdeas)}
+        </section>
+      `;
+    }
+
+    function novelHtml(data) {
+      return `
+        <section class="generated">
+          <h3>小说架构</h3>
+          <dl>
+            <div><dt>标题：</dt><dd>${escapeHtml(data.novelTitle)}</dd></div>
+            <div><dt>一句话故事：</dt><dd>${escapeHtml(data.logline)}</dd></div>
+            <div><dt>主题：</dt><dd>${escapeHtml(data.theme)}</dd></div>
+            <div><dt>风格：</dt><dd>${escapeHtml(data.style)}</dd></div>
+            <div><dt>目标字数：</dt><dd>${escapeHtml(data.targetWords)} 字</dd></div>
+            <div><dt>结尾：</dt><dd>${escapeHtml(data.ending)}</dd></div>
+          </dl>
+          ${listHtml("主要人物", data.characters)}
+          ${listHtml("故事结构", data.structure)}
+          ${listHtml("章节大纲", data.chapterOutline)}
+        </section>
+      `;
+    }
+
+    function songHtml(data) {
+      return `
+        <section class="generated">
+          <h3>歌曲方案</h3>
+          <dl>
+            <div><dt>歌名：</dt><dd>${escapeHtml(data.songTitle)}</dd></div>
+            <div><dt>音乐类型：</dt><dd>${escapeHtml(data.musicType)}</dd></div>
+            <div><dt>风格：</dt><dd>${escapeHtml(data.style)}</dd></div>
+            <div><dt>曲风说明：</dt><dd>${escapeHtml(data.arrangement)}</dd></div>
+          </dl>
+          ${listHtml("歌曲结构", data.structure)}
+          <div class="detail-line"><strong>歌词：</strong></div>
+          <p class="detail-summary">${escapeHtml(data.lyric)}</p>
+        </section>
+      `;
+    }
+
+    function listHtml(title, items) {
+      if (!items || !items.length) return "";
+      return `
+        <div class="detail-line"><strong>${escapeHtml(title)}：</strong></div>
+        <ol class="mini-list">
+          ${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+        </ol>
+      `;
+    }
+
+    function buildIdeaPrompt(form) {
+      return `你是一个擅长内容选题发散的中文内容策划。用户会给你一个名称、一句话、几个关键词或模糊想法。请把这个点发散成 ${form.ideaCount} 个可写的内容选题方向。
+
+要求：
+1. 每个结果都要能发展成公众号长文、小红书图文或朋友圈文案。
+2. 首要输出是“选题方向”，不要只给标题。
+3. 推荐标题要适合公众号或小红书，克制但有点击欲。
+4. 一句话简介控制在 20-45 个中文字符。
+5. 切入角度要具体，能指导下一步写作。
+6. 适合平台只能写：公众号、小红书、朋友圈、都适合。
+7. 推荐指数 score 用 1-5 的数字。
+8. 结果必须返回 JSON 数组，不要 Markdown，不要解释。
+9. 每个对象必须包含字段：category、direction、title、summary、angle、audience、platform、score、reason。
+10. category 必须从这个分类库中选择一个：${form.categories.join("、") || "未分类"}。
+
+输入想法：
+${form.seedIdea}
+
+风格偏好：
+${form.styleHint || "未填写"}
+
+不想要的内容：
+${form.avoidHint || "未填写"}`;
+    }
+
+    function buildBriefPrompt(items) {
+      return `你是一个内容策划编辑。请把用户选中的选题方向扩写成 150 字以内的内容介绍，帮助用户判断这个点是否值得继续做。
+
+要求：
+1. 每个选题生成一段 brief，控制在 150 个中文字符以内。
+2. 介绍要说明这篇内容可以讲什么、为什么有人愿意看。
+3. 不要直接生成完整文章。
+4. 必须返回 JSON 数组，不要 Markdown，不要解释。
+5. 每个对象必须包含字段：id、brief。
+
+已选选题：
+${JSON.stringify(toPromptItems(items), null, 2)}`;
+    }
+
+    function buildOfficialPrompt(items, form) {
+      return `你是一个公众号内容策划编辑。请把用户选中的选题转成公众号写作方案。公众号内容定位是长文本、知识科普、少量图片。
+
+要求：
+1. 默认目标字数是 ${form.contentWords} 字。
+2. 每个选题生成一套公众号方案，不要生成完整正文。
+3. 文章大纲 outline 返回 4-6 个要点。
+4. 适合配图建议 imageIdeas 必须返回 3 条。
+5. 必须返回 JSON 数组，不要 Markdown，不要解释。
+6. 每个对象必须包含字段：id、officialTitle、abstract、corePoint、outline、opening、imageIdeas、audience、tone、targetWords。
+
+已选选题：
+${JSON.stringify(toPromptItems(items), null, 2)}`;
+    }
+
+    function buildXhsPrompt(items) {
+      return `你是一个小红书图文内容策划。请把用户选中的选题转成小红书方案。小红书内容定位是图片有趣、多图、文字少、视觉抓人。
+
+要求：
+1. 正文 body 控制在 150 个中文字符以内。
+2. imageIdeas 必须返回 3 条，每条说明一张图片的创意构思、画面内容和文字钩子。
+3. tags 返回 4-8 个标签。
+4. 必须返回 JSON 数组，不要 Markdown，不要解释。
+5. 每个对象必须包含字段：id、xhsTitle、body、imageIdeas、tags、commentGuide。
+
+已选选题：
+${JSON.stringify(toPromptItems(items), null, 2)}`;
+    }
+
+    function buildMomentsPrompt(items) {
+      return `你是一个朋友圈文案策划。请把用户选中的选题转成朋友圈文案。朋友圈文案应该像真人手写，两三句话，要么有趣，要么利他，让人愿意读完。
+
+要求：
+1. copy 写 2-3 句话，不要像广告，不要过度营销。
+2. style 从这些风格中选择或概括：有趣、利他、轻观点、生活感。
+3. imageIdeas 必须返回 3 条，说明三张配图分别拍什么或生成什么，画面要具体。
+4. scene 写适合发布的场景。
+5. interaction 写一句自然的互动引导，可以为空但不要硬凑。
+6. 必须返回 JSON 数组，不要 Markdown，不要解释。
+7. 每个对象必须包含字段：id、copy、style、imageIdeas、scene、interaction。
+
+已选选题：
+${JSON.stringify(toPromptItems(items), null, 2)}`;
+    }
+
+    function buildNovelPrompt(items, form) {
+      return `你是一个中文小说策划编辑。请把用户选中的每个选题分别转成一篇小说的架构，不要写完整小说正文。
+
+要求：
+1. 每个选题生成一套独立小说架构。
+2. 默认按 ${form.novelWords} 字小说设计节奏和篇幅。
+3. 小说风格是：${form.novelStyle}。
+4. characters 返回 3-5 个主要人物，每条包含人物身份、欲望和矛盾。
+5. structure 返回 5-7 个故事阶段，说明起承转合。
+6. chapterOutline 返回 5-8 个章节或段落安排，每条说明这一部分写什么。
+7. 必须返回 JSON 数组，不要 Markdown，不要解释。
+8. 每个对象必须包含字段：id、novelTitle、theme、targetWords、style、logline、characters、structure、chapterOutline、ending。
+
+已选选题：
+${JSON.stringify(toPromptItems(items), null, 2)}`;
+    }
+
+    function buildSongPrompt(items, form) {
+      return `你是一个中文歌曲企划和歌词创作者。请把用户选中的每个选题分别转成一套作曲文本方案，不生成音频。
+
+要求：
+1. 音乐类型是：${form.musicType}。
+2. 风格偏好是：${form.musicStyle || "有记忆点、适合大众传播"}。
+3. 输出必须包含歌词、曲风说明和歌曲结构。
+4. lyric 写完整歌词，包含主歌、副歌和桥段，可用换行分段。
+5. arrangement 写曲风说明，包括节奏、情绪、演唱方式和编曲元素。
+6. structure 返回 5-8 个结构段落，例如 intro、verse、chorus、bridge、outro，并说明作用。
+7. 必须返回 JSON 数组，不要 Markdown，不要解释。
+8. 每个对象必须包含字段：id、songTitle、musicType、style、lyric、arrangement、structure。
+
+已选选题：
+${JSON.stringify(toPromptItems(items), null, 2)}`;
+    }
+
+    function toPromptItems(items) {
+      return items.map(item => ({
+        id: item.id,
+        direction: item.direction,
+        title: item.title,
+        summary: item.summary,
+        brief: item.brief,
+        angle: item.angle,
+        audience: item.audience
+      }));
+    }
+
+    async function callDeepSeek(prompt, form) {
+      if (form.provider !== "deepseek") {
+        throw new Error("当前版本只接入 DeepSeek，其他模型先作为高级设置预留。");
+      }
+      if (!form.apiKey) {
+        state.lastPrompt = prompt;
+        showPrompt(prompt);
+        throw new Error("未填写 DeepSeek API Key，已生成可复制提示词。");
+      }
+
+      const response = await fetch(form.apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${form.apiKey}`
+        },
+        body: JSON.stringify({
+          model: form.model,
+          messages: [
+            { role: "system", content: "你只输出可解析 JSON，不输出 Markdown。你擅长中文内容选题、公众号、小红书和朋友圈文案策划。" },
+            { role: "user", content: prompt }
+          ],
+          temperature: form.temperature
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`DeepSeek 返回错误：${response.status} ${errText.slice(0, 160)}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || "";
+    }
+
+    function parseJsonArray(content) {
+      const cleaned = String(content || "")
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/```$/i, "")
+        .trim();
+      const start = cleaned.indexOf("[");
+      const end = cleaned.lastIndexOf("]");
+      const jsonText = start >= 0 && end >= start ? cleaned.slice(start, end + 1) : cleaned;
+      const parsed = JSON.parse(jsonText);
+      if (!Array.isArray(parsed)) throw new Error("模型返回的不是数组 JSON。");
+      return parsed;
+    }
+
+    async function generateIdeas() {
+      const form = getForm();
+      try {
+        validateSeed(form);
+        const prompt = buildIdeaPrompt(form);
+        state.lastPrompt = prompt;
+        $("promptText").value = prompt;
+        setBusy(true, "正在生成点子墙...");
+        const content = await callDeepSeek(prompt, form);
+        const parsed = parseJsonArray(content);
+        state.ideas = parsed.map((item, index) => ({
+          id: index + 1,
+          category: String(item.category || "未分类").trim(),
+          direction: String(item.direction || item.topic || item.title || "").trim(),
+          title: String(item.title || "").trim(),
+          summary: String(item.summary || item.description || "").trim(),
+          angle: String(item.angle || "").trim(),
+          audience: String(item.audience || "").trim(),
+          platform: String(item.platform || "都适合").trim(),
+          score: Number(item.score || 3),
+          reason: String(item.reason || "").trim(),
+          selected: false,
+          brief: "",
+          official: null,
+          xhs: null,
+          moments: null,
+          novel: null,
+          song: null
+        })).filter(item => item.direction || item.title);
+        state.activeId = state.ideas[0]?.id || null;
+        $("promptBox").style.display = "none";
+        render();
+        $("ideasSection").scrollIntoView({ behavior: "smooth", block: "start" });
+        setStatus(`已生成 ${state.ideas.length} 个点子。点击卡片深入，勾选用于批量导出。`);
+      } catch (error) {
+        render();
+        setStatus(error.message, true);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function runGeneration(items, buildPrompt, applyResult, statusText, doneText) {
+      if (!items.length) return setStatus("先选择一个点子。", true);
+      const form = getForm();
+      try {
+        const prompt = buildPrompt(items, form);
+        state.lastPrompt = prompt;
+        $("promptText").value = prompt;
+        setBusy(true, statusText);
+        const content = await callDeepSeek(prompt, form);
+        const parsed = parseJsonArray(content);
+        parsed.forEach(applyResult);
+        $("promptBox").style.display = "none";
+        render();
+        setStatus(doneText(parsed.length));
+      } catch (error) {
+        render();
+        setStatus(error.message, true);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function expandBriefs(items) {
+      return runGeneration(
+        items,
+        buildBriefPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (item) item.brief = String(row.brief || "").trim();
+        },
+        "正在扩写 150 字介绍...",
+        count => `已为 ${count} 个点子生成内容介绍。`
+      );
+    }
+
+    function generateOfficial(items) {
+      return runGeneration(
+        items,
+        buildOfficialPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (!item) return;
+          item.official = {
+            officialTitle: String(row.officialTitle || "").trim(),
+            abstract: String(row.abstract || "").trim(),
+            corePoint: String(row.corePoint || "").trim(),
+            outline: normalizeList(row.outline),
+            opening: String(row.opening || "").trim(),
+            imageIdeas: normalizeList(row.imageIdeas).slice(0, 3),
+            audience: String(row.audience || item.audience || "").trim(),
+            tone: String(row.tone || "").trim(),
+            targetWords: Number(row.targetWords || getForm().contentWords)
+          };
+        },
+        "正在生成公众号方案...",
+        count => `已生成 ${count} 套公众号方案。`
+      );
+    }
+
+    function generateXhs(items) {
+      return runGeneration(
+        items,
+        buildXhsPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (!item) return;
+          item.xhs = {
+            xhsTitle: String(row.xhsTitle || "").trim(),
+            body: String(row.body || "").trim(),
+            imageIdeas: normalizeList(row.imageIdeas).slice(0, 3),
+            tags: normalizeList(row.tags),
+            commentGuide: String(row.commentGuide || "").trim()
+          };
+        },
+        "正在生成小红书方案...",
+        count => `已生成 ${count} 套小红书方案。`
+      );
+    }
+
+    function generateMoments(items) {
+      return runGeneration(
+        items,
+        buildMomentsPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (!item) return;
+          item.moments = {
+            copy: String(row.copy || "").trim(),
+            style: String(row.style || "").trim(),
+            imageIdeas: normalizeList(row.imageIdeas).slice(0, 3),
+            scene: String(row.scene || "").trim(),
+            interaction: String(row.interaction || "").trim()
+          };
+        },
+        "正在生成朋友圈文案...",
+        count => `已生成 ${count} 条朋友圈文案。`
+      );
+    }
+
+    function generateNovel(items) {
+      return runGeneration(
+        items,
+        buildNovelPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (!item) return;
+          item.novel = {
+            novelTitle: String(row.novelTitle || item.title || "").trim(),
+            theme: String(row.theme || "").trim(),
+            targetWords: Number(row.targetWords || getForm().novelWords),
+            style: String(row.style || getForm().novelStyle).trim(),
+            logline: String(row.logline || "").trim(),
+            characters: normalizeList(row.characters),
+            structure: normalizeList(row.structure),
+            chapterOutline: normalizeList(row.chapterOutline),
+            ending: String(row.ending || "").trim()
+          };
+        },
+        "正在生成小说架构...",
+        count => `已生成 ${count} 套小说架构。`
+      );
+    }
+
+    function generateSong(items) {
+      return runGeneration(
+        items,
+        buildSongPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (!item) return;
+          item.song = {
+            songTitle: String(row.songTitle || item.title || "").trim(),
+            musicType: String(row.musicType || getForm().musicType).trim(),
+            style: String(row.style || getForm().musicStyle || "").trim(),
+            lyric: String(row.lyric || "").trim(),
+            arrangement: String(row.arrangement || "").trim(),
+            structure: normalizeList(row.structure)
+          };
+        },
+        "正在生成歌曲方案...",
+        count => `已生成 ${count} 套歌曲方案。`
+      );
+    }
+
+    function normalizeList(value) {
+      const toLine = item => {
+        if (item && typeof item === "object") return Object.values(item).map(v => String(v).trim()).filter(Boolean).join(" - ");
+        return String(item).trim();
+      };
+      if (Array.isArray(value)) return value.map(toLine).filter(Boolean);
+      if (!value) return [];
+      return String(value).split(/\n|;|；/).map(item => item.trim()).filter(Boolean);
+    }
+
+    function formatItemText(item) {
+      const lines = [
+        `分类：${item.category}`,
+        `选题方向：${item.direction}`,
+        `推荐标题：${item.title}`,
+        `一句话简介：${item.summary}`,
+        `适合平台：${item.platform}`,
+        `目标读者：${item.audience}`,
+        `切入角度：${item.angle}`,
+        `推荐指数：${item.score}`,
+        `推荐理由：${item.reason}`
+      ];
+      if (item.brief) lines.push(`150字介绍：${item.brief}`);
+      if (item.official) {
+        lines.push("", "公众号方案：");
+        lines.push(`标题：${item.official.officialTitle}`);
+        lines.push(`摘要：${item.official.abstract}`);
+        lines.push(`核心观点：${item.official.corePoint}`);
+        lines.push(`大纲：${item.official.outline.join("；")}`);
+        lines.push(`开头切入：${item.official.opening}`);
+        lines.push(`配图建议：${item.official.imageIdeas.join("；")}`);
+        lines.push(`写作口吻：${item.official.tone}`);
+        lines.push(`目标字数：${item.official.targetWords}`);
+      }
+      if (item.xhs) {
+        lines.push("", "小红书方案：");
+        lines.push(`标题：${item.xhs.xhsTitle}`);
+        lines.push(`正文：${item.xhs.body}`);
+        lines.push(`图片创意：${item.xhs.imageIdeas.join("；")}`);
+        lines.push(`标签：${item.xhs.tags.join(" ")}`);
+        lines.push(`评论引导：${item.xhs.commentGuide}`);
+      }
+      if (item.moments) {
+        lines.push("", "朋友圈文案：");
+        lines.push(`文案：${item.moments.copy}`);
+        lines.push(`风格：${item.moments.style}`);
+        lines.push(`配图建议：${item.moments.imageIdeas.join("；")}`);
+        lines.push(`发布场景：${item.moments.scene}`);
+        lines.push(`互动引导：${item.moments.interaction}`);
+      }
+      if (item.novel) {
+        lines.push("", "小说架构：");
+        lines.push(`标题：${item.novel.novelTitle}`);
+        lines.push(`一句话故事：${item.novel.logline}`);
+        lines.push(`主题：${item.novel.theme}`);
+        lines.push(`风格：${item.novel.style}`);
+        lines.push(`目标字数：${item.novel.targetWords}`);
+        lines.push(`主要人物：${item.novel.characters.join("；")}`);
+        lines.push(`故事结构：${item.novel.structure.join("；")}`);
+        lines.push(`章节大纲：${item.novel.chapterOutline.join("；")}`);
+        lines.push(`结尾：${item.novel.ending}`);
+      }
+      if (item.song) {
+        lines.push("", "歌曲方案：");
+        lines.push(`歌名：${item.song.songTitle}`);
+        lines.push(`音乐类型：${item.song.musicType}`);
+        lines.push(`风格：${item.song.style}`);
+        lines.push(`曲风说明：${item.song.arrangement}`);
+        lines.push(`歌曲结构：${item.song.structure.join("；")}`);
+        lines.push(`歌词：${item.song.lyric}`);
+      }
+      return lines.join("\n");
+    }
+
+    async function copySelected() {
+      const items = selectedItems();
+      if (!items.length) return setStatus("先勾选要复制的点子。", true);
+      await copyText(items.map(formatItemText).join("\n\n---\n\n"), `已复制 ${items.length} 个点子。`);
+    }
+
+    async function copyText(text, message = "已复制。") {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          fallbackCopy(text);
+        }
+        setStatus(message);
+      } catch (error) {
+        try {
+          fallbackCopy(text);
+          setStatus(message);
+        } catch (fallbackError) {
+          setStatus(`复制失败：${fallbackError.message || error.message}`, true);
+        }
+      }
+    }
+
+    function fallbackCopy(text) {
+      const temp = document.createElement("textarea");
+      temp.value = text;
+      temp.setAttribute("readonly", "");
+      temp.style.position = "fixed";
+      temp.style.left = "-9999px";
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand("copy");
+      document.body.removeChild(temp);
+    }
+
+    function overviewRows(items) {
+      return items.map(item => ({
+        分类: item.category,
+        选题方向: item.direction,
+        推荐标题: item.title,
+        一句话简介: item.summary,
+        适合平台: item.platform,
+        目标读者: item.audience,
+        切入角度: item.angle,
+        推荐指数: item.score,
+        推荐理由: item.reason,
+        "150字介绍": item.brief || "",
+        公众号标题: item.official?.officialTitle || "",
+        公众号摘要: item.official?.abstract || "",
+        小红书标题: item.xhs?.xhsTitle || "",
+        小红书正文: item.xhs?.body || "",
+        朋友圈文案: item.moments?.copy || "",
+        朋友圈配图建议: item.moments?.imageIdeas?.join("；") || "",
+        小说标题: item.novel?.novelTitle || "",
+        小说架构: item.novel?.chapterOutline?.join("；") || "",
+        歌名: item.song?.songTitle || "",
+        歌词: item.song?.lyric || "",
+        创建时间: new Date().toLocaleString("zh-CN")
+      }));
+    }
+
+    async function exportExcel(items = selectedItems()) {
+      if (!items.length) return setStatus("先勾选要导出的点子。", true);
+      if (!window.XLSX) return downloadCsv(items);
+      const rows = overviewRows(items);
+      const sheet = XLSX.utils.json_to_sheet(rows);
+      const book = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(book, sheet, "本次脑暴总览");
+      const buffer = XLSX.write(book, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      await saveFiles([{ name: `AI灵感脑暴器-总览-${dateStamp()}.xlsx`, blob }], `AI灵感脑暴器-Excel-${dateStamp()}`);
+    }
+
+    async function downloadCsv(items) {
+      const rows = overviewRows(items);
+      const header = Object.keys(rows[0] || {});
+      const csv = "\ufeff" + [header, ...rows.map(row => header.map(key => row[key]))]
+        .map(row => row.map(cell => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+        .join("\r\n");
+      await saveFiles([{ name: `AI灵感脑暴器-总览-${dateStamp()}.csv`, blob: new Blob([csv], { type: "text/csv;charset=utf-8" }) }], `AI灵感脑暴器-CSV-${dateStamp()}`);
+    }
+
+    async function exportWordFiles() {
+      const items = selectedItems();
+      if (!items.length) return setStatus("先勾选要导出的点子。", true);
+      if (!window.docx) {
+        return setStatus("Word 依赖库还没有加载完成，请稍后重试。", true);
+      }
+
+      try {
+        setBusy(true, "正在生成 Word 文件...");
+        const files = [];
+        for (const [index, item] of items.entries()) {
+          const prefix = `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}`;
+          files.push({ name: `${prefix}.docx`, blob: await makeDocxBlob(item, "all") });
+        }
+        await saveFiles(files, `AI灵感脑暴器-Word-${dateStamp()}`);
+      } catch (error) {
+        setStatus(`导出失败：${error.message}`, true);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function exportMarkdownFiles() {
+      const items = selectedItems();
+      if (!items.length) return setStatus("先勾选要导出的点子。", true);
+      const files = items.map((item, index) => ({
+        name: `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}.md`,
+        blob: new Blob([formatItemMarkdown(item)], { type: "text/markdown;charset=utf-8" })
+      }));
+      await saveFiles(files, `AI灵感脑暴器-MD-${dateStamp()}`);
+    }
+
+    async function exportTxtFiles() {
+      const items = selectedItems();
+      if (!items.length) return setStatus("先勾选要导出的点子。", true);
+      const files = items.map((item, index) => ({
+        name: `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}.txt`,
+        blob: new Blob([formatItemText(item)], { type: "text/plain;charset=utf-8" })
+      }));
+      await saveFiles(files, `AI灵感脑暴器-TXT-${dateStamp()}`);
+    }
+
+    async function exportPptOutline(format) {
+      const items = selectedItems();
+      if (!items.length) return setStatus("先勾选要导出的点子。", true);
+      const form = getForm();
+      const files = items.map((item, index) => {
+        const text = format === "md" ? formatPptMarkdown(item, form.pptPages) : formatPptText(item, form.pptPages);
+        return {
+          name: `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}-PPT大纲.${format}`,
+          blob: new Blob([text], { type: "text/plain;charset=utf-8" })
+        };
+      });
+      await saveFiles(files, `AI灵感脑暴器-PPT大纲-${format.toUpperCase()}-${dateStamp()}`);
+    }
+
+    async function makeDocxBlob(item, kind) {
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
+      const children = [];
+      const addHeading = (text, level = HeadingLevel.HEADING_1) => {
+        children.push(new Paragraph({ text, heading: level }));
+      };
+      const addLine = (label, value) => {
+        if (!value && value !== 0) return;
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: `${label}：`, bold: true }),
+            new TextRun(String(value))
+          ]
+        }));
+      };
+      const addList = (label, values) => {
+        if (!values || !values.length) return;
+        addHeading(label, HeadingLevel.HEADING_2);
+        values.forEach((value, index) => children.push(new Paragraph(`${index + 1}. ${value}`)));
+      };
+
+      if (kind === "official" && item.official) {
+        addHeading(item.official.officialTitle || item.direction);
+        addLine("一句话摘要", item.official.abstract);
+        addLine("核心观点", item.official.corePoint);
+        addLine("开头切入方式", item.official.opening);
+        addLine("目标读者", item.official.audience);
+        addLine("写作口吻", item.official.tone);
+        addLine("目标字数", `${item.official.targetWords} 字`);
+        addList("文章大纲", item.official.outline);
+        addList("适合配图建议", item.official.imageIdeas);
+      } else if (kind === "xhs" && item.xhs) {
+        addHeading(item.xhs.xhsTitle || item.direction);
+        addLine("正文", item.xhs.body);
+        addList("3 张图片创意构思", item.xhs.imageIdeas);
+        addLine("标签", item.xhs.tags.join(" "));
+        addLine("评论区引导", item.xhs.commentGuide);
+      } else if (kind === "moments" && item.moments) {
+        addHeading(item.direction || "朋友圈文案");
+        addLine("朋友圈文案", item.moments.copy);
+        addLine("风格", item.moments.style);
+        addLine("发布场景", item.moments.scene);
+        addLine("互动引导", item.moments.interaction);
+        addList("3 张配图建议", item.moments.imageIdeas);
+      } else {
+        addHeading(item.direction || item.title);
+        addLine("推荐标题", item.title);
+        addLine("一句话简介", item.summary);
+        addLine("150 字介绍", item.brief);
+        addLine("分类", item.category);
+        addLine("适合平台", item.platform);
+        addLine("目标读者", item.audience);
+        addLine("切入角度", item.angle);
+        addLine("推荐指数", item.score);
+        addLine("推荐理由", item.reason);
+        if (kind === "all") {
+          if (item.official) {
+            addHeading("公众号方案", HeadingLevel.HEADING_2);
+            addLine("标题", item.official.officialTitle);
+            addLine("摘要", item.official.abstract);
+            addLine("核心观点", item.official.corePoint);
+            addList("文章大纲", item.official.outline);
+            addLine("开头切入", item.official.opening);
+            addList("配图建议", item.official.imageIdeas);
+            addLine("写作口吻", item.official.tone);
+            addLine("目标字数", `${item.official.targetWords} 字`);
+          }
+          if (item.xhs) {
+            addHeading("小红书方案", HeadingLevel.HEADING_2);
+            addLine("标题", item.xhs.xhsTitle);
+            addLine("正文", item.xhs.body);
+            addList("图片创意", item.xhs.imageIdeas);
+            addLine("标签", item.xhs.tags.join(" "));
+            addLine("评论引导", item.xhs.commentGuide);
+          }
+          if (item.moments) {
+            addHeading("朋友圈文案", HeadingLevel.HEADING_2);
+            addLine("文案", item.moments.copy);
+            addLine("风格", item.moments.style);
+            addList("配图建议", item.moments.imageIdeas);
+            addLine("发布场景", item.moments.scene);
+            addLine("互动引导", item.moments.interaction);
+          }
+          if (item.novel) {
+            addHeading("小说架构", HeadingLevel.HEADING_2);
+            addLine("标题", item.novel.novelTitle);
+            addLine("一句话故事", item.novel.logline);
+            addLine("主题", item.novel.theme);
+            addLine("风格", item.novel.style);
+            addLine("目标字数", `${item.novel.targetWords} 字`);
+            addList("主要人物", item.novel.characters);
+            addList("故事结构", item.novel.structure);
+            addList("章节大纲", item.novel.chapterOutline);
+            addLine("结尾", item.novel.ending);
+          }
+          if (item.song) {
+            addHeading("歌曲方案", HeadingLevel.HEADING_2);
+            addLine("歌名", item.song.songTitle);
+            addLine("音乐类型", item.song.musicType);
+            addLine("风格", item.song.style);
+            addLine("曲风说明", item.song.arrangement);
+            addList("歌曲结构", item.song.structure);
+            addLine("歌词", item.song.lyric);
+          }
+        }
+      }
+
+      const doc = new Document({ sections: [{ properties: {}, children }] });
+      return Packer.toBlob(doc);
+    }
+
+    function formatItemMarkdown(item) {
+      const lines = [
+        `# ${item.direction || item.title || "未命名点子"}`,
+        "",
+        `- 分类：${item.category || ""}`,
+        `- 推荐标题：${item.title || ""}`,
+        `- 一句话简介：${item.summary || ""}`,
+        `- 适合平台：${item.platform || ""}`,
+        `- 目标读者：${item.audience || ""}`,
+        `- 切入角度：${item.angle || ""}`,
+        `- 推荐指数：${item.score || ""}`,
+        `- 推荐理由：${item.reason || ""}`
+      ];
+      if (item.brief) lines.push("", "## 150 字介绍", "", item.brief);
+      if (item.official) {
+        lines.push("", "## 公众号方案", "", `### ${item.official.officialTitle || ""}`, "", item.official.abstract || "");
+        lines.push("", `核心观点：${item.official.corePoint || ""}`, "", "### 文章大纲", ...item.official.outline.map(row => `- ${row}`));
+        lines.push("", `开头切入：${item.official.opening || ""}`, "", "### 配图建议", ...item.official.imageIdeas.map(row => `- ${row}`));
+      }
+      if (item.xhs) {
+        lines.push("", "## 小红书方案", "", `标题：${item.xhs.xhsTitle || ""}`, "", item.xhs.body || "");
+        lines.push("", "### 图片创意", ...item.xhs.imageIdeas.map(row => `- ${row}`), "", `标签：${item.xhs.tags.join(" ")}`, "", `评论引导：${item.xhs.commentGuide || ""}`);
+      }
+      if (item.moments) {
+        lines.push("", "## 朋友圈文案", "", item.moments.copy || "", "", `风格：${item.moments.style || ""}`, "", `发布场景：${item.moments.scene || ""}`, "", `互动引导：${item.moments.interaction || ""}`);
+      }
+      if (item.novel) {
+        lines.push("", "## 小说架构", "", `### ${item.novel.novelTitle || ""}`, "", `一句话故事：${item.novel.logline || ""}`, "", `主题：${item.novel.theme || ""}`, "", `风格：${item.novel.style || ""}`, "", `目标字数：${item.novel.targetWords || ""}`);
+        lines.push("", "### 主要人物", ...item.novel.characters.map(row => `- ${row}`), "", "### 故事结构", ...item.novel.structure.map(row => `- ${row}`), "", "### 章节大纲", ...item.novel.chapterOutline.map(row => `- ${row}`), "", `结尾：${item.novel.ending || ""}`);
+      }
+      if (item.song) {
+        lines.push("", "## 歌曲方案", "", `歌名：${item.song.songTitle || ""}`, "", `音乐类型：${item.song.musicType || ""}`, "", `风格：${item.song.style || ""}`, "", `曲风说明：${item.song.arrangement || ""}`);
+        lines.push("", "### 歌曲结构", ...item.song.structure.map(row => `- ${row}`), "", "### 歌词", "", item.song.lyric || "");
+      }
+      return lines.join("\n");
+    }
+
+    function formatPptMarkdown(item, pageCount) {
+      return pptPages(item, pageCount).map(page => [
+        `## 第 ${page.page} 页：${page.title}`,
+        "",
+        `- 目的：${page.goal}`,
+        `- 主信息：${page.message}`,
+        `- 页面结构：${page.layout}`,
+        `- 画面建议：${page.visual}`
+      ].join("\n")).join("\n\n");
+    }
+
+    function formatPptText(item, pageCount) {
+      return pptPages(item, pageCount).map(page => [
+        `第 ${page.page} 页：${page.title}`,
+        `目的：${page.goal}`,
+        `主信息：${page.message}`,
+        `页面结构：${page.layout}`,
+        `画面建议：${page.visual}`
+      ].join("\n")).join("\n\n");
+    }
+
+    function pptPages(item, pageCount) {
+      const outline = item.official?.outline?.length ? item.official.outline : [
+        item.summary || "先说明这个选题为什么值得看",
+        item.angle || "拆解核心切入角度",
+        item.reason || "给出推荐理由和可执行结论"
+      ];
+      const base = [
+        ["标题页", "让读者立刻知道主题", item.title || item.direction, "大标题 + 一句话副标题 + 适合平台", "主题关键词或封面图"],
+        ["问题与场景", "建立阅读动机", item.summary || item.reason || "说明这个问题为什么现在值得讨论", "场景描述 + 痛点列表", "真实使用场景或对比截图"],
+        ["核心观点", "给出内容主张", item.angle || item.official?.corePoint || "提炼一个清晰观点", "一句核心判断 + 三个支撑点", "中心观点放大展示"],
+        ["展开结构", "说明内容怎么讲", outline.join("；"), "分点列表或时间线", "流程图、步骤图或栏目分区"],
+        ["结论与行动", "收束并引导下一步", item.official?.opening || item.reason || "给出可执行建议", "总结句 + 行动清单", "清单、按钮式结尾或金句"]
+      ];
+      const extra = [
+        ["目标读者", "明确内容服务谁", item.audience || "目标读者画像", "人群画像 + 需求 + 阻碍", "人物卡片"],
+        ["反常识切入", "制造记忆点", item.angle || "把常见误区讲清楚", "误区 vs 新判断", "左右对比"],
+        ["案例拆解", "让观点落地", item.brief || item.summary || "用一个具体案例串起逻辑", "案例背景 + 做法 + 结果", "案例流程"],
+        ["方法步骤", "降低执行难度", outline.slice(0, 4).join("；") || "三步执行法", "步骤 1/2/3/4", "阶梯或流程线"],
+        ["内容素材", "准备可直接使用的素材", item.official?.imageIdeas?.join("；") || item.moments?.imageIdeas?.join("；") || "列出可配图、可引用、可复用素材", "素材清单", "素材墙"],
+        ["传播标题", "优化对外表达", item.title || item.direction, "主标题 + 备选标题 + 关键词", "标题对比"],
+        ["风险规避", "避免写偏或过度营销", "不要泛泛而谈，避免焦虑和硬广", "不要做什么 + 替代表达", "警示清单"],
+        ["发布版本", "适配不同平台", item.platform || "公众号、小红书、朋友圈", "平台 + 内容形态 + 注意事项", "三列平台表"],
+        ["复盘指标", "定义是否有效", "阅读、收藏、评论、转发或咨询", "指标 + 判断标准", "数据仪表盘"],
+        ["下一步", "给出具体执行动作", "选择一个角度，写成第一版内容", "今日动作 + 明日优化", "行动清单"]
+      ];
+      return base.concat(extra).slice(0, pageCount).map((row, index) => ({
+        page: index + 1,
+        title: row[0],
+        goal: row[1],
+        message: row[2],
+        layout: row[3],
+        visual: row[4]
+      }));
+    }
+
+    async function chooseExportFolder() {
+      if (!window.showDirectoryPicker) {
+        setStatus("当前浏览器不支持选择导出文件夹，会按浏览器下载设置保存。", true);
+        return;
+      }
+      try {
+        state.exportDirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+        state.exportDirName = state.exportDirHandle.name || "已选择文件夹";
+        $("exportPathLabel").textContent = `已选择导出位置：${state.exportDirName}`;
+      } catch (error) {
+        if (error.name !== "AbortError") setStatus(`选择文件夹失败：${error.message}`, true);
+      }
+    }
+
+    async function saveFiles(files, folderName) {
+      if (!files.length) return;
+      if (state.exportDirHandle) {
+        const target = files.length > 1
+          ? await state.exportDirHandle.getDirectoryHandle(folderName, { create: true })
+          : state.exportDirHandle;
+        for (const file of files) {
+          const handle = await target.getFileHandle(file.name, { create: true });
+          const writable = await handle.createWritable();
+          await writable.write(file.blob);
+          await writable.close();
+        }
+        const place = files.length > 1 ? `${state.exportDirName || "所选文件夹"} / ${folderName}` : (state.exportDirName || "所选文件夹");
+        setStatus(`已导出 ${files.length} 个文件到 ${place}。`);
+        return;
+      }
+      files.forEach(file => downloadBlob(file.blob, file.name));
+      const suffix = files.length > 1 ? "当前浏览器未指定导出文件夹，已按多个文件下载。" : "已按单文件下载。";
+      setStatus(`已导出 ${files.length} 个文件。${suffix}`);
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function dateStamp() {
+      const now = new Date();
+      const pad = value => String(value).padStart(2, "0");
+      return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+    }
+
+    function safeFileName(text) {
+      return String(text || "未命名")
+        .replace(/[\\/:*?"<>|]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 48) || "未命名";
+    }
+
+    function showPrompt(prompt = state.lastPrompt) {
+      if (!prompt) {
+        const form = getForm();
+        try {
+          validateSeed(form);
+          prompt = buildIdeaPrompt(form);
+        } catch (error) {
+          setStatus(error.message, true);
+          return;
+        }
+      }
+      $("promptText").value = prompt;
+      $("promptBox").style.display = "block";
+      setStatus("提示词已生成。");
+    }
+
+    function resetAll() {
+      state.ideas = [];
+      state.activeId = null;
+      state.lastPrompt = "";
+      $("promptText").value = "";
+      $("promptBox").style.display = "none";
+      render();
+      setStatus("已清空本次脑暴。");
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeAttr(text) {
+      return escapeHtml(text ?? "");
+    }
+
+    document.querySelectorAll("[data-example]").forEach(button => {
+      button.addEventListener("click", () => {
+        $("seedIdea").value = button.dataset.example;
+        $("seedIdea").focus();
+      });
+    });
+
+    document.querySelectorAll(".stage").forEach(button => {
+      button.addEventListener("click", () => {
+        if (button.disabled) return;
+        const target = $(stageTargets[button.dataset.stage]);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    $("brainstormBtn").addEventListener("click", generateIdeas);
+    $("promptBtn").addEventListener("click", () => showPrompt());
+    $("resetBtn").addEventListener("click", resetAll);
+    $("batchBriefBtn").addEventListener("click", () => expandBriefs(selectedItems()));
+    $("batchOfficialBtn").addEventListener("click", () => generateOfficial(selectedItems()));
+    $("batchXhsBtn").addEventListener("click", () => generateXhs(selectedItems()));
+    $("batchMomentsBtn").addEventListener("click", () => generateMoments(selectedItems()));
+    $("batchNovelBtn").addEventListener("click", () => generateNovel(selectedItems()));
+    $("batchSongBtn").addEventListener("click", () => generateSong(selectedItems()));
+    $("copyBtn").addEventListener("click", copySelected);
+    $("excelBtn").addEventListener("click", () => exportExcel());
+    $("wordFilesBtn").addEventListener("click", exportWordFiles);
+    $("mdBtn").addEventListener("click", exportMarkdownFiles);
+    $("txtBtn").addEventListener("click", exportTxtFiles);
+    $("pptOutlineBtn").addEventListener("click", () => exportPptOutline(getForm().pptFormat));
+    $("chooseFolderBtn").addEventListener("click", chooseExportFolder);
+    $("rememberApiKey").addEventListener("change", syncApiKeyStorage);
+    $("apiKey").addEventListener("input", () => {
+      if ($("rememberApiKey").checked) {
+        try {
+          localStorage.setItem(API_KEY_STORAGE_KEY, $("apiKey").value.trim());
+        } catch (error) {
+          setStatus("当前浏览器不允许保存 API Key 到本机。", true);
+        }
+      }
+    });
+    $("selectAllBtn").addEventListener("click", () => {
+      state.ideas.forEach(item => item.selected = true);
+      render();
+      setStatus(`已全选 ${state.ideas.length} 个点子。`);
+    });
+    $("clearSelectBtn").addEventListener("click", () => {
+      state.ideas.forEach(item => item.selected = false);
+      render();
+      setStatus("已取消全部选择。");
+    });
+    $("copyPromptBtn").addEventListener("click", () => copyText($("promptText").value, "已复制提示词。"));
+
+    document.addEventListener("click", event => {
+      if (event.target.closest("[data-stop]")) return;
+      const card = event.target.closest("[data-open]");
+      if (!card) return;
+      state.activeId = Number(card.dataset.open);
+      render();
+      $("detailSection").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+
+    document.addEventListener("change", event => {
+      const detailId = event.target.getAttribute?.("data-detail-select");
+      if (detailId) {
+        const item = state.ideas.find(row => String(row.id) === String(detailId));
+        if (!item) return;
+        item.selected = event.target.checked;
+        state.activeId = item.id;
+        if (item.selected && state.ideas.length > 1) {
+          setStatus("已加入选择，自动切到下一个。");
+          moveActiveIdea(1);
+        } else {
+          render();
+          setStatus(item.selected ? "已加入选择。" : "已取消选择。");
+        }
+        return;
+      }
+
+      const id = event.target.getAttribute?.("data-select");
+      if (!id) return;
+      const item = state.ideas.find(row => String(row.id) === String(id));
+      if (!item) return;
+      item.selected = event.target.checked;
+      if (item.selected) state.activeId = item.id;
+      render();
+    });
+
+    loadSavedApiKey();
+    render();
+  </script>
+</body>
+</html>
