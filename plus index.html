@@ -88,6 +88,12 @@
       line-height: 1.65;
     }
 
+    #seedIdea {
+      min-height: 150px;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
     label {
       display: flex;
       justify-content: space-between;
@@ -211,10 +217,11 @@
 
     .example {
       min-height: 0;
-      padding: 8px 10px;
-      background: #fff;
-      color: #4f5a55;
+      padding: 7px 9px;
+      background: #fffdfa;
+      color: #68716c;
       text-align: left;
+      font-size: 12px;
       line-height: 1.45;
     }
 
@@ -519,6 +526,35 @@
       margin: 14px 0;
     }
 
+    .detail-pager {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 0 0 12px;
+    }
+
+    .detail-select {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: #fffdfa;
+      color: #3f4743;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .detail-select input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: var(--accent-dark);
+    }
+
     .generated {
       margin-top: 12px;
       border-top: 1px solid var(--line);
@@ -618,6 +654,22 @@
       grid-template-columns: repeat(3, minmax(140px, 1fr));
       gap: 10px;
       align-items: end;
+    }
+
+    .advanced-block {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+
+    .advanced-block:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .advanced-block h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      line-height: 1.4;
     }
 
     .path-line {
@@ -752,8 +804,8 @@
               <div class="field">
                 <label for="model">模型</label>
                 <select id="model">
-                  <option value="deepseek-chat" selected>deepseek-chat</option>
-                  <option value="deepseek-reasoner">deepseek-reasoner</option>
+                  <option value="deepseek-v4-flash" selected>deepseek-v4-flash</option>
+                  <option value="deepseek-v4-pro">deepseek-v4-pro</option>
                 </select>
               </div>
               <div class="field">
@@ -838,7 +890,6 @@
                 <button id="batchOfficialBtn" type="button">批量转公众号</button>
                 <button id="batchXhsBtn" type="button">批量转小红书</button>
                 <button id="batchMomentsBtn" type="button">批量转朋友圈</button>
-                <button id="batchNovelBtn" type="button">批量转小说架构</button>
               </div>
             </div>
           </details>
@@ -846,14 +897,19 @@
           <details class="batch-group">
             <summary>批量导出</summary>
             <div class="batch-group-body">
+              <div class="settings-row">
+                <div class="field">
+                  <label>导出位置</label>
+                  <button id="chooseFolderBtn" type="button">浏览文件夹</button>
+                </div>
+                <div class="path-line" id="exportPathLabel">未选择导出位置；默认按浏览器下载设置保存，建议设置为桌面。</div>
+              </div>
               <div class="batch-actions">
                 <button id="copyBtn" type="button">复制已选</button>
                 <button id="excelBtn" type="button">导出 Excel</button>
                 <button id="wordFilesBtn" type="button">批量导出 Word</button>
                 <button id="mdBtn" type="button">批量导出 MD</button>
                 <button id="txtBtn" type="button">批量导出 TXT</button>
-                <button id="pptMdBtn" type="button">导出 PPT 大纲 MD</button>
-                <button id="pptTxtBtn" type="button">导出 PPT 大纲 TXT</button>
               </div>
             </div>
           </details>
@@ -861,50 +917,74 @@
           <details class="batch-group">
             <summary>高级模式</summary>
             <div class="batch-group-body">
-              <div class="settings-row">
-                <div class="field">
-                  <label for="novelWords">小说字数</label>
-                  <input id="novelWords" type="number" min="1000" max="50000" step="500" value="5000">
-                </div>
-                <div class="field">
-                  <label for="novelStyle">小说风格</label>
-                  <select id="novelStyle">
-                    <option value="有趣" selected>有趣</option>
-                    <option value="荒诞">荒诞</option>
-                    <option value="爱情">爱情</option>
-                    <option value="纪录片">纪录片</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="pptPages">PPT 页数</label>
-                  <select id="pptPages">
-                    <option value="5" selected>5 页</option>
-                    <option value="10">10 页</option>
-                    <option value="15">15 页</option>
-                  </select>
-                </div>
-              </div>
-              <div class="settings-row">
-                <div class="field">
-                  <label for="musicType">音乐类型</label>
-                  <select id="musicType">
-                    <option value="流行" selected>流行</option>
-                    <option value="美声">美声</option>
-                    <option value="民族">民族</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="musicStyle">歌曲风格</label>
-                  <input id="musicStyle" placeholder="例如：轻快、治愈、热血、复古">
-                </div>
-                <div class="field">
-                  <label>导出位置</label>
-                  <button id="chooseFolderBtn" type="button">浏览文件夹</button>
+              <div class="advanced-block">
+                <h3>批量小说</h3>
+                <div class="settings-row">
+                  <div class="field">
+                    <label for="novelWords">小说字数</label>
+                    <input id="novelWords" type="number" min="1000" max="50000" step="500" value="5000">
+                  </div>
+                  <div class="field">
+                    <label for="novelStyle">小说风格</label>
+                    <select id="novelStyle">
+                      <option value="有趣" selected>有趣</option>
+                      <option value="荒诞">荒诞</option>
+                      <option value="爱情">爱情</option>
+                      <option value="纪录片">纪录片</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>执行</label>
+                    <button id="batchNovelBtn" type="button">批量生成小说架构</button>
+                  </div>
                 </div>
               </div>
-              <div class="path-line" id="exportPathLabel">未选择导出位置；默认按浏览器下载设置保存，建议设置为桌面。</div>
-              <div class="batch-actions">
-                <button id="batchSongBtn" type="button">批量作曲</button>
+
+              <div class="advanced-block">
+                <h3>PPT 文本大纲</h3>
+                <div class="settings-row">
+                  <div class="field">
+                    <label for="pptPages">PPT 页数</label>
+                    <select id="pptPages">
+                      <option value="5" selected>5 页</option>
+                      <option value="10">10 页</option>
+                      <option value="15">15 页</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="pptFormat">导出格式</label>
+                    <select id="pptFormat">
+                      <option value="md" selected>MD</option>
+                      <option value="txt">TXT</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>执行</label>
+                    <button id="pptOutlineBtn" type="button">批量导出 PPT 大纲</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="advanced-block">
+                <h3>批量作曲</h3>
+                <div class="settings-row">
+                  <div class="field">
+                    <label for="musicType">音乐类型</label>
+                    <select id="musicType">
+                      <option value="流行" selected>流行</option>
+                      <option value="美声">美声</option>
+                      <option value="民族">民族</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="musicStyle">歌曲风格</label>
+                    <input id="musicStyle" placeholder="例如：轻快、治愈、热血、复古">
+                  </div>
+                  <div class="field">
+                    <label>执行</label>
+                    <button id="batchSongBtn" type="button">批量作曲</button>
+                  </div>
+                </div>
               </div>
             </div>
           </details>
@@ -949,6 +1029,7 @@
         novelWords: Number($("novelWords").value || 5000),
         novelStyle: $("novelStyle").value,
         pptPages: Number($("pptPages").value || 5),
+        pptFormat: $("pptFormat").value,
         musicType: $("musicType").value,
         musicStyle: $("musicStyle").value.trim()
       };
@@ -964,6 +1045,10 @@
 
     function selectedItems() {
       return state.ideas.filter(item => item.selected);
+    }
+
+    function orderedIdeas() {
+      return state.ideas.slice().sort((a, b) => b.score - a.score);
     }
 
     function setStatus(text, isError = false) {
@@ -1005,7 +1090,7 @@
       const hasActive = Boolean(activeItem());
       [
         "batchBriefBtn", "batchOfficialBtn", "batchXhsBtn", "batchMomentsBtn", "batchNovelBtn", "batchSongBtn",
-        "copyBtn", "excelBtn", "wordFilesBtn", "mdBtn", "txtBtn", "pptMdBtn", "pptTxtBtn"
+        "copyBtn", "excelBtn", "wordFilesBtn", "mdBtn", "txtBtn", "pptOutlineBtn"
       ].forEach(id => {
         const button = $(id);
         if (button) button.disabled = state.busy || !hasSelected;
@@ -1014,7 +1099,7 @@
         const button = $(id);
         if (button) button.disabled = state.busy || !state.ideas.length;
       });
-      ["singleBriefBtn", "singleOfficialBtn", "singleXhsBtn", "singleMomentsBtn", "copyActiveBtn"].forEach(id => {
+      ["singleBriefBtn", "singleOfficialBtn", "singleXhsBtn", "singleMomentsBtn", "copyActiveBtn", "prevIdeaBtn", "nextIdeaBtn"].forEach(id => {
         const button = $(id);
         if (button) button.disabled = state.busy || !hasActive;
       });
@@ -1043,9 +1128,7 @@
 
       const hasChecked = selectedItems().length > 0;
       wall.className = "masonry";
-      wall.innerHTML = state.ideas
-        .slice()
-        .sort((a, b) => b.score - a.score)
+      wall.innerHTML = orderedIdeas()
         .map(item => ideaCardHtml(item, hasChecked))
         .join("");
     }
@@ -1085,7 +1168,19 @@
         return;
       }
 
+      const ordered = orderedIdeas();
+      const currentIndex = ordered.findIndex(row => row.id === item.id);
+      const positionText = currentIndex >= 0 ? `${currentIndex + 1} / ${ordered.length}` : "";
+
       $("detailContent").innerHTML = `
+        <div class="detail-pager">
+          <button id="prevIdeaBtn" type="button">上一个</button>
+          <button id="nextIdeaBtn" type="button">下一个</button>
+        </div>
+        <label class="detail-select" for="detailSelect">
+          <span>${item.selected ? "已加入选择" : "加入选择"} ${positionText ? `<span class="hint">${positionText}</span>` : ""}</span>
+          <input id="detailSelect" type="checkbox" data-detail-select="${item.id}" ${item.selected ? "checked" : ""}>
+        </label>
         <h2>${escapeHtml(item.direction || item.title)}</h2>
         <p class="detail-title">${escapeHtml(item.title || "未生成推荐标题")}</p>
         <p class="detail-summary">${escapeHtml(item.summary || "未生成一句话简介")}</p>
@@ -1111,7 +1206,19 @@
       $("singleOfficialBtn").addEventListener("click", () => generateOfficial([item]));
       $("singleXhsBtn").addEventListener("click", () => generateXhs([item]));
       $("singleMomentsBtn").addEventListener("click", () => generateMoments([item]));
-      $("copyActiveBtn").addEventListener("click", () => copyText(formatItemText(item)));
+      $("copyActiveBtn").addEventListener("click", () => copyText(formatItemText(item), "已复制当前内容。"));
+      $("prevIdeaBtn").addEventListener("click", () => moveActiveIdea(-1));
+      $("nextIdeaBtn").addEventListener("click", () => moveActiveIdea(1));
+    }
+
+    function moveActiveIdea(offset) {
+      const ordered = orderedIdeas();
+      if (!ordered.length) return;
+      const currentIndex = Math.max(0, ordered.findIndex(item => item.id === state.activeId));
+      const nextIndex = (currentIndex + offset + ordered.length) % ordered.length;
+      state.activeId = ordered[nextIndex].id;
+      render();
+      $("detailSection").scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
     function officialHtml(data) {
@@ -1651,20 +1758,24 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     async function copySelected() {
       const items = selectedItems();
       if (!items.length) return setStatus("先勾选要复制的点子。", true);
-      await copyText(items.map(formatItemText).join("\n\n---\n\n"));
+      await copyText(items.map(formatItemText).join("\n\n---\n\n"), `已复制 ${items.length} 个点子。`);
     }
 
-    async function copyText(text) {
+    async function copyText(text, message = "已复制。") {
       try {
         if (navigator.clipboard?.writeText) {
           await navigator.clipboard.writeText(text);
         } else {
           fallbackCopy(text);
         }
-        setStatus("已复制。");
+        setStatus(message);
       } catch (error) {
-        fallbackCopy(text);
-        setStatus("已复制。");
+        try {
+          fallbackCopy(text);
+          setStatus(message);
+        } catch (fallbackError) {
+          setStatus(`复制失败：${fallbackError.message || error.message}`, true);
+        }
       }
     }
 
@@ -1706,25 +1817,25 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
       }));
     }
 
-    function exportExcel(items = selectedItems()) {
+    async function exportExcel(items = selectedItems()) {
       if (!items.length) return setStatus("先勾选要导出的点子。", true);
       if (!window.XLSX) return downloadCsv(items);
       const rows = overviewRows(items);
       const sheet = XLSX.utils.json_to_sheet(rows);
       const book = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(book, sheet, "本次脑暴总览");
-      XLSX.writeFile(book, `AI灵感脑暴器-总览-${dateStamp()}.xlsx`);
-      setStatus(`已导出 ${items.length} 条内容的 Excel 总览。`);
+      const buffer = XLSX.write(book, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      await saveFiles([{ name: `AI灵感脑暴器-总览-${dateStamp()}.xlsx`, blob }], `AI灵感脑暴器-Excel-${dateStamp()}`);
     }
 
-    function downloadCsv(items) {
+    async function downloadCsv(items) {
       const rows = overviewRows(items);
       const header = Object.keys(rows[0] || {});
       const csv = "\ufeff" + [header, ...rows.map(row => header.map(key => row[key]))]
         .map(row => row.map(cell => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
         .join("\r\n");
-      downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `AI灵感脑暴器-总览-${dateStamp()}.csv`);
-      setStatus("Excel 库未加载，已改为导出 CSV。");
+      await saveFiles([{ name: `AI灵感脑暴器-总览-${dateStamp()}.csv`, blob: new Blob([csv], { type: "text/csv;charset=utf-8" }) }], `AI灵感脑暴器-CSV-${dateStamp()}`);
     }
 
     async function exportWordFiles() {
@@ -2109,8 +2220,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     $("wordFilesBtn").addEventListener("click", exportWordFiles);
     $("mdBtn").addEventListener("click", exportMarkdownFiles);
     $("txtBtn").addEventListener("click", exportTxtFiles);
-    $("pptMdBtn").addEventListener("click", () => exportPptOutline("md"));
-    $("pptTxtBtn").addEventListener("click", () => exportPptOutline("txt"));
+    $("pptOutlineBtn").addEventListener("click", () => exportPptOutline(getForm().pptFormat));
     $("chooseFolderBtn").addEventListener("click", chooseExportFolder);
     $("selectAllBtn").addEventListener("click", () => {
       state.ideas.forEach(item => item.selected = true);
@@ -2122,7 +2232,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
       render();
       setStatus("已取消全部选择。");
     });
-    $("copyPromptBtn").addEventListener("click", () => copyText($("promptText").value));
+    $("copyPromptBtn").addEventListener("click", () => copyText($("promptText").value, "已复制提示词。"));
 
     document.addEventListener("click", event => {
       if (event.target.closest("[data-stop]")) return;
@@ -2134,6 +2244,22 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     });
 
     document.addEventListener("change", event => {
+      const detailId = event.target.getAttribute?.("data-detail-select");
+      if (detailId) {
+        const item = state.ideas.find(row => String(row.id) === String(detailId));
+        if (!item) return;
+        item.selected = event.target.checked;
+        state.activeId = item.id;
+        if (item.selected && state.ideas.length > 1) {
+          setStatus("已加入选择，自动切到下一个。");
+          moveActiveIdea(1);
+        } else {
+          render();
+          setStatus(item.selected ? "已加入选择。" : "已取消选择。");
+        }
+        return;
+      }
+
       const id = event.target.getAttribute?.("data-select");
       if (!id) return;
       const item = state.ideas.find(row => String(row.id) === String(id));
