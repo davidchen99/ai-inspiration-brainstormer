@@ -313,6 +313,10 @@
       align-items: start;
     }
 
+    .app.layout-ultra .workbench {
+      grid-template-columns: minmax(220px, .34fr) minmax(520px, 1fr);
+    }
+
     .app.layout-standard .workbench {
       grid-template-columns: minmax(0, 1fr) minmax(380px, .55fr);
     }
@@ -382,6 +386,7 @@
       column-gap: 12px;
     }
 
+    .app.layout-ultra .masonry { column-count: 1; }
     .app.layout-standard .masonry { column-count: 3; }
     .app.layout-compact .masonry { column-count: 4; }
 
@@ -904,6 +909,7 @@
           </div>
           <div class="section-tools">
             <div class="density-control" aria-label="点子墙密度">
+              <button class="icon-btn density-btn" data-layout="ultra" type="button" title="超级宽松布局，右侧详情约占 3/4">超级宽松</button>
               <button class="icon-btn density-btn active" data-layout="loose" type="button" title="宽松布局，右侧详情更宽">宽松</button>
               <button class="icon-btn density-btn" data-layout="standard" type="button" title="标准布局">标准</button>
               <button class="icon-btn density-btn" data-layout="compact" type="button" title="紧凑布局，左侧显示更多点子">紧凑</button>
@@ -1190,6 +1196,7 @@
 
     function render() {
       $("appRoot").classList.toggle("has-ideas", state.ideas.length > 0);
+      $("appRoot").classList.toggle("layout-ultra", state.layoutDensity === "ultra");
       $("appRoot").classList.toggle("layout-standard", state.layoutDensity === "standard");
       $("appRoot").classList.toggle("layout-compact", state.layoutDensity === "compact");
       renderIdeaWall();
