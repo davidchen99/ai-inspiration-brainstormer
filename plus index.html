@@ -555,6 +555,29 @@
       accent-color: var(--accent-dark);
     }
 
+    .edit-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .edit-section {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+
+    .edit-section:first-child { border-top: 0; }
+
+    .edit-section h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .edit-form textarea {
+      min-height: 86px;
+      font-size: 14px;
+    }
+
     .generated {
       margin-top: 12px;
       border-top: 1px solid var(--line);
@@ -1035,6 +1058,10 @@
       };
     }
 
+    function getValue(id) {
+      return $(id)?.value.trim() || "";
+    }
+
     function validateSeed(form) {
       if (!form.seedIdea) throw new Error("先输入一句想法、一个名称或几个关键词。");
     }
@@ -1099,7 +1126,7 @@
         const button = $(id);
         if (button) button.disabled = state.busy || !state.ideas.length;
       });
-      ["singleBriefBtn", "singleOfficialBtn", "singleXhsBtn", "singleMomentsBtn", "copyActiveBtn", "prevIdeaBtn", "nextIdeaBtn"].forEach(id => {
+      ["singleBriefBtn", "singleOfficialBtn", "singleXhsBtn", "singleMomentsBtn", "copyActiveBtn", "editActiveBtn", "prevIdeaBtn", "nextIdeaBtn"].forEach(id => {
         const button = $(id);
         if (button) button.disabled = state.busy || !hasActive;
       });
@@ -1193,6 +1220,7 @@
           <button id="singleXhsBtn" type="button">转小红书</button>
           <button id="singleMomentsBtn" type="button">转朋友圈</button>
           <button id="copyActiveBtn" type="button">复制当前</button>
+          <button id="editActiveBtn" type="button">编辑内容</button>
         </div>
         ${item.brief ? `<section class="generated"><h3>150 字介绍</h3><p class="detail-summary">${escapeHtml(item.brief)}</p></section>` : ""}
         ${item.official ? officialHtml(item.official) : ""}
@@ -1207,8 +1235,174 @@
       $("singleXhsBtn").addEventListener("click", () => generateXhs([item]));
       $("singleMomentsBtn").addEventListener("click", () => generateMoments([item]));
       $("copyActiveBtn").addEventListener("click", () => copyText(formatItemText(item), "已复制当前内容。"));
+      $("editActiveBtn").addEventListener("click", () => renderEditDetail(item));
       $("prevIdeaBtn").addEventListener("click", () => moveActiveIdea(-1));
       $("nextIdeaBtn").addEventListener("click", () => moveActiveIdea(1));
+    }
+
+    function renderEditDetail(item) {
+      $("detailContent").innerHTML = `
+        <div class="detail-actions">
+          <button class="primary" id="saveEditBtn" type="button">保存修改</button>
+          <button id="cancelEditBtn" type="button">取消</button>
+        </div>
+        <div class="edit-form">
+          <section class="edit-section">
+            <h3>基础信息</h3>
+            ${editInput("editDirection", "选题方向", item.direction)}
+            ${editInput("editTitle", "推荐标题", item.title)}
+            ${editTextarea("editSummary", "一句话简介", item.summary)}
+            ${editInput("editCategory", "分类", item.category)}
+            ${editInput("editPlatform", "适合平台", item.platform)}
+            ${editInput("editAudience", "目标读者", item.audience)}
+            ${editTextarea("editAngle", "切入角度", item.angle)}
+            ${editTextarea("editReason", "推荐理由", item.reason)}
+            ${editInput("editScore", "推荐指数", item.score)}
+            ${editTextarea("editBrief", "150 字介绍", item.brief)}
+          </section>
+          ${item.official ? `
+            <section class="edit-section">
+              <h3>公众号方案</h3>
+              ${editInput("editOfficialTitle", "标题", item.official.officialTitle)}
+              ${editTextarea("editOfficialAbstract", "摘要", item.official.abstract)}
+              ${editTextarea("editOfficialCore", "核心观点", item.official.corePoint)}
+              ${editList("editOfficialOutline", "文章大纲", item.official.outline)}
+              ${editTextarea("editOfficialOpening", "开头切入", item.official.opening)}
+              ${editList("editOfficialImages", "配图建议", item.official.imageIdeas)}
+              ${editInput("editOfficialTone", "写作口吻", item.official.tone)}
+              ${editInput("editOfficialWords", "目标字数", item.official.targetWords)}
+            </section>
+          ` : ""}
+          ${item.xhs ? `
+            <section class="edit-section">
+              <h3>小红书方案</h3>
+              ${editInput("editXhsTitle", "标题", item.xhs.xhsTitle)}
+              ${editTextarea("editXhsBody", "正文", item.xhs.body)}
+              ${editList("editXhsImages", "图片创意", item.xhs.imageIdeas)}
+              ${editInput("editXhsTags", "标签", item.xhs.tags.join(" "))}
+              ${editTextarea("editXhsGuide", "评论引导", item.xhs.commentGuide)}
+            </section>
+          ` : ""}
+          ${item.moments ? `
+            <section class="edit-section">
+              <h3>朋友圈文案</h3>
+              ${editTextarea("editMomentsCopy", "文案", item.moments.copy)}
+              ${editInput("editMomentsStyle", "风格", item.moments.style)}
+              ${editList("editMomentsImages", "配图建议", item.moments.imageIdeas)}
+              ${editInput("editMomentsScene", "发布场景", item.moments.scene)}
+              ${editTextarea("editMomentsInteraction", "互动引导", item.moments.interaction)}
+            </section>
+          ` : ""}
+          ${item.novel ? `
+            <section class="edit-section">
+              <h3>小说架构</h3>
+              ${editInput("editNovelTitle", "标题", item.novel.novelTitle)}
+              ${editTextarea("editNovelLogline", "一句话故事", item.novel.logline)}
+              ${editInput("editNovelTheme", "主题", item.novel.theme)}
+              ${editInput("editNovelStyle", "风格", item.novel.style)}
+              ${editInput("editNovelWords", "目标字数", item.novel.targetWords)}
+              ${editList("editNovelCharacters", "主要人物", item.novel.characters)}
+              ${editList("editNovelStructure", "故事结构", item.novel.structure)}
+              ${editList("editNovelOutline", "章节大纲", item.novel.chapterOutline)}
+              ${editTextarea("editNovelEnding", "结尾", item.novel.ending)}
+            </section>
+          ` : ""}
+          ${item.song ? `
+            <section class="edit-section">
+              <h3>歌曲方案</h3>
+              ${editInput("editSongTitle", "歌名", item.song.songTitle)}
+              ${editInput("editSongType", "音乐类型", item.song.musicType)}
+              ${editInput("editSongStyle", "风格", item.song.style)}
+              ${editTextarea("editSongArrangement", "曲风说明", item.song.arrangement)}
+              ${editList("editSongStructure", "歌曲结构", item.song.structure)}
+              ${editTextarea("editSongLyric", "歌词", item.song.lyric)}
+            </section>
+          ` : ""}
+        </div>
+      `;
+
+      $("saveEditBtn").addEventListener("click", () => saveEditDetail(item.id));
+      $("cancelEditBtn").addEventListener("click", () => render());
+      $("detailSection").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function editInput(id, label, value) {
+      return `<div class="field"><label for="${id}">${escapeHtml(label)}</label><input id="${id}" value="${escapeAttr(value)}"></div>`;
+    }
+
+    function editTextarea(id, label, value) {
+      return `<div class="field"><label for="${id}">${escapeHtml(label)}</label><textarea id="${id}">${escapeHtml(value || "")}</textarea></div>`;
+    }
+
+    function editList(id, label, values) {
+      return editTextarea(id, `${label}（一行一条）`, (values || []).join("\n"));
+    }
+
+    function saveEditDetail(itemId) {
+      const item = state.ideas.find(row => row.id === itemId);
+      if (!item) return;
+
+      item.direction = getValue("editDirection");
+      item.title = getValue("editTitle");
+      item.summary = getValue("editSummary");
+      item.category = getValue("editCategory") || "未分类";
+      item.platform = getValue("editPlatform") || "都适合";
+      item.audience = getValue("editAudience");
+      item.angle = getValue("editAngle");
+      item.reason = getValue("editReason");
+      item.score = Math.max(1, Math.min(5, Number(getValue("editScore") || item.score || 3)));
+      item.brief = getValue("editBrief");
+
+      if (item.official) {
+        item.official.officialTitle = getValue("editOfficialTitle");
+        item.official.abstract = getValue("editOfficialAbstract");
+        item.official.corePoint = getValue("editOfficialCore");
+        item.official.outline = normalizeList(getValue("editOfficialOutline"));
+        item.official.opening = getValue("editOfficialOpening");
+        item.official.imageIdeas = normalizeList(getValue("editOfficialImages"));
+        item.official.tone = getValue("editOfficialTone");
+        item.official.targetWords = Number(getValue("editOfficialWords") || item.official.targetWords || getForm().contentWords);
+      }
+
+      if (item.xhs) {
+        item.xhs.xhsTitle = getValue("editXhsTitle");
+        item.xhs.body = getValue("editXhsBody");
+        item.xhs.imageIdeas = normalizeList(getValue("editXhsImages"));
+        item.xhs.tags = normalizeList(getValue("editXhsTags").replace(/\s+/g, "\n"));
+        item.xhs.commentGuide = getValue("editXhsGuide");
+      }
+
+      if (item.moments) {
+        item.moments.copy = getValue("editMomentsCopy");
+        item.moments.style = getValue("editMomentsStyle");
+        item.moments.imageIdeas = normalizeList(getValue("editMomentsImages"));
+        item.moments.scene = getValue("editMomentsScene");
+        item.moments.interaction = getValue("editMomentsInteraction");
+      }
+
+      if (item.novel) {
+        item.novel.novelTitle = getValue("editNovelTitle");
+        item.novel.logline = getValue("editNovelLogline");
+        item.novel.theme = getValue("editNovelTheme");
+        item.novel.style = getValue("editNovelStyle");
+        item.novel.targetWords = Number(getValue("editNovelWords") || item.novel.targetWords || getForm().novelWords);
+        item.novel.characters = normalizeList(getValue("editNovelCharacters"));
+        item.novel.structure = normalizeList(getValue("editNovelStructure"));
+        item.novel.chapterOutline = normalizeList(getValue("editNovelOutline"));
+        item.novel.ending = getValue("editNovelEnding");
+      }
+
+      if (item.song) {
+        item.song.songTitle = getValue("editSongTitle");
+        item.song.musicType = getValue("editSongType");
+        item.song.style = getValue("editSongStyle");
+        item.song.arrangement = getValue("editSongArrangement");
+        item.song.structure = normalizeList(getValue("editSongStructure"));
+        item.song.lyric = getValue("editSongLyric");
+      }
+
+      render();
+      setStatus("已保存修改。左侧卡片、复制和导出都会使用新版内容。");
     }
 
     function moveActiveIdea(offset) {
@@ -2189,6 +2383,10 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+    }
+
+    function escapeAttr(text) {
+      return escapeHtml(text ?? "");
     }
 
     document.querySelectorAll("[data-example]").forEach(button => {
