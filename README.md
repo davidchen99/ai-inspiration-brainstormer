@@ -5,7 +5,7 @@
 ## 文件
 
 - `plus index.html`：主工具页面，双击打开即可使用。
-- `index.html`：跳转到主工具页面，保留给习惯打开 `index.html` 的入口。
+- `index.html`：部署网页入口，内容与主工具页面保持一致。
 - `sync-to-lark.ps1`：旧版飞书同步脚本，当前新版主流程暂未接入页面。
 
 ## 主流程
@@ -58,10 +58,18 @@
 - DeepSeek API Key
 - 接口地址，默认 `https://api.deepseek.com/chat/completions`
 - 模型，默认 `deepseek-v4-flash`，也可切换 `deepseek-v4-pro`
+- 默认只在当前页面内存里使用 API Key；勾选“记住本机 API Key”后，才会保存到当前浏览器的 `localStorage`。
 
 页面提供 DeepSeek API Key 获取入口：`https://platform.deepseek.com/api_keys`
 
 如果没有填写 API Key，页面会生成可复制提示词，可以手动粘贴到 DeepSeek 或其他 AI 对话中使用。
+
+## 隐私说明
+
+- 本工具是静态网页，不设置业务服务器。
+- API Key 不会上传到本站服务器，也不会写入云端数据库。
+- 调用模型时，请求从用户浏览器直接发送到 DeepSeek API。
+- 不建议把自己的统一 API Key 写进前端代码；用户应填写自己的 Key。
 
 ## 批量小说与作曲
 
@@ -86,3 +94,17 @@
 - “批量导出 PPT 大纲”：每个点子导出一份 5 页、10 页或 15 页的 PPT 文本大纲，格式可选 MD 或 TXT。
 - 不再使用 zip。一个文件直接导出；多个文件在已选择导出目录时写入一个文件夹。
 - 高级模式可以点击“浏览文件夹”选择导出位置。未选择时，按浏览器下载设置保存，建议把浏览器默认下载位置设为桌面。
+
+## 部署成网页链接
+
+这是纯静态网页项目，可部署到 Vercel、Cloudflare Pages、Netlify 或 GitHub Pages。
+
+通用步骤：
+
+1. 确认根目录存在 `index.html`。
+2. 上传整个项目目录。
+3. 平台构建命令留空。
+4. 输出目录选择项目根目录。
+5. 部署完成后，把生成的网址发给朋友。
+
+浏览器建议使用 Chrome 或 Edge；“浏览文件夹”导出功能依赖浏览器支持，不支持时会退回到普通下载。
