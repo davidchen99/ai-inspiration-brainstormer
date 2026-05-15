@@ -254,6 +254,15 @@
 
     .settings-body { padding-top: 13px; }
 
+    .settings-subhead {
+      margin: 18px 0 10px;
+      border-top: 1px solid var(--line);
+      padding-top: 13px;
+      color: #3f4743;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
     .note {
       border: 1px solid #e3d3b3;
       border-radius: 8px;
@@ -635,6 +644,107 @@
       margin: 0;
     }
 
+    .image-tool {
+      margin-top: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+
+    .image-tool summary {
+      cursor: pointer;
+      color: #3f4743;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .image-tool-body {
+      display: grid;
+      gap: 11px;
+      padding-top: 12px;
+    }
+
+    .image-tool-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 10px;
+    }
+
+    .image-tool-head h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .image-advanced {
+      margin-top: 6px;
+    }
+
+    .image-advanced summary {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .image-tool textarea {
+      min-height: 116px;
+      font-size: 13px;
+    }
+
+    .image-status {
+      margin: 8px 0 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: #fffdfa;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .image-status.loading {
+      border-color: #c8d2c7;
+      background: var(--mist);
+      color: #53665d;
+      font-weight: 700;
+    }
+
+    .image-status.error {
+      border-color: #e3d3b3;
+      background: var(--warn);
+      color: #8b5b44;
+      font-weight: 700;
+    }
+
+    .image-status.success {
+      border-color: #c8d2c7;
+      background: #eef2ea;
+      color: #53665d;
+    }
+
+    .image-preview {
+      display: grid;
+      gap: 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fffdfa;
+    }
+
+    .image-preview img {
+      display: block;
+      width: 100%;
+      border-radius: 6px;
+      background: #f4f1ea;
+    }
+
+    .image-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
     .mini-list {
       margin: 5px 0 0;
       padding-left: 20px;
@@ -885,6 +995,44 @@
               <label for="categories">分类库 <span class="hint">用中文逗号分隔</span></label>
               <input id="categories" value="AI工具,公众号日更,小红书转公众号,副业,职场,热点,产品思考">
             </div>
+            <div class="settings-subhead">图片生成：OpenRouter</div>
+            <div class="field">
+              <label for="openRouterApiKey">OpenRouter API Key <span class="hint">用于详情页一键生图</span></label>
+              <input id="openRouterApiKey" type="password" placeholder="sk-or-v1-...">
+            </div>
+            <label class="detail-select" for="rememberOpenRouterKey">
+              <span>记住本机 OpenRouter Key <span class="hint">只保存到当前浏览器</span></span>
+              <input id="rememberOpenRouterKey" type="checkbox">
+            </label>
+            <div class="compact">
+              <div class="field">
+                <label for="defaultImageModel">默认图片模型</label>
+                <select id="defaultImageModel">
+                  <option value="bytedance-seed/seedream-4.5" selected>Seedream 4.5（默认主力）</option>
+                  <option value="google/gemini-2.5-flash-image">Nano Banana（部分地区不可用）</option>
+                  <option value="openai/gpt-5.4-image-2">GPT Image 2（高级，部分地区不可用）</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="defaultImageUseCase">默认图片用途</label>
+                <select id="defaultImageUseCase">
+                  <option value="wechat_cover" selected>公众号封面</option>
+                  <option value="article_image">文章配图</option>
+                  <option value="xhs_cover">小红书封面</option>
+                  <option value="moments">朋友圈配图</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="defaultImageStyle">默认图片风格</label>
+              <select id="defaultImageStyle">
+                <option value="magazine" selected>杂志封面</option>
+                <option value="photo">真实摄影</option>
+                <option value="tech">高级科技感</option>
+                <option value="illustration">扁平插画</option>
+                <option value="infographic">极简信息图</option>
+              </select>
+            </div>
           </div>
         </details>
 
@@ -1059,11 +1207,51 @@
       busy: false,
       exportDirHandle: null,
       exportDirName: "",
-      layoutDensity: "loose"
+      layoutDensity: "loose",
+      openRouterApiKey: "",
+      rememberOpenRouterKey: false,
+      defaultImageModel: "bytedance-seed/seedream-4.5",
+      defaultImageUseCase: "wechat_cover",
+      defaultImageStyle: "magazine",
+      defaultImageSize: "1K"
     };
 
     const $ = (id) => document.getElementById(id);
     const API_KEY_STORAGE_KEY = "ai_brainstorm_deepseek_api_key";
+    const OPENROUTER_KEY_STORAGE_KEY = "ai_brainstorm_openrouter_api_key";
+
+    const IMAGE_MODELS = {
+      "google/gemini-2.5-flash-image": {
+        name: "Nano Banana",
+        label: "Nano Banana（部分地区不可用）",
+        modalities: ["image", "text"]
+      },
+      "bytedance-seed/seedream-4.5": {
+        name: "Seedream 4.5",
+        label: "Seedream 4.5（默认主力）",
+        modalities: ["image"]
+      },
+      "openai/gpt-5.4-image-2": {
+        name: "GPT Image 2",
+        label: "GPT Image 2（高级，部分地区不可用）",
+        modalities: ["image", "text"]
+      }
+    };
+
+    const IMAGE_USE_CASES = {
+      wechat_cover: { label: "公众号封面", aspectRatio: "16:9", size: "1K" },
+      article_image: { label: "文章配图", aspectRatio: "4:3", size: "1K" },
+      xhs_cover: { label: "小红书封面", aspectRatio: "3:4", size: "1K" },
+      moments: { label: "朋友圈配图", aspectRatio: "1:1", size: "1K" }
+    };
+
+    const IMAGE_STYLES = {
+      photo: "真实摄影，明亮自然，质感克制",
+      magazine: "杂志封面，高级排版感，主体清晰",
+      tech: "高级科技感，干净界面，现代光影",
+      illustration: "扁平插画，清晰色块，亲和但不幼稚",
+      infographic: "极简信息图，结构清楚，留白充足"
+    };
 
     const stageTargets = {
       input: "inputSection",
@@ -1192,6 +1380,10 @@
         const button = $(id);
         if (button) button.disabled = state.busy || !hasActive;
       });
+      ["imagePromptBtn", "imageGenerateBtn", "downloadImageBtn"].forEach(id => {
+        const button = $(id);
+        if (button) button.disabled = state.busy || (id === "downloadImageBtn" && !activeItem()?.imageResult);
+      });
     }
 
     function render() {
@@ -1296,6 +1488,7 @@
         ${item.moments ? momentsHtml(item.moments) : ""}
         ${item.novel ? novelHtml(item.novel) : ""}
         ${item.song ? songHtml(item.song) : ""}
+        ${imageToolHtml(item)}
       `;
 
       $("singleBriefBtn").addEventListener("click", () => expandBriefs([item]));
@@ -1306,6 +1499,363 @@
       $("editActiveBtn").addEventListener("click", () => renderEditDetail(item));
       $("prevIdeaBtn").addEventListener("click", () => moveActiveIdea(-1));
       $("nextIdeaBtn").addEventListener("click", () => moveActiveIdea(1));
+      bindImageTool(item);
+    }
+
+    function imageToolHtml(item) {
+      const result = item.imageResult || null;
+      const defaults = getImageDefaults();
+      const model = result?.model || defaults.model;
+      const useCase = result?.useCase || defaults.useCase;
+      const style = result?.style || defaults.style;
+      const aspectRatio = result?.aspectRatio || IMAGE_USE_CASES[useCase]?.aspectRatio || "16:9";
+      const imageSize = result?.imageSize || defaults.imageSize;
+      const prompt = result?.prompt || buildImagePrompt(item, { useCase, style });
+      const keyStatus = defaults.apiKey ? "已配置生图" : "未配置生图";
+      const imageStatus = item.imageStatus || "";
+      const isGenerating = imageStatus === "loading";
+      const statusMessage = item.imageMessage || (result ? "图片已生成，可以下载或重新生成。" : "生成成功后可下载图片。");
+      const modelOptions = Object.entries(IMAGE_MODELS)
+        .map(([value, config]) => `<option value="${escapeAttr(value)}" ${value === model ? "selected" : ""}>${escapeHtml(config.label)}</option>`)
+        .join("");
+      const useCaseOptions = Object.entries(IMAGE_USE_CASES)
+        .map(([value, config]) => `<option value="${escapeAttr(value)}" ${value === useCase ? "selected" : ""}>${escapeHtml(config.label)}</option>`)
+        .join("");
+      const styleOptions = Object.entries(IMAGE_STYLES)
+        .map(([value, label]) => `<option value="${escapeAttr(value)}" ${value === style ? "selected" : ""}>${escapeHtml(label.split("，")[0])}</option>`)
+        .join("");
+
+      return `
+        <section class="image-tool">
+          <div class="image-tool-head">
+            <div>
+              <h3>生成配图</h3>
+              <p class="image-meta">当前：${escapeHtml(IMAGE_USE_CASES[useCase]?.label || "内容配图")} · ${escapeHtml(IMAGE_STYLES[style]?.split("，")[0] || "默认风格")} · ${escapeHtml(IMAGE_MODELS[model]?.name || model)} · ${escapeHtml(keyStatus)}</p>
+            </div>
+          </div>
+          <div class="toolbar">
+            <button class="primary" id="imageGenerateBtn" type="button">${isGenerating ? "正在生成..." : result ? "重新生成" : "生成配图"}</button>
+            <button id="downloadImageBtn" type="button" ${result ? "" : "disabled"}>下载图片</button>
+          </div>
+          <p class="image-status ${escapeAttr(imageStatus || "")}">${escapeHtml(statusMessage)}</p>
+          ${result ? `
+            <div class="image-preview">
+              <img src="${escapeAttr(result.url)}" alt="生成配图预览">
+              <p class="image-meta">${escapeHtml(IMAGE_MODELS[result.model]?.name || result.model)} · ${escapeHtml(IMAGE_USE_CASES[result.useCase]?.label || result.useCase)} · ${escapeHtml(result.aspectRatio)} · ${escapeHtml(result.imageSize)}</p>
+            </div>
+          ` : ""}
+          <details class="image-advanced">
+            <summary>高级编辑</summary>
+            <div class="image-tool-body">
+              <div class="compact">
+                <div class="field">
+                  <label for="imageUseCase">图片用途</label>
+                  <select id="imageUseCase">${useCaseOptions}</select>
+                </div>
+                <div class="field">
+                  <label for="imageStyle">图片风格</label>
+                  <select id="imageStyle">${styleOptions}</select>
+                </div>
+              </div>
+              <div class="compact">
+                <div class="field">
+                  <label for="imageModel">图片模型</label>
+                  <select id="imageModel">${modelOptions}</select>
+                </div>
+                <div class="field">
+                  <label for="imageSize">清晰度</label>
+                  <select id="imageSize">
+                    <option value="1K" ${imageSize === "1K" ? "selected" : ""}>1K 试图</option>
+                    <option value="2K" ${imageSize === "2K" ? "selected" : ""}>2K 成稿</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="imageAspectRatio">画幅</label>
+                <select id="imageAspectRatio">
+                  <option value="16:9" ${aspectRatio === "16:9" ? "selected" : ""}>16:9 公众号封面</option>
+                  <option value="4:3" ${aspectRatio === "4:3" ? "selected" : ""}>4:3 文章配图</option>
+                  <option value="3:4" ${aspectRatio === "3:4" ? "selected" : ""}>3:4 小红书封面</option>
+                  <option value="1:1" ${aspectRatio === "1:1" ? "selected" : ""}>1:1 方图</option>
+                  <option value="9:16" ${aspectRatio === "9:16" ? "selected" : ""}>9:16 竖图</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="imagePrompt">图片提示词 <span class="hint">可直接改</span></label>
+                <textarea id="imagePrompt">${escapeHtml(prompt)}</textarea>
+              </div>
+              <div class="toolbar">
+                <button id="imagePromptBtn" type="button">重写提示词</button>
+              </div>
+            </div>
+          </details>
+        </section>
+      `;
+    }
+
+    function bindImageTool(item) {
+      $("imageUseCase").addEventListener("change", () => {
+        const defaults = IMAGE_USE_CASES[$("imageUseCase").value];
+        if (defaults) {
+          $("imageAspectRatio").value = defaults.aspectRatio;
+          $("imageSize").value = defaults.size;
+        }
+        updateImagePrompt(item);
+      });
+
+      ["imageStyle", "imageAspectRatio", "imageSize"].forEach(id => {
+        $(id).addEventListener("change", () => updateImagePrompt(item));
+      });
+
+      $("imagePromptBtn").addEventListener("click", () => {
+        updateImagePrompt(item);
+        setStatus("已根据当前点子重写图片提示词。");
+      });
+      $("imageGenerateBtn").addEventListener("click", () => generateCurrentImage(item));
+      $("downloadImageBtn").addEventListener("click", () => downloadCurrentImage(item));
+    }
+
+    function getImageDefaults() {
+      const model = $("defaultImageModel")?.value || state.defaultImageModel;
+      const useCase = $("defaultImageUseCase")?.value || state.defaultImageUseCase;
+      const style = $("defaultImageStyle")?.value || state.defaultImageStyle;
+      return {
+        apiKey: $("openRouterApiKey")?.value.trim() || state.openRouterApiKey,
+        model,
+        useCase,
+        style,
+        aspectRatio: IMAGE_USE_CASES[useCase]?.aspectRatio || "16:9",
+        imageSize: state.defaultImageSize || IMAGE_USE_CASES[useCase]?.size || "1K"
+      };
+    }
+
+    function getImageForm() {
+      const defaults = getImageDefaults();
+      const useCase = $("imageUseCase")?.value || defaults.useCase;
+      return {
+        apiKey: defaults.apiKey,
+        model: $("imageModel")?.value || defaults.model,
+        useCase,
+        style: $("imageStyle")?.value || defaults.style,
+        aspectRatio: $("imageAspectRatio")?.value || IMAGE_USE_CASES[useCase]?.aspectRatio || defaults.aspectRatio,
+        imageSize: $("imageSize")?.value || defaults.imageSize,
+        prompt: $("imagePrompt")?.value.trim() || buildImagePrompt(activeItem() || {}, defaults)
+      };
+    }
+
+    function updateImagePrompt(item) {
+      const promptInput = $("imagePrompt");
+      if (!promptInput) return;
+      promptInput.value = buildImagePrompt(item, getImageForm());
+    }
+
+    function buildImagePrompt(item, form = {}) {
+      const useCase = form.useCase || "wechat_cover";
+      const style = IMAGE_STYLES[form.style] || IMAGE_STYLES.magazine;
+      const useCaseLabel = IMAGE_USE_CASES[useCase]?.label || "内容配图";
+      const title = item.official?.officialTitle || item.xhs?.xhsTitle || item.title || item.direction;
+      const summary = item.official?.abstract || item.summary || item.brief || item.angle;
+      const imageIdeas = pickImageIdeas(item, useCase);
+      const textArea = useCase === "wechat_cover"
+        ? "画面左侧或上方保留足够中文标题留白，但不要直接生成任何文字"
+        : "画面保留干净留白，不要直接生成任何文字";
+
+      return [
+        `为中文内容创作者生成一张${useCaseLabel}。`,
+        `主题：${title || item.direction || "未命名选题"}。`,
+        summary ? `内容含义：${summary}。` : "",
+        imageIdeas.length ? `可参考画面：${imageIdeas.slice(0, 3).join("；")}。` : "",
+        `视觉风格：${style}。`,
+        `${textArea}。`,
+        "要求：主体明确，层次清楚，适合公众号/小红书内容封面；不要真实品牌 logo；不要乱码字；不要低清、变形、过度拥挤。"
+      ].filter(Boolean).join("\n");
+    }
+
+    function pickImageIdeas(item, useCase) {
+      if (useCase === "xhs_cover" && item.xhs?.imageIdeas?.length) return item.xhs.imageIdeas;
+      if (useCase === "moments" && item.moments?.imageIdeas?.length) return item.moments.imageIdeas;
+      if ((useCase === "wechat_cover" || useCase === "article_image") && item.official?.imageIdeas?.length) return item.official.imageIdeas;
+      return [
+        ...(item.official?.imageIdeas || []),
+        ...(item.xhs?.imageIdeas || []),
+        ...(item.moments?.imageIdeas || [])
+      ];
+    }
+
+    async function generateCurrentImage(item) {
+      const form = getImageForm();
+      if (!form.apiKey) {
+        const message = "先在首页“接入 AI / 高级设置”里填写 OpenRouter API Key。";
+        item.imageStatus = "error";
+        item.imageMessage = message;
+        render();
+        setStatus(message, true);
+        return;
+      }
+      if (!form.prompt) {
+        const message = "先填写图片提示词。";
+        item.imageStatus = "error";
+        item.imageMessage = message;
+        render();
+        setStatus(message, true);
+        return;
+      }
+
+      try {
+        state.openRouterApiKey = form.apiKey;
+        if (state.rememberOpenRouterKey) saveOpenRouterKey();
+        item.imageStatus = "loading";
+        item.imageMessage = "正在生成图片，通常需要几秒到几十秒。";
+        setBusy(true, "正在通过 OpenRouter 生成配图...");
+        render();
+        const modelConfig = IMAGE_MODELS[form.model] || IMAGE_MODELS["bytedance-seed/seedream-4.5"];
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${form.apiKey}`,
+            "HTTP-Referer": location.href,
+            "X-Title": "AI Brainstormer"
+          },
+          body: JSON.stringify({
+            model: form.model,
+            messages: [
+              { role: "user", content: form.prompt }
+            ],
+            modalities: modelConfig.modalities,
+            image_config: {
+              aspect_ratio: form.aspectRatio,
+              image_size: form.imageSize
+            },
+            stream: false
+          })
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`OpenRouter 返回错误：${response.status} ${errText.slice(0, 220)}`);
+        }
+
+        const data = await response.json();
+        const imageUrl = extractImageUrl(data);
+        if (!imageUrl) throw new Error("OpenRouter 已返回结果，但没有找到图片数据。可以换模型或降低清晰度重试。");
+
+        item.imageResult = {
+          url: imageUrl,
+          prompt: form.prompt,
+          model: form.model,
+          useCase: form.useCase,
+          style: form.style,
+          aspectRatio: form.aspectRatio,
+          imageSize: form.imageSize,
+          createdAt: new Date().toISOString()
+        };
+        item.imageStatus = "success";
+        item.imageMessage = "图片已生成，可以下载或重新生成。";
+        render();
+        setStatus("已生成 1 张配图，可预览或下载。");
+      } catch (error) {
+        const message = friendlyImageError(error.message, form.model);
+        item.imageStatus = "error";
+        item.imageMessage = message;
+        render();
+        setStatus(message, true);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function friendlyImageError(message, model) {
+      const text = String(message || "");
+      if (/not available in your region/i.test(text)) {
+        if (model === "openai/gpt-5.4-image-2") {
+          return "GPT Image 2 当前在你的地区不可用，请切回 Seedream 4.5。";
+        }
+        if (model === "google/gemini-2.5-flash-image") {
+          return "Nano Banana 当前在你的地区不可用，请切回 Seedream 4.5。";
+        }
+        return "当前图片模型在你的地区不可用。建议在首页把默认图片模型切换为 Seedream 4.5 后重试。";
+      }
+      return text;
+    }
+
+    function extractImageUrl(data) {
+      const message = data?.choices?.[0]?.message || {};
+      const image = message.images?.[0] || data?.images?.[0];
+      const directUrl = image?.image_url?.url || image?.imageUrl?.url || image?.url;
+      if (directUrl) return directUrl;
+      if (Array.isArray(message.content)) {
+        const contentImage = message.content.find(part => part?.image_url?.url || part?.imageUrl?.url || part?.url);
+        return contentImage?.image_url?.url || contentImage?.imageUrl?.url || contentImage?.url || "";
+      }
+      return "";
+    }
+
+    function downloadCurrentImage(item) {
+      const result = item.imageResult;
+      if (!result?.url) {
+        item.imageStatus = "error";
+        item.imageMessage = "当前点子还没有生成图片，先点击“生成配图”。";
+        render();
+        setStatus("当前点子还没有生成图片，先点击“生成配图”。", true);
+        return;
+      }
+      const filenameBase = `${dateStamp()}-${safeFileName(item.title || item.direction)}`;
+      if (result.url.startsWith("data:")) {
+        const blob = dataUrlToBlob(result.url);
+        const ext = blob.type.includes("jpeg") ? "jpg" : blob.type.includes("webp") ? "webp" : "png";
+        downloadBlob(blob, `${filenameBase}.${ext}`);
+      } else {
+        const a = document.createElement("a");
+        a.href = result.url;
+        a.download = `${filenameBase}.png`;
+        a.click();
+      }
+      setStatus("已开始下载图片。");
+    }
+
+    function dataUrlToBlob(dataUrl) {
+      const [meta, base64] = dataUrl.split(",");
+      const mime = meta.match(/data:([^;]+)/)?.[1] || "image/png";
+      const binary = atob(base64 || "");
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return new Blob([bytes], { type: mime });
+    }
+
+    function loadSavedOpenRouterKey() {
+      try {
+        const savedKey = localStorage.getItem(OPENROUTER_KEY_STORAGE_KEY);
+        if (!savedKey) return;
+        state.openRouterApiKey = savedKey;
+        state.rememberOpenRouterKey = true;
+        if ($("openRouterApiKey")) $("openRouterApiKey").value = savedKey;
+        if ($("rememberOpenRouterKey")) $("rememberOpenRouterKey").checked = true;
+      } catch (error) {
+        setStatus("当前浏览器不允许读取 OpenRouter Key 保存状态。", true);
+      }
+    }
+
+    function saveOpenRouterKey() {
+      try {
+        localStorage.setItem(OPENROUTER_KEY_STORAGE_KEY, state.openRouterApiKey);
+      } catch (error) {
+        setStatus("当前浏览器不允许保存 OpenRouter Key 到本机。", true);
+      }
+    }
+
+    function removeOpenRouterKey() {
+      try {
+        localStorage.removeItem(OPENROUTER_KEY_STORAGE_KEY);
+        state.openRouterApiKey = "";
+        state.rememberOpenRouterKey = false;
+        if ($("openRouterApiKey")) $("openRouterApiKey").value = "";
+        if ($("rememberOpenRouterKey")) $("rememberOpenRouterKey").checked = false;
+      } catch (error) {
+        setStatus("当前浏览器不允许删除 OpenRouter Key 保存状态。", true);
+      }
     }
 
     function renderEditDetail(item) {
@@ -1784,7 +2334,10 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
           xhs: null,
           moments: null,
           novel: null,
-          song: null
+          song: null,
+          imageResult: null,
+          imageStatus: "",
+          imageMessage: ""
         })).filter(item => item.direction || item.title);
         state.activeId = state.ideas[0]?.id || null;
         $("promptBox").style.display = "none";
@@ -2498,6 +3051,33 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
         }
       }
     });
+    $("openRouterApiKey").addEventListener("input", () => {
+      state.openRouterApiKey = $("openRouterApiKey").value.trim();
+      if ($("rememberOpenRouterKey").checked) saveOpenRouterKey();
+    });
+    $("rememberOpenRouterKey").addEventListener("change", () => {
+      state.rememberOpenRouterKey = $("rememberOpenRouterKey").checked;
+      state.openRouterApiKey = $("openRouterApiKey").value.trim();
+      if (state.rememberOpenRouterKey) {
+        saveOpenRouterKey();
+        setStatus("已记住本机 OpenRouter Key。");
+      } else {
+        removeOpenRouterKey();
+        setStatus("已取消记住 OpenRouter Key。");
+      }
+    });
+    $("defaultImageModel").addEventListener("change", () => {
+      state.defaultImageModel = $("defaultImageModel").value;
+      render();
+    });
+    $("defaultImageUseCase").addEventListener("change", () => {
+      state.defaultImageUseCase = $("defaultImageUseCase").value;
+      render();
+    });
+    $("defaultImageStyle").addEventListener("change", () => {
+      state.defaultImageStyle = $("defaultImageStyle").value;
+      render();
+    });
     $("selectAllBtn").addEventListener("click", () => {
       state.ideas.forEach(item => item.selected = true);
       render();
@@ -2554,6 +3134,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     });
 
     loadSavedApiKey();
+    loadSavedOpenRouterKey();
     render();
   </script>
 </body>
