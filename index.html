@@ -6,6 +6,7 @@
   <title>AI 灵感脑暴器</title>
   <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
     :root {
       --bg: #f3f1eb;
@@ -1185,6 +1186,13 @@
             <div class="batch-group-body">
               <div class="settings-row">
                 <div class="field">
+                  <label for="exportMode">导出方式</label>
+                  <select id="exportMode">
+                    <option value="folder" selected>保存到文件夹</option>
+                    <option value="zip">下载 ZIP 包</option>
+                  </select>
+                </div>
+                <div class="field">
                   <label>导出位置</label>
                   <button id="chooseFolderBtn" type="button">浏览文件夹</button>
                 </div>
@@ -1285,6 +1293,7 @@
       activeId: null,
       lastPrompt: "",
       busy: false,
+      exportMode: "folder",
       exportDirHandle: null,
       exportDirName: "",
       layoutDensity: "loose",
@@ -1484,6 +1493,9 @@
         const button = $(id);
         if (button) button.disabled = state.busy || !hasSelected;
       });
+      const exportMode = $("exportMode");
+      if (exportMode) exportMode.disabled = state.busy;
+      updateExportModeUI();
       const abortButton = $("abortBatchImageBtn");
       if (abortButton) abortButton.disabled = !state.batchImage.running || state.batchImage.abortRequested;
     }
@@ -2168,6 +2180,7 @@
         return;
       }
       try {
+        if (!(await ensureExportDestination())) return;
         const stamp = dateStamp();
         const files = [];
         for (let index = 0; index < items.length; index += 1) {
@@ -3009,6 +3022,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     async function exportExcel(items = selectedItems()) {
       if (!items.length) return setStatus("先勾选要导出的点子。", true);
       if (!window.XLSX) return downloadCsv(items);
+      if (!(await ensureExportDestination())) return;
       const rows = overviewRows(items);
       const sheet = XLSX.utils.json_to_sheet(rows);
       const book = XLSX.utils.book_new();
@@ -3019,6 +3033,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     }
 
     async function downloadCsv(items) {
+      if (!(await ensureExportDestination())) return;
       const rows = overviewRows(items);
       const header = Object.keys(rows[0] || {});
       const csv = "\ufeff" + [header, ...rows.map(row => header.map(key => row[key]))]
@@ -3035,6 +3050,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
       }
 
       try {
+        if (!(await ensureExportDestination())) return;
         setBusy(true, "正在生成 Word 文件...");
         const files = [];
         for (const [index, item] of items.entries()) {
@@ -3052,6 +3068,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     async function exportMarkdownFiles() {
       const items = selectedItems();
       if (!items.length) return setStatus("先勾选要导出的点子。", true);
+      if (!(await ensureExportDestination())) return;
       const files = items.map((item, index) => ({
         name: `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}.md`,
         blob: new Blob([formatItemMarkdown(item)], { type: "text/markdown;charset=utf-8" })
@@ -3062,6 +3079,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     async function exportTxtFiles() {
       const items = selectedItems();
       if (!items.length) return setStatus("先勾选要导出的点子。", true);
+      if (!(await ensureExportDestination())) return;
       const files = items.map((item, index) => ({
         name: `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}.txt`,
         blob: new Blob([formatItemText(item)], { type: "text/plain;charset=utf-8" })
@@ -3072,6 +3090,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     async function exportPptOutline(format) {
       const items = selectedItems();
       if (!items.length) return setStatus("先勾选要导出的点子。", true);
+      if (!(await ensureExportDestination())) return;
       const form = getForm();
       const files = items.map((item, index) => {
         const text = format === "md" ? formatPptMarkdown(item, form.pptPages) : formatPptText(item, form.pptPages);
@@ -3287,15 +3306,67 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
       }));
     }
 
+    function getExportMode() {
+      const mode = $("exportMode")?.value || state.exportMode || "folder";
+      return mode === "zip" ? "zip" : "folder";
+    }
+
+    function updateExportModeUI() {
+      const mode = getExportMode();
+      state.exportMode = mode;
+      const modeSelect = $("exportMode");
+      if (modeSelect && modeSelect.value !== mode) modeSelect.value = mode;
+
+      const folderButton = $("chooseFolderBtn");
+      if (folderButton) {
+        folderButton.disabled = state.busy || mode !== "folder" || !window.showDirectoryPicker;
+      }
+
+      const label = $("exportPathLabel");
+      if (!label) return;
+      if (mode === "zip") {
+        label.textContent = "当前导出方式：下载 ZIP 包。导出时会生成一个压缩包，避免连续触发多个单文件下载。";
+      } else if (!window.showDirectoryPicker) {
+        label.textContent = "当前浏览器不支持保存到文件夹，导出时会自动改用 ZIP 包。建议使用 Chrome 或 Edge 获得文件夹保存体验。";
+      } else if (state.exportDirHandle) {
+        label.textContent = `当前导出方式：保存到文件夹。已选择导出位置：${state.exportDirName || "所选文件夹"}。`;
+      } else {
+        label.textContent = "当前导出方式：保存到文件夹。导出时会弹出文件夹选择窗口，也可以先点击“浏览文件夹”。";
+      }
+    }
+
+    async function pickExportFolder() {
+      if (!window.showDirectoryPicker) return null;
+      const handle = await window.showDirectoryPicker({ mode: "readwrite" });
+      state.exportDirHandle = handle;
+      state.exportDirName = handle.name || "已选择文件夹";
+      updateExportModeUI();
+      return handle;
+    }
+
+    async function ensureExportDestination() {
+      if (getExportMode() !== "folder" || state.exportDirHandle || !window.showDirectoryPicker) return true;
+      try {
+        await pickExportFolder();
+        return true;
+      } catch (error) {
+        if (error.name === "AbortError") {
+          setStatus("已取消选择导出文件夹，未导出文件。");
+        } else {
+          setStatus(`选择文件夹失败：${error.message}`, true);
+        }
+        return false;
+      }
+    }
+
     async function chooseExportFolder() {
       if (!window.showDirectoryPicker) {
-        setStatus("当前浏览器不支持选择导出文件夹，会按浏览器下载设置保存。", true);
+        setStatus("当前浏览器不支持选择导出文件夹，导出时会改用 ZIP 包。", true);
         return;
       }
       try {
-        state.exportDirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
-        state.exportDirName = state.exportDirHandle.name || "已选择文件夹";
-        $("exportPathLabel").textContent = `已选择导出位置：${state.exportDirName}`;
+        await pickExportFolder();
+        setStatus(`已选择导出位置：${state.exportDirName || "所选文件夹"}。`);
       } catch (error) {
         if (error.name !== "AbortError") setStatus(`选择文件夹失败：${error.message}`, true);
       }
@@ -3303,10 +3374,25 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
 
     async function saveFiles(files, folderName) {
       if (!files.length) return;
-      if (state.exportDirHandle) {
+      try {
+        const mode = getExportMode();
+        if (mode === "folder") {
+          const result = await saveFilesToFolder(files, folderName);
+          if (result === "saved" || result === "cancelled") return;
+        }
+        await saveFilesAsZip(files, folderName);
+      } catch (error) {
+        setStatus(`导出失败：${error.message}`, true);
+      }
+    }
+
+    async function saveFilesToFolder(files, folderName) {
+      if (!window.showDirectoryPicker) return "unsupported";
+      try {
+        const dirHandle = state.exportDirHandle || await pickExportFolder();
         const target = files.length > 1
-          ? await state.exportDirHandle.getDirectoryHandle(folderName, { create: true })
-          : state.exportDirHandle;
+          ? await dirHandle.getDirectoryHandle(folderName, { create: true })
+          : dirHandle;
         for (const file of files) {
           const handle = await target.getFileHandle(file.name, { create: true });
           const writable = await handle.createWritable();
@@ -3315,11 +3401,35 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
         }
         const place = files.length > 1 ? `${state.exportDirName || "所选文件夹"} / ${folderName}` : (state.exportDirName || "所选文件夹");
         setStatus(`已导出 ${files.length} 个文件到 ${place}。`);
+        return "saved";
+      } catch (error) {
+        if (error.name === "AbortError") {
+          setStatus("已取消选择导出文件夹，未导出文件。");
+          return "cancelled";
+        }
+        throw error;
+      }
+    }
+
+    async function saveFilesAsZip(files, folderName) {
+      if (!window.JSZip) {
+        if (files.length === 1) {
+          downloadBlob(files[0].blob, files[0].name);
+          setStatus("ZIP 依赖库还没有加载完成，已按单文件下载。", true);
+          return;
+        }
+        setStatus("ZIP 依赖库还没有加载完成，请稍后重试。", true);
         return;
       }
-      files.forEach(file => downloadBlob(file.blob, file.name));
-      const suffix = files.length > 1 ? "当前浏览器未指定导出文件夹，已按多个文件下载。" : "已按单文件下载。";
-      setStatus(`已导出 ${files.length} 个文件。${suffix}`);
+      const zipName = `${safeFileName(folderName || `AI灵感脑暴器-导出-${dateStamp()}`)}.zip`;
+      const zip = new JSZip();
+      const root = zip.folder(safeFileName(folderName) || "导出") || zip;
+      for (const file of files) {
+        root.file(file.name, file.blob);
+      }
+      const blob = await zip.generateAsync({ type: "blob" });
+      downloadBlob(blob, zipName);
+      setStatus(`已将 ${files.length} 个文件打包为 ZIP 下载。`);
     }
 
     function downloadBlob(blob, filename) {
@@ -3419,6 +3529,10 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     $("txtBtn").addEventListener("click", exportTxtFiles);
     $("pptOutlineBtn").addEventListener("click", () => exportPptOutline(getForm().pptFormat));
     $("chooseFolderBtn").addEventListener("click", chooseExportFolder);
+    $("exportMode").addEventListener("change", () => {
+      state.exportMode = getExportMode();
+      updateExportModeUI();
+    });
     $("rememberApiKey").addEventListener("change", syncApiKeyStorage);
     $("apiKey").addEventListener("input", () => {
       if ($("rememberApiKey").checked) {
