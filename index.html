@@ -807,6 +807,58 @@
       padding-top: 12px;
     }
 
+    .batch-image-panel {
+      display: grid;
+      gap: 10px;
+    }
+
+    .progress-shell {
+      height: 12px;
+      overflow: hidden;
+      border: 1px solid #c8d2c7;
+      border-radius: 999px;
+      background: #f4f1ea;
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent-dark);
+      transition: width .2s ease;
+    }
+
+    .batch-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: #53665d;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .batch-stats span {
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: var(--mist);
+    }
+
+    .batch-confirm,
+    .batch-failures {
+      border: 1px solid #e3d3b3;
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: var(--warn);
+      color: #5a4d39;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .batch-failures ul {
+      margin: 6px 0 0;
+      padding-left: 18px;
+    }
+
     .settings-row {
       display: grid;
       grid-template-columns: repeat(3, minmax(140px, 1fr));
@@ -1101,6 +1153,34 @@
           </details>
 
           <details class="batch-group">
+            <summary>批量生成配图</summary>
+            <div class="batch-group-body">
+              <div class="batch-image-panel">
+                <div class="note" id="batchImageSummary">使用首页默认生图配置，给已选点子逐张生成配图。</div>
+                <div class="progress-shell" aria-label="批量生图进度">
+                  <div class="progress-bar" id="batchImageProgressBar"></div>
+                </div>
+                <div class="batch-stats" id="batchImageStats">
+                  <span>进度：0 / 0</span>
+                  <span>成功：0</span>
+                  <span>失败：0</span>
+                  <span>跳过：0</span>
+                  <span>未处理：0</span>
+                </div>
+                <div class="image-status" id="batchImageStatus">勾选点子后，可以批量生成缺失配图。</div>
+                <div class="batch-actions">
+                  <button id="batchImageMissingBtn" type="button">批量生成缺失配图</button>
+                  <button id="batchImageAllBtn" type="button">重新生成全部配图</button>
+                  <button id="abortBatchImageBtn" type="button" disabled>中止生成</button>
+                  <button id="exportImagesBtn" type="button">批量导出图片</button>
+                </div>
+                <div class="batch-confirm" id="batchImageConfirm" style="display: none;"></div>
+                <div class="batch-failures" id="batchImageFailures" style="display: none;"></div>
+              </div>
+            </div>
+          </details>
+
+          <details class="batch-group">
             <summary>批量导出</summary>
             <div class="batch-group-body">
               <div class="settings-row">
@@ -1213,7 +1293,23 @@
       defaultImageModel: "bytedance-seed/seedream-4.5",
       defaultImageUseCase: "wechat_cover",
       defaultImageStyle: "magazine",
-      defaultImageSize: "1K"
+      defaultImageSize: "1K",
+      batchImage: {
+        running: false,
+        abortRequested: false,
+        total: 0,
+        done: 0,
+        success: 0,
+        failed: 0,
+        skipped: 0,
+        unprocessed: 0,
+        current: "",
+        message: "",
+        failures: [],
+        pendingMode: "",
+        pendingCount: 0
+      },
+      batchImageAbortController: null
     };
 
     const $ = (id) => document.getElementById(id);
@@ -1384,6 +1480,12 @@
         const button = $(id);
         if (button) button.disabled = state.busy || (id === "downloadImageBtn" && !activeItem()?.imageResult);
       });
+      ["batchImageMissingBtn", "batchImageAllBtn", "exportImagesBtn"].forEach(id => {
+        const button = $(id);
+        if (button) button.disabled = state.busy || !hasSelected;
+      });
+      const abortButton = $("abortBatchImageBtn");
+      if (abortButton) abortButton.disabled = !state.batchImage.running || state.batchImage.abortRequested;
     }
 
     function render() {
@@ -1403,6 +1505,7 @@
       document.querySelectorAll(".density-btn").forEach(button => {
         button.classList.toggle("active", button.dataset.layout === state.layoutDensity);
       });
+      updateBatchImagePanel();
     }
 
     function renderIdeaWall() {
@@ -1682,6 +1785,42 @@
       ];
     }
 
+    async function callOpenRouterImage(form, signal) {
+      const modelConfig = IMAGE_MODELS[form.model] || IMAGE_MODELS["bytedance-seed/seedream-4.5"];
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${form.apiKey}`,
+          "HTTP-Referer": location.href,
+          "X-Title": "AI Brainstormer"
+        },
+        body: JSON.stringify({
+          model: form.model,
+          messages: [
+            { role: "user", content: form.prompt }
+          ],
+          modalities: modelConfig.modalities,
+          image_config: {
+            aspect_ratio: form.aspectRatio,
+            image_size: form.imageSize
+          },
+          stream: false
+        }),
+        signal
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`OpenRouter 返回错误：${response.status} ${errText.slice(0, 220)}`);
+      }
+
+      const data = await response.json();
+      const imageUrl = extractImageUrl(data);
+      if (!imageUrl) throw new Error("OpenRouter 已返回结果，但没有找到图片数据。可以换模型或降低清晰度重试。");
+      return imageUrl;
+    }
+
     async function generateCurrentImage(item) {
       const form = getImageForm();
       if (!form.apiKey) {
@@ -1708,37 +1847,7 @@
         item.imageMessage = "正在生成图片，通常需要几秒到几十秒。";
         setBusy(true, "正在通过 OpenRouter 生成配图...");
         render();
-        const modelConfig = IMAGE_MODELS[form.model] || IMAGE_MODELS["bytedance-seed/seedream-4.5"];
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${form.apiKey}`,
-            "HTTP-Referer": location.href,
-            "X-Title": "AI Brainstormer"
-          },
-          body: JSON.stringify({
-            model: form.model,
-            messages: [
-              { role: "user", content: form.prompt }
-            ],
-            modalities: modelConfig.modalities,
-            image_config: {
-              aspect_ratio: form.aspectRatio,
-              image_size: form.imageSize
-            },
-            stream: false
-          })
-        });
-
-        if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(`OpenRouter 返回错误：${response.status} ${errText.slice(0, 220)}`);
-        }
-
-        const data = await response.json();
-        const imageUrl = extractImageUrl(data);
-        if (!imageUrl) throw new Error("OpenRouter 已返回结果，但没有找到图片数据。可以换模型或降低清晰度重试。");
+        const imageUrl = await callOpenRouterImage(form);
 
         item.imageResult = {
           url: imageUrl,
@@ -1823,6 +1932,271 @@
         bytes[i] = binary.charCodeAt(i);
       }
       return new Blob([bytes], { type: mime });
+    }
+
+    function batchImageCandidates(mode) {
+      const selected = selectedItems();
+      const tasks = mode === "all" ? selected : selected.filter(item => !item.imageResult?.url);
+      const skipped = mode === "missing" ? selected.length - tasks.length : 0;
+      return { selected, tasks, skipped };
+    }
+
+    function estimateImageCost(count, model = getImageDefaults().model) {
+      if (!count) return "预计费用：$0。";
+      if (model === "bytedance-seed/seedream-4.5") {
+        return `费用预估：Seedream 4.5 约 $0.04 / 张。本次最多生成 ${count} 张，预计约 $${(count * 0.04).toFixed(2)}。实际以 OpenRouter 账单为准。`;
+      }
+      if (model === "google/gemini-2.5-flash-image") {
+        return `费用预估：Nano Banana 通常约 $0.03-$0.04 / 张。本次最多生成 ${count} 张，预计约 $${(count * 0.03).toFixed(2)}-$${(count * 0.04).toFixed(2)}。部分地区不可用，实际以 OpenRouter 账单为准。`;
+      }
+      if (model === "openai/gpt-5.4-image-2") {
+        return `费用预估：GPT Image 2 约 $0.005-$0.211 / 张。本次最多生成 ${count} 张，预计约 $${(count * 0.005).toFixed(3)}-$${(count * 0.211).toFixed(2)}。部分地区不可用，实际以 OpenRouter 账单为准。`;
+      }
+      return `费用预估：本次最多生成 ${count} 张，实际以 OpenRouter 账单为准。`;
+    }
+
+    function batchImageConfigText() {
+      const defaults = getImageDefaults();
+      return `${IMAGE_MODELS[defaults.model]?.name || defaults.model} · ${IMAGE_USE_CASES[defaults.useCase]?.label || "内容配图"} · ${IMAGE_STYLES[defaults.style]?.split("，")[0] || "默认风格"}`;
+    }
+
+    function updateBatchImagePanel() {
+      const summary = $("batchImageSummary");
+      if (!summary) return;
+      const mode = state.batchImage.pendingMode || "missing";
+      const { selected, tasks, skipped } = batchImageCandidates(mode);
+      const withImages = selected.filter(item => item.imageResult?.url).length;
+      const countForCost = state.batchImage.running ? state.batchImage.total : tasks.length;
+      summary.textContent = `当前：${batchImageConfigText()}。已选 ${selected.length} 个，其中 ${withImages} 个已有配图。${estimateImageCost(countForCost)}`;
+
+      const total = state.batchImage.total || tasks.length || 0;
+      const done = state.batchImage.running || state.batchImage.done ? state.batchImage.done : 0;
+      const percent = total ? Math.round((done / total) * 100) : 0;
+      $("batchImageProgressBar").style.width = `${percent}%`;
+      $("batchImageStats").innerHTML = [
+        `进度：${done} / ${total}`,
+        `成功：${state.batchImage.success || 0}`,
+        `失败：${state.batchImage.failed || 0}`,
+        `跳过：${state.batchImage.skipped || skipped || 0}`,
+        `未处理：${state.batchImage.unprocessed || 0}`
+      ].map(text => `<span>${escapeHtml(text)}</span>`).join("");
+
+      const status = $("batchImageStatus");
+      const statusClass = state.batchImage.running
+        ? "image-status loading"
+        : state.batchImage.failed
+          ? "image-status error"
+          : state.batchImage.success
+            ? "image-status success"
+            : "image-status";
+      status.className = statusClass;
+      status.textContent = state.batchImage.message || "勾选点子后，可以批量生成缺失配图。";
+
+      const failures = $("batchImageFailures");
+      if (state.batchImage.failures?.length) {
+        failures.style.display = "block";
+        failures.innerHTML = `<strong>失败列表</strong><ul>${state.batchImage.failures.map(row => `<li>${escapeHtml(row)}</li>`).join("")}</ul>`;
+      } else {
+        failures.style.display = "none";
+        failures.innerHTML = "";
+      }
+    }
+
+    function resetBatchImageState(overrides = {}) {
+      state.batchImage = {
+        running: false,
+        abortRequested: false,
+        total: 0,
+        done: 0,
+        success: 0,
+        failed: 0,
+        skipped: 0,
+        unprocessed: 0,
+        current: "",
+        message: "",
+        failures: [],
+        pendingMode: "",
+        pendingCount: 0,
+        ...overrides
+      };
+      state.batchImageAbortController = null;
+      updateBatchImagePanel();
+      updateButtons();
+    }
+
+    function prepareBatchImage(mode) {
+      if (state.batchImage.running) return;
+      const { selected, tasks, skipped } = batchImageCandidates(mode);
+      if (!selected.length) {
+        resetBatchImageState({ message: "先在左侧勾选要生成配图的点子。" });
+        setStatus("先在左侧勾选要生成配图的点子。", true);
+        return;
+      }
+      if (!tasks.length) {
+        resetBatchImageState({ skipped, message: "已选点子都已有配图，无需重复生成。" });
+        setStatus("已选点子都已有配图。");
+        return;
+      }
+      if (!getImageDefaults().apiKey) {
+        resetBatchImageState({ message: "先在首页“接入 AI / 高级设置”里填写 OpenRouter API Key。" });
+        setStatus("先在首页“接入 AI / 高级设置”里填写 OpenRouter API Key。", true);
+        return;
+      }
+      if (tasks.length > 10) {
+        showBatchImageConfirm(mode, tasks.length, skipped);
+        return;
+      }
+      startBatchImage(mode);
+    }
+
+    function showBatchImageConfirm(mode, count, skipped) {
+      resetBatchImageState({
+        pendingMode: mode,
+        pendingCount: count,
+        skipped,
+        message: `本次将生成 ${count} 张配图，超过 10 张，需要确认后开始。`
+      });
+      const confirm = $("batchImageConfirm");
+      confirm.style.display = "block";
+      confirm.innerHTML = `
+        <strong>确认批量生成</strong>
+        <p>本次将生成 ${count} 张配图，${skipped ? `跳过 ${skipped} 张已有配图。` : "不会跳过已选点子。"}</p>
+        <p>${escapeHtml(estimateImageCost(count))}</p>
+        <div class="batch-actions">
+          <button class="primary" id="confirmBatchImageBtn" type="button">确认生成</button>
+          <button id="cancelBatchImageBtn" type="button">取消</button>
+        </div>
+      `;
+      $("confirmBatchImageBtn").addEventListener("click", () => startBatchImage(mode));
+      $("cancelBatchImageBtn").addEventListener("click", () => {
+        confirm.style.display = "none";
+        resetBatchImageState({ message: "已取消批量生成。" });
+      });
+      updateBatchImagePanel();
+    }
+
+    function batchImageFormForItem(item) {
+      const defaults = getImageDefaults();
+      return {
+        ...defaults,
+        prompt: buildImagePrompt(item, defaults)
+      };
+    }
+
+    async function startBatchImage(mode) {
+      const confirm = $("batchImageConfirm");
+      if (confirm) {
+        confirm.style.display = "none";
+        confirm.innerHTML = "";
+      }
+      const { tasks, skipped } = batchImageCandidates(mode);
+      if (!tasks.length) return;
+      resetBatchImageState({
+        running: true,
+        total: tasks.length,
+        skipped,
+        message: `正在批量生成配图：0 / ${tasks.length}。${estimateImageCost(tasks.length)}`
+      });
+      setBusy(true, "正在批量生成配图...");
+
+      for (let index = 0; index < tasks.length; index += 1) {
+        if (state.batchImage.abortRequested) break;
+        const item = tasks[index];
+        state.batchImage.current = item.title || item.direction || `第 ${index + 1} 张`;
+        state.batchImage.message = `正在生成 ${index + 1} / ${tasks.length}：${state.batchImage.current}`;
+        updateBatchImagePanel();
+
+        try {
+          const controller = new AbortController();
+          state.batchImageAbortController = controller;
+          const form = batchImageFormForItem(item);
+          const imageUrl = await callOpenRouterImage(form, controller.signal);
+          item.imageResult = {
+            url: imageUrl,
+            prompt: form.prompt,
+            model: form.model,
+            useCase: form.useCase,
+            style: form.style,
+            aspectRatio: form.aspectRatio,
+            imageSize: form.imageSize,
+            createdAt: new Date().toISOString()
+          };
+          item.imageStatus = "success";
+          item.imageMessage = "图片已生成，可以下载或重新生成。";
+          state.batchImage.success += 1;
+        } catch (error) {
+          const title = item.title || item.direction || `第 ${index + 1} 张`;
+          if (error.name === "AbortError") {
+            state.batchImage.abortRequested = true;
+            state.batchImage.failures.push(`${title}：已中止当前请求`);
+          } else {
+            const message = friendlyImageError(error.message, getImageDefaults().model);
+            item.imageStatus = "error";
+            item.imageMessage = message;
+            state.batchImage.failures.push(`${title}：${message}`);
+            state.batchImage.failed += 1;
+          }
+        } finally {
+          state.batchImage.done += 1;
+          state.batchImageAbortController = null;
+          updateBatchImagePanel();
+        }
+      }
+
+      state.batchImage.running = false;
+      state.batchImage.unprocessed = Math.max(0, state.batchImage.total - state.batchImage.done);
+      const stopped = state.batchImage.abortRequested ? "已中止批量生成。" : "批量生成完成。";
+      state.batchImage.message = `${stopped} 成功：${state.batchImage.success}，失败：${state.batchImage.failed}，跳过：${state.batchImage.skipped}，未处理：${state.batchImage.unprocessed}。`;
+      setBusy(false);
+      render();
+      setStatus(state.batchImage.message, state.batchImage.failed > 0);
+    }
+
+    function abortBatchImage() {
+      if (!state.batchImage.running) return;
+      state.batchImage.abortRequested = true;
+      state.batchImage.message = "已请求中止，当前图片完成或取消后停止。";
+      if (state.batchImageAbortController) state.batchImageAbortController.abort();
+      updateBatchImagePanel();
+      updateButtons();
+    }
+
+    async function exportSelectedImages() {
+      const items = selectedItems().filter(item => item.imageResult?.url);
+      if (!items.length) {
+        setStatus("已选点子里还没有可导出的图片。", true);
+        return;
+      }
+      try {
+        const stamp = dateStamp();
+        const files = [];
+        for (let index = 0; index < items.length; index += 1) {
+          const item = items[index];
+          const blob = await imageResultToBlob(item.imageResult);
+          const ext = imageExtFromBlob(blob);
+          const useCase = IMAGE_USE_CASES[item.imageResult.useCase]?.label || "配图";
+          files.push({
+            name: `${stamp}-${String(index + 1).padStart(2, "0")}-${safeFileName(item.title || item.direction)}-${useCase}.${ext}`,
+            blob
+          });
+        }
+        await saveFiles(files, `AI灵感脑暴器-配图-${stamp}`);
+      } catch (error) {
+        setStatus(`批量导出图片失败：${error.message}`, true);
+      }
+    }
+
+    async function imageResultToBlob(result) {
+      if (result.url.startsWith("data:")) return dataUrlToBlob(result.url);
+      const response = await fetch(result.url);
+      if (!response.ok) throw new Error(`下载图片失败：${response.status}`);
+      return response.blob();
+    }
+
+    function imageExtFromBlob(blob) {
+      if (blob.type.includes("jpeg")) return "jpg";
+      if (blob.type.includes("webp")) return "webp";
+      return "png";
     }
 
     function loadSavedOpenRouterKey() {
@@ -3034,6 +3408,10 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     $("batchMomentsBtn").addEventListener("click", () => generateMoments(selectedItems()));
     $("batchNovelBtn").addEventListener("click", () => generateNovel(selectedItems()));
     $("batchSongBtn").addEventListener("click", () => generateSong(selectedItems()));
+    $("batchImageMissingBtn").addEventListener("click", () => prepareBatchImage("missing"));
+    $("batchImageAllBtn").addEventListener("click", () => prepareBatchImage("all"));
+    $("abortBatchImageBtn").addEventListener("click", abortBatchImage);
+    $("exportImagesBtn").addEventListener("click", exportSelectedImages);
     $("copyBtn").addEventListener("click", copySelected);
     $("excelBtn").addEventListener("click", () => exportExcel());
     $("wordFilesBtn").addEventListener("click", exportWordFiles);
