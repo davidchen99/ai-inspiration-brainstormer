@@ -12,7 +12,7 @@ https://ai-inspiration-generator.vercel.app
 - `plus index.html`：本地备用页面，内容与主工具页面保持一致。
 - `manifest.json`：PWA 应用名称、图标和安装配置。
 - `service-worker.js`：PWA 缓存和离线兜底。
-- `assets/`：应用图标资源。
+- `assets/`：应用图标和分享封面资源。
 - `vercel.json`：Vercel 静态部署配置。
 - `sync-to-lark.ps1`：旧版飞书同步脚本，当前新版主流程暂未接入页面。
 
@@ -23,6 +23,8 @@ https://ai-inspiration-generator.vercel.app
 3. 朋友在“接入 AI / 高级设置”里填写自己的 DeepSeek API Key。
 4. 如果要生成配图，再填写自己的 OpenRouter API Key。
 5. 在 Chrome 或 Edge 里可以选择“安装应用”或“添加到桌面”，以后从桌面图标打开。
+
+页面首屏内置一行首次使用提示：输入想法、填写 API Key、生成灵感，并提供轻量数量和生成模式选择。链接分享时会使用 `assets/og-cover.png` 作为传播封面。
 
 ## 主流程
 

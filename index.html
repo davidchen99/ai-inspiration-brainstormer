@@ -9,10 +9,11 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="AI灵感生成器">
   <meta property="og:description" content="输入一句想法，快速生成公众号、小红书、朋友圈等内容灵感。">
-  <meta property="og:image" content="/assets/icon-512.png">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="/assets/og-cover.png">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="AI灵感生成器">
   <meta name="twitter:description" content="输入一句想法，快速生成内容选题、方案和配图。">
+  <meta name="twitter:image" content="/assets/og-cover.png">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
@@ -206,7 +207,7 @@
     }
 
     .app:not(.has-ideas) .top-grid {
-      grid-template-columns: minmax(320px, 680px);
+      grid-template-columns: minmax(320px, 820px);
       justify-content: center;
     }
 
@@ -217,21 +218,20 @@
       box-shadow: var(--shadow);
     }
 
-    .composer {
-      padding: 18px;
-    }
+    .composer { padding: 24px; }
 
     .field { margin-bottom: 14px; }
 
     .examples {
-      display: grid;
+      display: flex;
+      flex-wrap: wrap;
       gap: 8px;
-      margin-top: 10px;
     }
 
     .example {
       min-height: 0;
-      padding: 7px 9px;
+      border-radius: 999px;
+      padding: 7px 11px;
       background: #fffdfa;
       color: #68716c;
       text-align: left;
@@ -239,26 +239,117 @@
       line-height: 1.45;
     }
 
-    .simple-toggle {
+    .composer-title {
+      display: block;
+      justify-content: initial;
+      margin: 0 0 16px;
+      color: #1f2523;
+      text-align: center;
+      font-size: 24px;
+      line-height: 1.35;
+      font-weight: 800;
+    }
+
+    .seed-field { margin-bottom: 12px; }
+
+    .example-strip {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin: 0 0 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 9px 10px;
-      background: #fffdfa;
-      color: #3f4743;
-      font-size: 14px;
+      flex-wrap: wrap;
+      gap: 8px 10px;
+      margin-top: 10px;
+    }
+
+    .example-label {
+      color: var(--muted);
+      font-size: 12px;
       font-weight: 700;
     }
 
-    .simple-toggle input {
-      width: 18px;
-      height: 18px;
-      margin: 0;
-      accent-color: var(--accent-dark);
+    .quick-start {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .quick-start strong {
+      color: #3f4743;
+      font-weight: 800;
+    }
+
+    .creator-controls {
+      display: grid;
+      gap: 12px;
+      margin: 0 0 14px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .control-label {
+      color: #3d423f;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .pill-btn,
+    .mode-option {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: #fffdfa;
+      color: #4f5752;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .pill-btn.active,
+    .mode-option.active {
+      border-color: var(--accent-dark);
+      background: var(--accent-dark);
+      color: #fff;
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px;
+      background: #fff;
+    }
+
+    .mode-option {
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .hidden-control {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .primary-action {
+      min-height: 46px;
+      padding: 10px 22px;
+      font-size: 16px;
     }
 
     .compact {
@@ -969,6 +1060,26 @@
       }
 
       button { width: 100%; }
+
+      .example,
+      .pill-btn,
+      .mode-option {
+        width: auto;
+      }
+
+      .control-row,
+      .control-group {
+        align-items: stretch;
+      }
+
+      .mode-toggle {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .mode-option {
+        flex: 1;
+      }
     }
   </style>
 </head>
@@ -992,40 +1103,58 @@
 
     <section class="top-grid" id="inputSection">
       <aside class="panel composer">
-        <div class="field">
-          <label for="seedIdea">你现在脑子里有什么想法？</label>
+        <div class="field seed-field">
+          <label class="composer-title" for="seedIdea">你今天想生成什么灵感？</label>
           <textarea id="seedIdea" placeholder="输入一句话、一个名称、几个关键词都可以。"></textarea>
-          <div class="examples">
-            <button class="example" data-example="AI 工具太多，普通人不知道怎么开始" type="button">AI 工具太多，普通人不知道怎么开始</button>
-            <button class="example" data-example="普通人怎么用 AI 做公众号日更" type="button">普通人怎么用 AI 做公众号日更</button>
-            <button class="example" data-example="小红书内容如何转成公众号长文" type="button">小红书内容如何转成公众号长文</button>
+          <div class="example-strip" aria-label="快捷示例">
+            <span class="example-label">试试这些：</span>
+            <div class="examples">
+              <button class="example" data-example="普通人怎么用 AI 做公众号日更" type="button">普通人怎么用 AI 做公众号日更</button>
+              <button class="example" data-example="小红书内容如何转成公众号长文" type="button">小红书内容转公众号长文</button>
+              <button class="example" data-example="AI 工具太多，普通人不知道怎么开始" type="button">AI 工具太多，不知道怎么开始</button>
+            </div>
           </div>
         </div>
 
-        <label class="simple-toggle" for="associationMode">
-          <span>联想发散 <span class="hint" id="associationModeHint">默认，适合脑暴</span></span>
-          <input id="associationMode" type="checkbox" checked>
-        </label>
+        <div class="quick-start">
+          <strong>首次使用：</strong>输入想法 → 填写 API Key → 生成灵感。Key 只保存在你的浏览器。
+        </div>
 
-        <div class="compact">
-          <div class="field">
-            <label for="ideaCount">生成数量</label>
-            <select id="ideaCount">
+        <div class="creator-controls">
+          <div class="control-row">
+            <div class="control-group" aria-label="生成数量">
+              <span class="control-label">灵感数量</span>
+              <select class="hidden-control" id="ideaCount" aria-hidden="true" tabindex="-1">
               <option selected>10</option>
               <option>20</option>
               <option>50</option>
               <option>100</option>
               <option>200</option>
-            </select>
+              </select>
+              <button class="pill-btn active" data-count-option="10" type="button">10</button>
+              <button class="pill-btn" data-count-option="20" type="button">20</button>
+              <button class="pill-btn" data-count-option="50" type="button">50</button>
+              <button class="pill-btn" data-count-option="100" type="button">100</button>
+              <button class="pill-btn" data-count-option="200" type="button">200</button>
+            </div>
+            <div class="control-group" aria-label="生成模式">
+              <span class="control-label">生成模式</span>
+              <input class="hidden-control" id="associationMode" type="checkbox" checked aria-hidden="true" tabindex="-1">
+              <div class="mode-toggle" role="group" aria-label="生成模式">
+                <button class="mode-option active" data-association-mode="on" type="button">脑暴发散</button>
+                <button class="mode-option" data-association-mode="off" type="button">更贴题</button>
+              </div>
+              <span class="hint" id="associationModeHint">默认，适合脑暴</span>
+            </div>
           </div>
           <div class="toolbar field">
-            <button class="primary" id="brainstormBtn" type="button">开始脑暴</button>
+            <button class="primary primary-action" id="brainstormBtn" type="button">生成灵感</button>
             <button id="promptBtn" type="button">生成提示词</button>
           </div>
         </div>
 
         <details class="settings">
-          <summary>接入 AI / 高级设置</summary>
+          <summary>接入 AI / API Key 设置</summary>
           <div class="settings-body">
             <div class="note field">
               当前版本默认接入 DeepSeek。还没有 API Key？去
@@ -1161,7 +1290,7 @@
         </div>
 
         <div id="ideaWall">
-          <div class="empty">还没有点子。先输入一个想法，然后点击“开始脑暴”。</div>
+          <div class="empty">还没有点子。先输入一个想法，然后点击“生成灵感”。</div>
         </div>
       </main>
 
@@ -1445,8 +1574,33 @@
       return state.ideas.filter(item => item.selected);
     }
 
+    function syncIdeaCountControls() {
+      const value = String($("ideaCount").value);
+      document.querySelectorAll("[data-count-option]").forEach(button => {
+        const isActive = button.dataset.countOption === value;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+    }
+
+    function setIdeaCount(value) {
+      $("ideaCount").value = String(value);
+      syncIdeaCountControls();
+    }
+
     function updateAssociationModeHint() {
-      $("associationModeHint").textContent = $("associationMode").checked ? "默认，适合脑暴" : "更贴题";
+      const isOn = $("associationMode").checked;
+      $("associationModeHint").textContent = isOn ? "默认，适合脑暴" : "更贴题";
+      document.querySelectorAll("[data-association-mode]").forEach(button => {
+        const active = button.dataset.associationMode === (isOn ? "on" : "off");
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+    }
+
+    function setAssociationMode(isOn) {
+      $("associationMode").checked = isOn;
+      updateAssociationModeHint();
     }
 
     function orderedIdeas() {
@@ -1569,7 +1723,7 @@
       const wall = $("ideaWall");
       if (!state.ideas.length) {
         wall.className = "";
-        wall.innerHTML = `<div class="empty">还没有点子。先输入一个想法，然后点击“开始脑暴”。</div>`;
+        wall.innerHTML = `<div class="empty">还没有点子。先输入一个想法，然后点击“生成灵感”。</div>`;
         return;
       }
 
@@ -1881,7 +2035,7 @@
     async function generateCurrentImage(item) {
       const form = getImageForm();
       if (!form.apiKey) {
-        const message = "先在首页“接入 AI / 高级设置”里填写 OpenRouter API Key。";
+        const message = "先在首页“接入 AI / API Key 设置”里填写 OpenRouter API Key。";
         item.imageStatus = "error";
         item.imageMessage = message;
         render();
@@ -2095,8 +2249,8 @@
         return;
       }
       if (!getImageDefaults().apiKey) {
-        resetBatchImageState({ message: "先在首页“接入 AI / 高级设置”里填写 OpenRouter API Key。" });
-        setStatus("先在首页“接入 AI / 高级设置”里填写 OpenRouter API Key。", true);
+        resetBatchImageState({ message: "先在首页“接入 AI / API Key 设置”里填写 OpenRouter API Key。" });
+        setStatus("先在首页“接入 AI / API Key 设置”里填写 OpenRouter API Key。", true);
         return;
       }
       if (tasks.length > 10) {
@@ -3558,6 +3712,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     $("brainstormBtn").addEventListener("click", generateIdeas);
     $("promptBtn").addEventListener("click", () => showPrompt());
     $("associationMode").addEventListener("change", updateAssociationModeHint);
+    $("ideaCount").addEventListener("change", syncIdeaCountControls);
     $("resetBtn").addEventListener("click", resetAll);
     $("batchBriefBtn").addEventListener("click", () => expandBriefs(selectedItems()));
     $("batchOfficialBtn").addEventListener("click", () => generateOfficial(selectedItems()));
@@ -3629,6 +3784,14 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     });
     $("copyPromptBtn").addEventListener("click", () => copyText($("promptText").value, "已复制提示词。"));
 
+    document.querySelectorAll("[data-count-option]").forEach(button => {
+      button.addEventListener("click", () => setIdeaCount(button.dataset.countOption));
+    });
+
+    document.querySelectorAll("[data-association-mode]").forEach(button => {
+      button.addEventListener("click", () => setAssociationMode(button.dataset.associationMode === "on"));
+    });
+
     document.querySelectorAll("[data-layout]").forEach(button => {
       button.addEventListener("click", () => {
         state.layoutDensity = button.dataset.layout;
@@ -3674,6 +3837,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
 
     loadSavedApiKey();
     loadSavedOpenRouterKey();
+    syncIdeaCountControls();
     updateAssociationModeHint();
     render();
 
