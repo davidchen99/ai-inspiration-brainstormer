@@ -3,7 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI 灵感脑暴器</title>
+  <meta name="theme-color" content="#5f7469">
+  <meta name="description" content="AI灵感生成器：输入一句想法，快速生成公众号、小红书、朋友圈等内容灵感，并支持继续发散、配图和导出。">
+  <meta name="application-name" content="AI灵感生成器">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="AI灵感生成器">
+  <meta property="og:description" content="输入一句想法，快速生成公众号、小红书、朋友圈等内容灵感。">
+  <meta property="og:image" content="/assets/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="AI灵感生成器">
+  <meta name="twitter:description" content="输入一句想法，快速生成内容选题、方案和配图。">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <title>AI灵感生成器</title>
   <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -963,7 +976,7 @@
   <div class="app" id="appRoot">
     <header class="hero">
       <div>
-        <h1>AI 灵感脑暴器</h1>
+        <h1>AI灵感生成器</h1>
         <p class="sub">输入一句想法，先生成可选方向，再决定要扩写、导出或批量处理。</p>
       </div>
       <button class="ghost" id="resetBtn" type="button">清空本次脑暴</button>
@@ -2225,7 +2238,7 @@
             blob
           });
         }
-        await saveFiles(files, `AI灵感脑暴器-配图-${stamp}`);
+        await saveFiles(files, `AI灵感生成器-配图-${stamp}`);
       } catch (error) {
         setStatus(`批量导出图片失败：${error.message}`, true);
       }
@@ -3062,7 +3075,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
       XLSX.utils.book_append_sheet(book, sheet, "本次脑暴总览");
       const buffer = XLSX.write(book, { bookType: "xlsx", type: "array" });
       const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-      await saveFiles([{ name: `AI灵感脑暴器-总览-${dateStamp()}.xlsx`, blob }], `AI灵感脑暴器-Excel-${dateStamp()}`);
+      await saveFiles([{ name: `AI灵感生成器-总览-${dateStamp()}.xlsx`, blob }], `AI灵感生成器-Excel-${dateStamp()}`);
     }
 
     async function downloadCsv(items) {
@@ -3072,7 +3085,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
       const csv = "\ufeff" + [header, ...rows.map(row => header.map(key => row[key]))]
         .map(row => row.map(cell => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
         .join("\r\n");
-      await saveFiles([{ name: `AI灵感脑暴器-总览-${dateStamp()}.csv`, blob: new Blob([csv], { type: "text/csv;charset=utf-8" }) }], `AI灵感脑暴器-CSV-${dateStamp()}`);
+      await saveFiles([{ name: `AI灵感生成器-总览-${dateStamp()}.csv`, blob: new Blob([csv], { type: "text/csv;charset=utf-8" }) }], `AI灵感生成器-CSV-${dateStamp()}`);
     }
 
     async function exportWordFiles() {
@@ -3090,7 +3103,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
           const prefix = `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}`;
           files.push({ name: `${prefix}.docx`, blob: await makeDocxBlob(item, "all") });
         }
-        await saveFiles(files, `AI灵感脑暴器-Word-${dateStamp()}`);
+        await saveFiles(files, `AI灵感生成器-Word-${dateStamp()}`);
       } catch (error) {
         setStatus(`导出失败：${error.message}`, true);
       } finally {
@@ -3106,7 +3119,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
         name: `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}.md`,
         blob: new Blob([formatItemMarkdown(item)], { type: "text/markdown;charset=utf-8" })
       }));
-      await saveFiles(files, `AI灵感脑暴器-MD-${dateStamp()}`);
+      await saveFiles(files, `AI灵感生成器-MD-${dateStamp()}`);
     }
 
     async function exportTxtFiles() {
@@ -3117,7 +3130,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
         name: `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}.txt`,
         blob: new Blob([formatItemText(item)], { type: "text/plain;charset=utf-8" })
       }));
-      await saveFiles(files, `AI灵感脑暴器-TXT-${dateStamp()}`);
+      await saveFiles(files, `AI灵感生成器-TXT-${dateStamp()}`);
     }
 
     async function exportPptOutline(format) {
@@ -3132,7 +3145,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
           blob: new Blob([text], { type: "text/plain;charset=utf-8" })
         };
       });
-      await saveFiles(files, `AI灵感脑暴器-PPT大纲-${format.toUpperCase()}-${dateStamp()}`);
+      await saveFiles(files, `AI灵感生成器-PPT大纲-${format.toUpperCase()}-${dateStamp()}`);
     }
 
     async function makeDocxBlob(item, kind) {
@@ -3454,7 +3467,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
         setStatus("ZIP 依赖库还没有加载完成，请稍后重试。", true);
         return;
       }
-      const zipName = `${safeFileName(folderName || `AI灵感脑暴器-导出-${dateStamp()}`)}.zip`;
+      const zipName = `${safeFileName(folderName || `AI灵感生成器-导出-${dateStamp()}`)}.zip`;
       const zip = new JSZip();
       const root = zip.folder(safeFileName(folderName) || "导出") || zip;
       for (const file of files) {
@@ -3663,6 +3676,13 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     loadSavedOpenRouterKey();
     updateAssociationModeHint();
     render();
+
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+      });
+    }
   </script>
 </body>
 </html>
+

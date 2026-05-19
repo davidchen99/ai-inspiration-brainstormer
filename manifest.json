@@ -1,0 +1,27 @@
+{
+  "name": "AI灵感生成器",
+  "short_name": "AI灵感",
+  "description": "输入一句想法，快速生成公众号、小红书、朋友圈等内容灵感。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3f1eb",
+  "theme_color": "#5f7469",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
