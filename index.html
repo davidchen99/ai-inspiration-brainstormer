@@ -226,6 +226,28 @@
       line-height: 1.45;
     }
 
+    .simple-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: #fffdfa;
+      color: #3f4743;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .simple-toggle input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: var(--accent-dark);
+    }
+
     .compact {
       display: grid;
       grid-template-columns: minmax(120px, 160px) 1fr;
@@ -967,15 +989,20 @@
           </div>
         </div>
 
+        <label class="simple-toggle" for="associationMode">
+          <span>联想发散 <span class="hint" id="associationModeHint">默认，适合脑暴</span></span>
+          <input id="associationMode" type="checkbox" checked>
+        </label>
+
         <div class="compact">
           <div class="field">
             <label for="ideaCount">生成数量</label>
             <select id="ideaCount">
-              <option>6</option>
               <option selected>10</option>
-              <option>15</option>
               <option>20</option>
-              <option>30</option>
+              <option>50</option>
+              <option>100</option>
+              <option>200</option>
             </select>
           </div>
           <div class="toolbar field">
@@ -1376,6 +1403,7 @@
         apiUrl: $("apiUrl").value.trim() || "https://api.deepseek.com/chat/completions",
         model: $("model").value,
         temperature: Number($("temperature").value),
+        associationMode: $("associationMode").checked,
         styleHint: $("styleHint").value.trim(),
         avoidHint: $("avoidHint").value.trim(),
         categories: $("categories").value.split(/[,，]/).map(item => item.trim()).filter(Boolean),
@@ -1402,6 +1430,10 @@
 
     function selectedItems() {
       return state.ideas.filter(item => item.selected);
+    }
+
+    function updateAssociationModeHint() {
+      $("associationModeHint").textContent = $("associationMode").checked ? "默认，适合脑暴" : "更贴题";
     }
 
     function orderedIdeas() {
@@ -2529,6 +2561,7 @@
 8. 结果必须返回 JSON 数组，不要 Markdown，不要解释。
 9. 每个对象必须包含字段：category、direction、title、summary、angle、audience、platform、score、reason。
 10. category 必须从这个分类库中选择一个：${form.categories.join("、") || "未分类"}。
+11. ${form.associationMode ? "联想发散已开启：可以做近似联想和概念扩展，例如从 AI 联想到 ChatGPT、大模型、AI 工具、智能体等，但仍要能回到用户输入。" : "联想发散已关闭：必须更贴近用户原始输入，减少跨概念发散，不要引入和输入主题关系较远的新概念。"}
 
 输入想法：
 ${form.seedIdea}
@@ -3511,6 +3544,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
 
     $("brainstormBtn").addEventListener("click", generateIdeas);
     $("promptBtn").addEventListener("click", () => showPrompt());
+    $("associationMode").addEventListener("change", updateAssociationModeHint);
     $("resetBtn").addEventListener("click", resetAll);
     $("batchBriefBtn").addEventListener("click", () => expandBriefs(selectedItems()));
     $("batchOfficialBtn").addEventListener("click", () => generateOfficial(selectedItems()));
@@ -3627,6 +3661,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
 
     loadSavedApiKey();
     loadSavedOpenRouterKey();
+    updateAssociationModeHint();
     render();
   </script>
 </body>
