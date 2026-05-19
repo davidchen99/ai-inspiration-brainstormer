@@ -134,7 +134,7 @@
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 18px;
-      align-items: end;
+      align-items: center;
       margin-bottom: 18px;
     }
 
@@ -150,6 +150,42 @@
       color: var(--muted);
       font-size: 14px;
       line-height: 1.65;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .api-status {
+      min-height: 34px;
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: #53605a;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .api-status.connected {
+      border-color: rgba(95, 116, 105, .42);
+      background: var(--mist);
+      color: #45584f;
+    }
+
+    .app:not(.has-ideas) .hero {
+      margin-bottom: clamp(30px, 8vh, 88px);
+    }
+
+    .app:not(.has-ideas) .hero h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .app:not(.has-ideas) .hero .sub,
+    .app:not(.has-ideas) #resetBtn {
+      display: none;
     }
 
     .stage-nav {
@@ -218,7 +254,7 @@
       box-shadow: var(--shadow);
     }
 
-    .composer { padding: 24px; }
+    .composer { padding: 28px 30px 30px; }
 
     .field { margin-bottom: 14px; }
 
@@ -242,22 +278,52 @@
     .composer-title {
       display: block;
       justify-content: initial;
-      margin: 0 0 16px;
+      margin: 0 0 8px;
       color: #1f2523;
       text-align: center;
-      font-size: 24px;
+      font-size: 28px;
       line-height: 1.35;
       font-weight: 800;
     }
 
-    .seed-field { margin-bottom: 12px; }
+    .composer-subtitle {
+      margin: 0 0 22px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .seed-field { margin-bottom: 0; }
+
+    .super-input {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      background: #fff;
+      box-shadow: 0 16px 42px rgba(42, 39, 34, .07);
+    }
+
+    .super-input textarea {
+      min-height: 170px;
+      border: 0;
+      border-radius: 12px;
+      padding: 8px 4px;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .super-input textarea:focus {
+      border-color: transparent;
+      box-shadow: none;
+    }
 
     .example-strip {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
       gap: 8px 10px;
-      margin-top: 10px;
+      margin: 8px 0 12px;
     }
 
     .example-label {
@@ -267,7 +333,7 @@
     }
 
     .quick-start {
-      margin: 0 0 14px;
+      margin: 11px 4px 0;
       color: var(--muted);
       font-size: 13px;
       line-height: 1.6;
@@ -280,14 +346,14 @@
 
     .creator-controls {
       display: grid;
-      gap: 12px;
-      margin: 0 0 14px;
+      gap: 10px;
+      margin: 0;
     }
 
     .control-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       flex-wrap: wrap;
       gap: 10px;
     }
@@ -305,8 +371,18 @@
       font-weight: 800;
     }
 
+    .input-action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-top: 1px solid rgba(217, 210, 198, .76);
+      padding-top: 12px;
+    }
+
     .pill-btn,
-    .mode-option {
+    .mode-option,
+    .smart-default {
       min-height: 34px;
       border: 1px solid var(--line);
       border-radius: 999px;
@@ -318,10 +394,15 @@
     }
 
     .pill-btn.active,
-    .mode-option.active {
+    .mode-option.active,
+    .smart-default.active {
       border-color: var(--accent-dark);
       background: var(--accent-dark);
       color: #fff;
+    }
+
+    .smart-default {
+      background: #fffdfa;
     }
 
     .mode-toggle {
@@ -350,6 +431,27 @@
       min-height: 46px;
       padding: 10px 22px;
       font-size: 16px;
+    }
+
+    .prompt-link {
+      min-height: 0;
+      border: 0;
+      padding: 5px 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .default-panel {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+      border-top: 1px solid rgba(217, 210, 198, .76);
+      padding-top: 12px;
+    }
+
+    .default-panel[hidden] {
+      display: none;
     }
 
     .compact {
@@ -1043,6 +1145,10 @@
         display: block;
       }
 
+      .hero-actions {
+        margin-top: 10px;
+      }
+
       .stage-nav {
         grid-template-columns: 1fr;
         position: static;
@@ -1080,6 +1186,23 @@
       .mode-option {
         flex: 1;
       }
+
+      .composer {
+        padding: 20px;
+      }
+
+      .composer-title {
+        font-size: 23px;
+      }
+
+      .input-action-row {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .primary-action {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -1090,7 +1213,10 @@
         <h1>AI灵感生成器</h1>
         <p class="sub">输入一句想法，先生成可选方向，再决定要扩写、导出或批量处理。</p>
       </div>
-      <button class="ghost" id="resetBtn" type="button">清空本次脑暴</button>
+      <div class="hero-actions">
+        <button class="api-status" id="apiStatusBtn" type="button">未接入 AI</button>
+        <button class="ghost" id="resetBtn" type="button">清空本次脑暴</button>
+      </div>
     </header>
 
     <nav class="stage-nav" aria-label="流程导航">
@@ -1105,55 +1231,60 @@
       <aside class="panel composer">
         <div class="field seed-field">
           <label class="composer-title" for="seedIdea">你今天想生成什么灵感？</label>
-          <textarea id="seedIdea" placeholder="输入一句话、一个名称、几个关键词都可以。"></textarea>
-          <div class="example-strip" aria-label="快捷示例">
-            <span class="example-label">试试这些：</span>
-            <div class="examples">
-              <button class="example" data-example="普通人怎么用 AI 做公众号日更" type="button">普通人怎么用 AI 做公众号日更</button>
-              <button class="example" data-example="小红书内容如何转成公众号长文" type="button">小红书内容转公众号长文</button>
-              <button class="example" data-example="AI 工具太多，普通人不知道怎么开始" type="button">AI 工具太多，不知道怎么开始</button>
+          <p class="composer-subtitle">输入一句想法，生成公众号、小红书、朋友圈选题方向</p>
+          <div class="super-input">
+            <textarea id="seedIdea" placeholder="输入一句话、一个名称、几个关键词都可以。"></textarea>
+            <div class="example-strip" aria-label="快捷示例">
+              <span class="example-label">试试这些：</span>
+              <div class="examples">
+                <button class="example" data-example="普通人怎么用 AI 做公众号日更" type="button">公众号日更选题</button>
+                <button class="example" data-example="小红书内容如何转成公众号长文" type="button">小红书转公众号</button>
+                <button class="example" data-example="AI 工具太多，普通人不知道怎么开始" type="button">AI工具入门</button>
+                <button class="example" data-example="朋友圈文案怎么写得自然又有记忆点" type="button">朋友圈文案</button>
+              </div>
+            </div>
+            <div class="input-action-row">
+              <div class="creator-controls">
+                <button class="smart-default" id="defaultSummaryBtn" type="button" aria-expanded="false" aria-controls="defaultPanel">10 个灵感 · 脑暴发散</button>
+                <button class="prompt-link" id="promptBtn" type="button">生成提示词</button>
+              </div>
+              <button class="primary primary-action" id="brainstormBtn" type="button">生成灵感</button>
+            </div>
+            <div class="default-panel" id="defaultPanel" hidden>
+              <div class="control-row">
+                <div class="control-group" aria-label="生成数量">
+                  <span class="control-label">灵感数量</span>
+                  <select class="hidden-control" id="ideaCount" aria-hidden="true" tabindex="-1">
+                    <option selected>10</option>
+                    <option>20</option>
+                    <option>50</option>
+                    <option>100</option>
+                    <option>200</option>
+                  </select>
+                  <button class="pill-btn active" data-count-option="10" type="button">10</button>
+                  <button class="pill-btn" data-count-option="20" type="button">20</button>
+                  <button class="pill-btn" data-count-option="50" type="button">50</button>
+                  <button class="pill-btn" data-count-option="100" type="button">100</button>
+                  <button class="pill-btn" data-count-option="200" type="button">200</button>
+                </div>
+                <div class="control-group" aria-label="生成模式">
+                  <span class="control-label">生成模式</span>
+                  <input class="hidden-control" id="associationMode" type="checkbox" checked aria-hidden="true" tabindex="-1">
+                  <div class="mode-toggle" role="group" aria-label="生成模式">
+                    <button class="mode-option active" data-association-mode="on" type="button">脑暴发散</button>
+                    <button class="mode-option" data-association-mode="off" type="button">更贴题</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="quick-start">
-          <strong>首次使用：</strong>输入想法 → 填写 API Key → 生成灵感。Key 只保存在你的浏览器。
+          填写 API Key 后即可生成，Key 只保存在浏览器。没有 Key 也可以先生成提示词。
         </div>
 
-        <div class="creator-controls">
-          <div class="control-row">
-            <div class="control-group" aria-label="生成数量">
-              <span class="control-label">灵感数量</span>
-              <select class="hidden-control" id="ideaCount" aria-hidden="true" tabindex="-1">
-              <option selected>10</option>
-              <option>20</option>
-              <option>50</option>
-              <option>100</option>
-              <option>200</option>
-              </select>
-              <button class="pill-btn active" data-count-option="10" type="button">10</button>
-              <button class="pill-btn" data-count-option="20" type="button">20</button>
-              <button class="pill-btn" data-count-option="50" type="button">50</button>
-              <button class="pill-btn" data-count-option="100" type="button">100</button>
-              <button class="pill-btn" data-count-option="200" type="button">200</button>
-            </div>
-            <div class="control-group" aria-label="生成模式">
-              <span class="control-label">生成模式</span>
-              <input class="hidden-control" id="associationMode" type="checkbox" checked aria-hidden="true" tabindex="-1">
-              <div class="mode-toggle" role="group" aria-label="生成模式">
-                <button class="mode-option active" data-association-mode="on" type="button">脑暴发散</button>
-                <button class="mode-option" data-association-mode="off" type="button">更贴题</button>
-              </div>
-              <span class="hint" id="associationModeHint">默认，适合脑暴</span>
-            </div>
-          </div>
-          <div class="toolbar field">
-            <button class="primary primary-action" id="brainstormBtn" type="button">生成灵感</button>
-            <button id="promptBtn" type="button">生成提示词</button>
-          </div>
-        </div>
-
-        <details class="settings">
+        <details class="settings" id="apiSettings">
           <summary>接入 AI / API Key 设置</summary>
           <div class="settings-body">
             <div class="note field">
@@ -1581,6 +1712,7 @@
         button.classList.toggle("active", isActive);
         button.setAttribute("aria-pressed", String(isActive));
       });
+      updateDefaultSummary();
     }
 
     function setIdeaCount(value) {
@@ -1590,17 +1722,48 @@
 
     function updateAssociationModeHint() {
       const isOn = $("associationMode").checked;
-      $("associationModeHint").textContent = isOn ? "默认，适合脑暴" : "更贴题";
       document.querySelectorAll("[data-association-mode]").forEach(button => {
         const active = button.dataset.associationMode === (isOn ? "on" : "off");
         button.classList.toggle("active", active);
         button.setAttribute("aria-pressed", String(active));
       });
+      updateDefaultSummary();
     }
 
     function setAssociationMode(isOn) {
       $("associationMode").checked = isOn;
       updateAssociationModeHint();
+    }
+
+    function updateDefaultSummary() {
+      const count = $("ideaCount")?.value || "10";
+      const mode = $("associationMode")?.checked ? "脑暴发散" : "更贴题";
+      const button = $("defaultSummaryBtn");
+      if (button) button.textContent = `${count} 个灵感 · ${mode}`;
+    }
+
+    function toggleDefaultPanel() {
+      const panel = $("defaultPanel");
+      const button = $("defaultSummaryBtn");
+      const willOpen = panel.hidden;
+      panel.hidden = !willOpen;
+      button.setAttribute("aria-expanded", String(willOpen));
+      button.classList.toggle("active", willOpen);
+    }
+
+    function updateApiStatus() {
+      const button = $("apiStatusBtn");
+      if (!button) return;
+      const connected = Boolean($("apiKey")?.value.trim());
+      button.textContent = connected ? "已接入 AI" : "未接入 AI";
+      button.classList.toggle("connected", connected);
+    }
+
+    function openApiSettings() {
+      const settings = $("apiSettings");
+      if (settings) settings.open = true;
+      $("apiKey")?.focus();
+      settings?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
     function orderedIdeas() {
@@ -3711,8 +3874,10 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
 
     $("brainstormBtn").addEventListener("click", generateIdeas);
     $("promptBtn").addEventListener("click", () => showPrompt());
+    $("defaultSummaryBtn").addEventListener("click", toggleDefaultPanel);
     $("associationMode").addEventListener("change", updateAssociationModeHint);
     $("ideaCount").addEventListener("change", syncIdeaCountControls);
+    $("apiStatusBtn").addEventListener("click", openApiSettings);
     $("resetBtn").addEventListener("click", resetAll);
     $("batchBriefBtn").addEventListener("click", () => expandBriefs(selectedItems()));
     $("batchOfficialBtn").addEventListener("click", () => generateOfficial(selectedItems()));
@@ -3737,6 +3902,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     });
     $("rememberApiKey").addEventListener("change", syncApiKeyStorage);
     $("apiKey").addEventListener("input", () => {
+      updateApiStatus();
       if ($("rememberApiKey").checked) {
         try {
           localStorage.setItem(API_KEY_STORAGE_KEY, $("apiKey").value.trim());
@@ -3839,6 +4005,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
     loadSavedOpenRouterKey();
     syncIdeaCountControls();
     updateAssociationModeHint();
+    updateApiStatus();
     render();
 
     if ("serviceWorker" in navigator && location.protocol !== "file:") {

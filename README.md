@@ -20,11 +20,11 @@ https://ai-inspiration-generator.vercel.app
 
 1. 把线上地址发给朋友。
 2. 朋友打开网址即可使用，不需要下载代码或配置本地环境。
-3. 朋友在“接入 AI / 高级设置”里填写自己的 DeepSeek API Key。
+3. 朋友点击右上角 `未接入 AI`，在“接入 AI / API Key 设置”里填写自己的 DeepSeek API Key。
 4. 如果要生成配图，再填写自己的 OpenRouter API Key。
 5. 在 Chrome 或 Edge 里可以选择“安装应用”或“添加到桌面”，以后从桌面图标打开。
 
-页面首屏内置一行首次使用提示：输入想法、填写 API Key、生成灵感，并提供轻量数量和生成模式选择。链接分享时会使用 `assets/og-cover.png` 作为传播封面。
+页面首屏是一个极简创作启动器：输入想法后可直接生成灵感；数量和模式默认收起为 `10 个灵感 · 脑暴发散`，点击后再调整。链接分享时会使用 `assets/og-cover.png` 作为传播封面。
 
 ## 主流程
 
