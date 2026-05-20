@@ -906,6 +906,47 @@
       line-height: 1.4;
     }
 
+    .quality-toggle {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 8px 0 10px;
+    }
+
+    .quality-option {
+      min-height: 58px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fffdfa;
+      color: #303733;
+      text-align: left;
+    }
+
+    .quality-option strong,
+    .quality-option span {
+      display: block;
+    }
+
+    .quality-option strong {
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .quality-option span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .quality-option.active {
+      border-color: #66786f;
+      background: var(--mist);
+      color: #1f2925;
+      font-weight: 700;
+    }
+
     .image-advanced {
       margin-top: 6px;
     }
@@ -1183,6 +1224,10 @@
         justify-content: space-between;
       }
 
+      .quality-toggle {
+        grid-template-columns: 1fr;
+      }
+
       .mode-option {
         flex: 1;
       }
@@ -1309,7 +1354,7 @@
               <input id="rememberApiKey" type="checkbox">
             </label>
             <div class="note field">
-              隐私说明：API Key 仅用于从你的浏览器直接请求 DeepSeek API。本站不设置服务器、不收集、不保存、不上传你的 Key。
+              隐私说明：API Key 仅用于从你的浏览器直接请求 DeepSeek、OpenRouter 或 Kie.ai。本站不设置服务器、不收集、不保存、不上传你的 Key。
             </div>
             <div class="field">
               <label for="apiUrl">接口地址</label>
@@ -1348,22 +1393,29 @@
               <label for="categories">分类库 <span class="hint">用中文逗号分隔</span></label>
               <input id="categories" value="AI工具,公众号日更,小红书转公众号,副业,职场,热点,产品思考">
             </div>
-            <div class="settings-subhead">图片生成：OpenRouter</div>
+            <div class="settings-subhead">图片生成：标准配图 / 高质成稿</div>
             <div class="field">
-              <label for="openRouterApiKey">OpenRouter API Key <span class="hint">用于详情页一键生图</span></label>
+              <label for="openRouterApiKey">OpenRouter API Key <span class="hint">标准配图，默认 Seedream 4.5</span></label>
               <input id="openRouterApiKey" type="password" placeholder="sk-or-v1-...">
             </div>
             <label class="detail-select" for="rememberOpenRouterKey">
               <span>记住本机 OpenRouter Key <span class="hint">只保存到当前浏览器</span></span>
               <input id="rememberOpenRouterKey" type="checkbox">
             </label>
+            <div class="field">
+              <label for="kieApiKey">Kie.ai API Key <span class="hint">高质成稿，GPT Image 2</span></label>
+              <input id="kieApiKey" type="password" placeholder="kie_...">
+            </div>
+            <label class="detail-select" for="rememberKieKey">
+              <span>记住本机 Kie.ai Key <span class="hint">只保存到当前浏览器</span></span>
+              <input id="rememberKieKey" type="checkbox">
+            </label>
             <div class="compact">
               <div class="field">
-                <label for="defaultImageModel">默认图片模型</label>
-                <select id="defaultImageModel">
-                  <option value="bytedance-seed/seedream-4.5" selected>Seedream 4.5（默认主力）</option>
-                  <option value="google/gemini-2.5-flash-image">Nano Banana（部分地区不可用）</option>
-                  <option value="openai/gpt-5.4-image-2">GPT Image 2（高级，部分地区不可用）</option>
+                <label for="defaultImageQuality">默认图片质量</label>
+                <select id="defaultImageQuality">
+                  <option value="standard" selected>标准配图（适合批量）</option>
+                  <option value="premium">高质成稿（适合封面）</option>
                 </select>
               </div>
               <div class="field">
@@ -1376,15 +1428,24 @@
                 </select>
               </div>
             </div>
-            <div class="field">
-              <label for="defaultImageStyle">默认图片风格</label>
-              <select id="defaultImageStyle">
-                <option value="magazine" selected>杂志封面</option>
-                <option value="photo">真实摄影</option>
-                <option value="tech">高级科技感</option>
-                <option value="illustration">扁平插画</option>
-                <option value="infographic">极简信息图</option>
-              </select>
+            <div class="compact">
+              <div class="field">
+                <label for="defaultImageModel">标准配图模型</label>
+                <select id="defaultImageModel">
+                  <option value="bytedance-seed/seedream-4.5" selected>Seedream 4.5（默认主力）</option>
+                  <option value="google/gemini-2.5-flash-image">Nano Banana（部分地区不可用）</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="defaultImageStyle">默认图片风格</label>
+                <select id="defaultImageStyle">
+                  <option value="magazine" selected>杂志封面</option>
+                  <option value="photo">真实摄影</option>
+                  <option value="tech">高级科技感</option>
+                  <option value="illustration">扁平插画</option>
+                  <option value="infographic">极简信息图</option>
+                </select>
+              </div>
             </div>
           </div>
         </details>
@@ -1599,6 +1660,9 @@
       layoutDensity: "loose",
       openRouterApiKey: "",
       rememberOpenRouterKey: false,
+      kieApiKey: "",
+      rememberKieKey: false,
+      defaultImageQuality: "standard",
       defaultImageModel: "bytedance-seed/seedream-4.5",
       defaultImageUseCase: "wechat_cover",
       defaultImageStyle: "magazine",
@@ -1624,6 +1688,25 @@
     const $ = (id) => document.getElementById(id);
     const API_KEY_STORAGE_KEY = "ai_brainstorm_deepseek_api_key";
     const OPENROUTER_KEY_STORAGE_KEY = "ai_brainstorm_openrouter_api_key";
+    const KIE_KEY_STORAGE_KEY = "ai_brainstorm_kie_api_key";
+    const KIE_IMAGE_MODEL = "gpt-image-2-text-to-image";
+    const KIE_TASK_CREATE_URL = "https://api.kie.ai/api/v1/jobs/createTask";
+    const KIE_TASK_RECORD_URL = "https://api.kie.ai/api/v1/jobs/recordInfo";
+
+    const IMAGE_QUALITIES = {
+      standard: {
+        label: "标准配图",
+        hint: "成本低，适合批量",
+        provider: "openrouter",
+        modelLabel: "Seedream 4.5"
+      },
+      premium: {
+        label: "高质成稿",
+        hint: "细节更好，适合封面",
+        provider: "kie",
+        modelLabel: "GPT Image 2 via Kie.ai"
+      }
+    };
 
     const IMAGE_MODELS = {
       "google/gemini-2.5-flash-image": {
@@ -1759,10 +1842,10 @@
       button.classList.toggle("connected", connected);
     }
 
-    function openApiSettings() {
+    function openApiSettings(focusId = "apiKey") {
       const settings = $("apiSettings");
       if (settings) settings.open = true;
-      $("apiKey")?.focus();
+      $(focusId)?.focus();
       settings?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
@@ -1850,6 +1933,9 @@
       ["imagePromptBtn", "imageGenerateBtn", "downloadImageBtn"].forEach(id => {
         const button = $(id);
         if (button) button.disabled = state.busy || (id === "downloadImageBtn" && !activeItem()?.imageResult);
+      });
+      document.querySelectorAll("[data-image-quality]").forEach(button => {
+        button.disabled = state.busy;
       });
       ["batchImageMissingBtn", "batchImageAllBtn", "exportImagesBtn"].forEach(id => {
         const button = $(id);
@@ -1982,17 +2068,18 @@
     function imageToolHtml(item) {
       const result = item.imageResult || null;
       const defaults = getImageDefaults();
-      const model = result?.model || defaults.model;
+      const quality = item.imageDraftQuality || result?.quality || defaults.quality || "standard";
+      const model = result?.model || (quality === "premium" ? KIE_IMAGE_MODEL : defaults.model);
       const useCase = result?.useCase || defaults.useCase;
       const style = result?.style || defaults.style;
       const aspectRatio = result?.aspectRatio || IMAGE_USE_CASES[useCase]?.aspectRatio || "16:9";
-      const imageSize = result?.imageSize || defaults.imageSize;
-      const prompt = result?.prompt || buildImagePrompt(item, { useCase, style });
-      const keyStatus = defaults.apiKey ? "已配置生图" : "未配置生图";
+      const imageSize = result?.imageSize || (quality === "premium" && defaults.imageSize === "1K" ? "2K" : defaults.imageSize);
+      const prompt = result?.prompt || buildImagePrompt(item, { useCase, style, quality });
       const imageStatus = item.imageStatus || "";
       const isGenerating = imageStatus === "loading";
       const statusMessage = item.imageMessage || (result ? "图片已生成，可以下载或重新生成。" : "生成成功后可下载图片。");
       const modelOptions = Object.entries(IMAGE_MODELS)
+        .filter(([value]) => value !== "openai/gpt-5.4-image-2" || value === model)
         .map(([value, config]) => `<option value="${escapeAttr(value)}" ${value === model ? "selected" : ""}>${escapeHtml(config.label)}</option>`)
         .join("");
       const useCaseOptions = Object.entries(IMAGE_USE_CASES)
@@ -2001,14 +2088,25 @@
       const styleOptions = Object.entries(IMAGE_STYLES)
         .map(([value, label]) => `<option value="${escapeAttr(value)}" ${value === style ? "selected" : ""}>${escapeHtml(label.split("，")[0])}</option>`)
         .join("");
+      const qualityOptions = Object.entries(IMAGE_QUALITIES)
+        .map(([value, config]) => `
+          <button class="quality-option ${value === quality ? "active" : ""}" data-image-quality="${escapeAttr(value)}" type="button" aria-pressed="${value === quality ? "true" : "false"}">
+            <strong>${escapeHtml(config.label)}</strong>
+            <span>${escapeHtml(config.hint)}</span>
+          </button>
+        `).join("");
 
       return `
         <section class="image-tool">
           <div class="image-tool-head">
             <div>
               <h3>生成配图</h3>
-              <p class="image-meta">当前：${escapeHtml(IMAGE_USE_CASES[useCase]?.label || "内容配图")} · ${escapeHtml(IMAGE_STYLES[style]?.split("，")[0] || "默认风格")} · ${escapeHtml(IMAGE_MODELS[model]?.name || model)} · ${escapeHtml(keyStatus)}</p>
+              <p class="image-meta" id="imageCurrentMeta">${escapeHtml(imageCurrentMetaText({ useCase, style, quality }, defaults))}</p>
             </div>
+          </div>
+          <input id="imageQuality" type="hidden" value="${escapeAttr(quality)}">
+          <div class="quality-toggle" aria-label="图片质量">
+            ${qualityOptions}
           </div>
           <div class="toolbar">
             <button class="primary" id="imageGenerateBtn" type="button">${isGenerating ? "正在生成..." : result ? "重新生成" : "生成配图"}</button>
@@ -2018,7 +2116,7 @@
           ${result ? `
             <div class="image-preview">
               <img src="${escapeAttr(result.url)}" alt="生成配图预览">
-              <p class="image-meta">${escapeHtml(IMAGE_MODELS[result.model]?.name || result.model)} · ${escapeHtml(IMAGE_USE_CASES[result.useCase]?.label || result.useCase)} · ${escapeHtml(result.aspectRatio)} · ${escapeHtml(result.imageSize)}</p>
+              <p class="image-meta">${escapeHtml(imageResultQualityLabel(result))} · ${escapeHtml(imageResultModelLabel(result))} · ${escapeHtml(IMAGE_USE_CASES[result.useCase]?.label || result.useCase)} · ${escapeHtml(result.aspectRatio)} · ${escapeHtml(result.imageSize)}</p>
             </div>
           ` : ""}
           <details class="image-advanced">
@@ -2036,14 +2134,15 @@
               </div>
               <div class="compact">
                 <div class="field">
-                  <label for="imageModel">图片模型</label>
+                  <label for="imageModel">标准配图模型 <span class="hint">高质成稿自动使用 GPT Image 2</span></label>
                   <select id="imageModel">${modelOptions}</select>
                 </div>
                 <div class="field">
                   <label for="imageSize">清晰度</label>
                   <select id="imageSize">
-                    <option value="1K" ${imageSize === "1K" ? "selected" : ""}>1K 试图</option>
+                    <option value="1K" ${imageSize === "1K" ? "selected" : ""}>1K 试稿</option>
                     <option value="2K" ${imageSize === "2K" ? "selected" : ""}>2K 成稿</option>
+                    <option value="4K" ${imageSize === "4K" ? "selected" : ""}>4K 精修</option>
                   </select>
                 </div>
               </div>
@@ -2070,18 +2169,51 @@
       `;
     }
 
+    function imageResultQualityLabel(result) {
+      if (!result) return IMAGE_QUALITIES.standard.label;
+      return IMAGE_QUALITIES[result.quality]?.label || (result.provider === "kie" ? IMAGE_QUALITIES.premium.label : IMAGE_QUALITIES.standard.label);
+    }
+
+    function imageResultModelLabel(result) {
+      if (!result) return "";
+      if (result.provider === "kie" || result.model === KIE_IMAGE_MODEL) return IMAGE_QUALITIES.premium.modelLabel;
+      return IMAGE_MODELS[result.model]?.name || result.model || IMAGE_QUALITIES.standard.modelLabel;
+    }
+
+    function imageKeyStatusForQuality(defaults, quality) {
+      const hasKey = quality === "premium" ? Boolean(defaults.kieApiKey) : Boolean(defaults.openRouterApiKey);
+      return hasKey ? "已配置生图" : "未配置生图";
+    }
+
+    function imageCurrentMetaText(form, defaults = getImageDefaults()) {
+      const quality = form.quality || defaults.quality || "standard";
+      const qualityConfig = IMAGE_QUALITIES[quality] || IMAGE_QUALITIES.standard;
+      return `当前：${IMAGE_USE_CASES[form.useCase]?.label || "内容配图"} · ${IMAGE_STYLES[form.style]?.split("，")[0] || "默认风格"} · ${qualityConfig.label} · ${imageKeyStatusForQuality(defaults, quality)}`;
+    }
+
     function bindImageTool(item) {
+      document.querySelectorAll("[data-image-quality]").forEach(button => {
+        button.addEventListener("click", () => setImageQuality(button.dataset.imageQuality, item));
+      });
+
       $("imageUseCase").addEventListener("change", () => {
         const defaults = IMAGE_USE_CASES[$("imageUseCase").value];
         if (defaults) {
           $("imageAspectRatio").value = defaults.aspectRatio;
           $("imageSize").value = defaults.size;
+          if ($("imageQuality")?.value === "premium" && $("imageSize")?.value === "1K") {
+            $("imageSize").value = "2K";
+          }
         }
+        updateImageCurrentMeta();
         updateImagePrompt(item);
       });
 
       ["imageStyle", "imageAspectRatio", "imageSize"].forEach(id => {
-        $(id).addEventListener("change", () => updateImagePrompt(item));
+        $(id).addEventListener("change", () => {
+          updateImageCurrentMeta();
+          updateImagePrompt(item);
+        });
       });
 
       $("imagePromptBtn").addEventListener("click", () => {
@@ -2092,30 +2224,72 @@
       $("downloadImageBtn").addEventListener("click", () => downloadCurrentImage(item));
     }
 
+    function setImageQuality(quality, item) {
+      const normalized = IMAGE_QUALITIES[quality] ? quality : "standard";
+      if ($("imageQuality")) $("imageQuality").value = normalized;
+      item.imageDraftQuality = normalized;
+      if (normalized === "premium" && $("imageSize")?.value === "1K") {
+        $("imageSize").value = "2K";
+      }
+      document.querySelectorAll("[data-image-quality]").forEach(button => {
+        const active = button.dataset.imageQuality === normalized;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      updateImageCurrentMeta();
+      updateImagePrompt(item);
+      setStatus(`已切换为${IMAGE_QUALITIES[normalized].label}。`);
+    }
+
+    function updateImageCurrentMeta() {
+      const meta = $("imageCurrentMeta");
+      if (!meta) return;
+      const defaults = getImageDefaults();
+      const useCase = $("imageUseCase")?.value || defaults.useCase;
+      const style = $("imageStyle")?.value || defaults.style;
+      const quality = $("imageQuality")?.value || defaults.quality;
+      meta.textContent = imageCurrentMetaText({ useCase, style, quality }, defaults);
+    }
+
     function getImageDefaults() {
+      const quality = $("defaultImageQuality")?.value || state.defaultImageQuality || "standard";
       const model = $("defaultImageModel")?.value || state.defaultImageModel;
       const useCase = $("defaultImageUseCase")?.value || state.defaultImageUseCase;
       const style = $("defaultImageStyle")?.value || state.defaultImageStyle;
+      const openRouterApiKey = $("openRouterApiKey")?.value.trim() || state.openRouterApiKey;
+      const kieApiKey = $("kieApiKey")?.value.trim() || state.kieApiKey;
+      const imageSize = state.defaultImageSize || IMAGE_USE_CASES[useCase]?.size || "1K";
       return {
-        apiKey: $("openRouterApiKey")?.value.trim() || state.openRouterApiKey,
+        quality,
+        provider: IMAGE_QUALITIES[quality]?.provider || "openrouter",
+        apiKey: quality === "premium" ? kieApiKey : openRouterApiKey,
+        openRouterApiKey,
+        kieApiKey,
         model,
         useCase,
         style,
         aspectRatio: IMAGE_USE_CASES[useCase]?.aspectRatio || "16:9",
-        imageSize: state.defaultImageSize || IMAGE_USE_CASES[useCase]?.size || "1K"
+        imageSize: quality === "premium" && imageSize === "1K" ? "2K" : imageSize
       };
     }
 
     function getImageForm() {
       const defaults = getImageDefaults();
       const useCase = $("imageUseCase")?.value || defaults.useCase;
+      const quality = $("imageQuality")?.value || defaults.quality || "standard";
+      const provider = IMAGE_QUALITIES[quality]?.provider || "openrouter";
+      const imageSize = $("imageSize")?.value || (quality === "premium" ? "2K" : defaults.imageSize);
       return {
-        apiKey: defaults.apiKey,
-        model: $("imageModel")?.value || defaults.model,
+        quality,
+        provider,
+        apiKey: quality === "premium" ? defaults.kieApiKey : defaults.openRouterApiKey,
+        openRouterApiKey: defaults.openRouterApiKey,
+        kieApiKey: defaults.kieApiKey,
+        model: provider === "kie" ? KIE_IMAGE_MODEL : ($("imageModel")?.value || defaults.model),
         useCase,
         style: $("imageStyle")?.value || defaults.style,
         aspectRatio: $("imageAspectRatio")?.value || IMAGE_USE_CASES[useCase]?.aspectRatio || defaults.aspectRatio,
-        imageSize: $("imageSize")?.value || defaults.imageSize,
+        imageSize,
         prompt: $("imagePrompt")?.value.trim() || buildImagePrompt(activeItem() || {}, defaults)
       };
     }
@@ -2195,14 +2369,151 @@
       return imageUrl;
     }
 
+    async function callImageProvider(form, signal) {
+      if (form.provider === "kie") return callKieImage(form, signal);
+      return callOpenRouterImage(form, signal);
+    }
+
+    async function callKieImage(form, signal) {
+      const response = await fetch(KIE_TASK_CREATE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${form.apiKey}`
+        },
+        body: JSON.stringify({
+          model: KIE_IMAGE_MODEL,
+          input: {
+            prompt: form.prompt,
+            aspect_ratio: normalizeKieAspectRatio(form.aspectRatio),
+            resolution: normalizeKieResolution(form.imageSize)
+          }
+        }),
+        signal
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Kie.ai 返回错误：${response.status} ${errText.slice(0, 220)}`);
+      }
+
+      const data = await response.json();
+      const taskId = data?.data?.taskId || data?.taskId;
+      if (!taskId) {
+        const message = data?.msg || data?.message || JSON.stringify(data).slice(0, 220);
+        throw new Error(`Kie.ai 没有返回任务 ID：${message}`);
+      }
+      return pollKieImageTask(form.apiKey, taskId, signal);
+    }
+
+    async function pollKieImageTask(apiKey, taskId, signal) {
+      const startedAt = Date.now();
+      let attempt = 0;
+      while (Date.now() - startedAt < 12 * 60 * 1000) {
+        await delay(Math.min(2500 + attempt * 500, 6000), signal);
+        attempt += 1;
+        const url = `${KIE_TASK_RECORD_URL}?taskId=${encodeURIComponent(taskId)}`;
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${apiKey}` },
+          signal
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`Kie.ai 查询任务失败：${response.status} ${errText.slice(0, 220)}`);
+        }
+
+        const data = await response.json();
+        const record = data?.data || data;
+        const stateText = String(record?.state || record?.status || "").toLowerCase();
+        if (["success", "completed", "complete", "done"].includes(stateText)) {
+          const imageUrl = extractKieImageUrl(record);
+          if (imageUrl) return imageUrl;
+          throw new Error("Kie.ai 已完成任务，但没有找到图片地址。");
+        }
+        if (["fail", "failed", "error", "cancelled", "canceled"].includes(stateText)) {
+          const failMessage = record?.failMsg || record?.errorMessage || data?.msg || data?.message || "任务失败";
+          throw new Error(`Kie.ai 生成失败：${failMessage}`);
+        }
+      }
+      throw new Error("Kie.ai 生成超时，请稍后重试或降低清晰度。");
+    }
+
+    function extractKieImageUrl(record) {
+      const resultJson = record?.resultJson || record?.result || record?.response;
+      const result = typeof resultJson === "string" ? safeJsonParse(resultJson) : resultJson;
+      return firstUrl([
+        record?.url,
+        record?.imageUrl,
+        record?.outputUrl,
+        record?.resultUrl,
+        ...asArray(record?.resultUrls),
+        result?.url,
+        result?.imageUrl,
+        result?.outputUrl,
+        result?.resultUrl,
+        ...asArray(result?.resultUrls),
+        ...asArray(result?.urls),
+        ...asArray(result?.images)
+      ]);
+    }
+
+    function asArray(value) {
+      if (!value) return [];
+      return Array.isArray(value) ? value : [value];
+    }
+
+    function firstUrl(values) {
+      for (const value of values) {
+        if (!value) continue;
+        if (typeof value === "string" && /^https?:\/\//i.test(value)) return value;
+        if (typeof value === "object") {
+          const nested = value.url || value.imageUrl || value.image_url?.url || value.imageUrl?.url;
+          if (nested && /^https?:\/\//i.test(nested)) return nested;
+        }
+      }
+      return "";
+    }
+
+    function safeJsonParse(value) {
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function normalizeKieAspectRatio(aspectRatio) {
+      return ["1:1", "3:4", "4:3", "9:16", "16:9"].includes(aspectRatio) ? aspectRatio : "16:9";
+    }
+
+    function normalizeKieResolution(imageSize) {
+      return ["1K", "2K", "4K"].includes(imageSize) ? imageSize : "2K";
+    }
+
+    function delay(ms, signal) {
+      return new Promise((resolve, reject) => {
+        if (signal?.aborted) {
+          reject(new DOMException("已中止", "AbortError"));
+          return;
+        }
+        const timer = setTimeout(resolve, ms);
+        signal?.addEventListener("abort", () => {
+          clearTimeout(timer);
+          reject(new DOMException("已中止", "AbortError"));
+        }, { once: true });
+      });
+    }
+
     async function generateCurrentImage(item) {
       const form = getImageForm();
       if (!form.apiKey) {
-        const message = "先在首页“接入 AI / API Key 设置”里填写 OpenRouter API Key。";
+        const message = missingImageKeyMessage(form.quality);
         item.imageStatus = "error";
         item.imageMessage = message;
         render();
         setStatus(message, true);
+        openApiSettings(form.provider === "kie" ? "kieApiKey" : "openRouterApiKey");
         return;
       }
       if (!form.prompt) {
@@ -2215,17 +2526,18 @@
       }
 
       try {
-        state.openRouterApiKey = form.apiKey;
-        if (state.rememberOpenRouterKey) saveOpenRouterKey();
+        persistImageProviderKey(form);
         item.imageStatus = "loading";
         item.imageMessage = "正在生成图片，通常需要几秒到几十秒。";
-        setBusy(true, "正在通过 OpenRouter 生成配图...");
+        setBusy(true, form.provider === "kie" ? "正在通过 Kie.ai 生成高质成稿..." : "正在通过 OpenRouter 生成配图...");
         render();
-        const imageUrl = await callOpenRouterImage(form);
+        const imageUrl = await callImageProvider(form);
 
         item.imageResult = {
           url: imageUrl,
           prompt: form.prompt,
+          provider: form.provider,
+          quality: form.quality,
           model: form.model,
           useCase: form.useCase,
           style: form.style,
@@ -2238,7 +2550,7 @@
         render();
         setStatus("已生成 1 张配图，可预览或下载。");
       } catch (error) {
-        const message = friendlyImageError(error.message, form.model);
+        const message = friendlyImageError(error.message, form);
         item.imageStatus = "error";
         item.imageMessage = message;
         render();
@@ -2248,8 +2560,32 @@
       }
     }
 
-    function friendlyImageError(message, model) {
+    function missingImageKeyMessage(quality = "standard") {
+      return quality === "premium"
+        ? "先在首页“接入 AI / API Key 设置”里填写 Kie.ai API Key。"
+        : "先在首页“接入 AI / API Key 设置”里填写 OpenRouter API Key。";
+    }
+
+    function persistImageProviderKey(form) {
+      if (form.provider === "kie") {
+        state.kieApiKey = form.apiKey || state.kieApiKey;
+        if (state.rememberKieKey) saveKieKey();
+        return;
+      }
+      state.openRouterApiKey = form.apiKey || state.openRouterApiKey;
+      if (state.rememberOpenRouterKey) saveOpenRouterKey();
+    }
+
+    function friendlyImageError(message, context = {}) {
+      const model = typeof context === "string" ? context : context.model;
+      const provider = typeof context === "string" ? "openrouter" : context.provider;
       const text = String(message || "");
+      if (/Failed to fetch|NetworkError|CORS/i.test(text) && provider === "kie") {
+        return "浏览器没有连上 Kie.ai，可能是网络或跨域限制。可以稍后重试，或后续改成 Vercel 代理。";
+      }
+      if (/401|unauthorized|invalid api key|forbidden/i.test(text)) {
+        return provider === "kie" ? "Kie.ai API Key 无效或余额不足，请检查 Key 后重试。" : "OpenRouter API Key 无效或余额不足，请检查 Key 后重试。";
+      }
       if (/not available in your region/i.test(text)) {
         if (model === "openai/gpt-5.4-image-2") {
           return "GPT Image 2 当前在你的地区不可用，请切回 Seedream 4.5。";
@@ -2315,8 +2651,13 @@
       return { selected, tasks, skipped };
     }
 
-    function estimateImageCost(count, model = getImageDefaults().model) {
+    function estimateImageCost(count, config = getImageDefaults()) {
       if (!count) return "预计费用：$0。";
+      const quality = typeof config === "string" ? "standard" : (config.quality || "standard");
+      const model = typeof config === "string" ? config : config.model;
+      if (quality === "premium") {
+        return `费用预估：高质成稿约 $0.03-$0.08 / 张。本次最多生成 ${count} 张，预计约 $${(count * 0.03).toFixed(2)}-$${(count * 0.08).toFixed(2)}。实际以 Kie.ai 账单为准。`;
+      }
       if (model === "bytedance-seed/seedream-4.5") {
         return `费用预估：Seedream 4.5 约 $0.04 / 张。本次最多生成 ${count} 张，预计约 $${(count * 0.04).toFixed(2)}。实际以 OpenRouter 账单为准。`;
       }
@@ -2331,7 +2672,9 @@
 
     function batchImageConfigText() {
       const defaults = getImageDefaults();
-      return `${IMAGE_MODELS[defaults.model]?.name || defaults.model} · ${IMAGE_USE_CASES[defaults.useCase]?.label || "内容配图"} · ${IMAGE_STYLES[defaults.style]?.split("，")[0] || "默认风格"}`;
+      const quality = IMAGE_QUALITIES[defaults.quality] || IMAGE_QUALITIES.standard;
+      const model = defaults.provider === "kie" ? quality.modelLabel : (IMAGE_MODELS[defaults.model]?.name || defaults.model);
+      return `${quality.label} · ${model} · ${IMAGE_USE_CASES[defaults.useCase]?.label || "内容配图"} · ${IMAGE_STYLES[defaults.style]?.split("，")[0] || "默认风格"}`;
     }
 
     function updateBatchImagePanel() {
@@ -2341,7 +2684,7 @@
       const { selected, tasks, skipped } = batchImageCandidates(mode);
       const withImages = selected.filter(item => item.imageResult?.url).length;
       const countForCost = state.batchImage.running ? state.batchImage.total : tasks.length;
-      summary.textContent = `当前：${batchImageConfigText()}。已选 ${selected.length} 个，其中 ${withImages} 个已有配图。${estimateImageCost(countForCost)}`;
+      summary.textContent = `当前：${batchImageConfigText()}。已选 ${selected.length} 个，其中 ${withImages} 个已有配图。${estimateImageCost(countForCost, getImageDefaults())}`;
 
       const total = state.batchImage.total || tasks.length || 0;
       const done = state.batchImage.running || state.batchImage.done ? state.batchImage.done : 0;
@@ -2411,31 +2754,38 @@
         setStatus("已选点子都已有配图。");
         return;
       }
-      if (!getImageDefaults().apiKey) {
-        resetBatchImageState({ message: "先在首页“接入 AI / API Key 设置”里填写 OpenRouter API Key。" });
-        setStatus("先在首页“接入 AI / API Key 设置”里填写 OpenRouter API Key。", true);
+      const defaults = getImageDefaults();
+      if (!defaults.apiKey) {
+        const message = missingImageKeyMessage(defaults.quality);
+        resetBatchImageState({ message });
+        setStatus(message, true);
+        openApiSettings(defaults.provider === "kie" ? "kieApiKey" : "openRouterApiKey");
         return;
       }
-      if (tasks.length > 10) {
-        showBatchImageConfirm(mode, tasks.length, skipped);
+      if (tasks.length > 10 || (defaults.quality === "premium" && tasks.length > 3)) {
+        showBatchImageConfirm(mode, tasks.length, skipped, defaults);
         return;
       }
       startBatchImage(mode);
     }
 
-    function showBatchImageConfirm(mode, count, skipped) {
+    function showBatchImageConfirm(mode, count, skipped, defaults = getImageDefaults()) {
+      const reason = defaults.quality === "premium"
+        ? "高质成稿更适合精选封面，超过 3 张建议确认成本后再开始。"
+        : "本次超过 10 张，需要确认后开始。";
       resetBatchImageState({
         pendingMode: mode,
         pendingCount: count,
         skipped,
-        message: `本次将生成 ${count} 张配图，超过 10 张，需要确认后开始。`
+        message: `本次将生成 ${count} 张配图，${reason}`
       });
       const confirm = $("batchImageConfirm");
       confirm.style.display = "block";
       confirm.innerHTML = `
         <strong>确认批量生成</strong>
         <p>本次将生成 ${count} 张配图，${skipped ? `跳过 ${skipped} 张已有配图。` : "不会跳过已选点子。"}</p>
-        <p>${escapeHtml(estimateImageCost(count))}</p>
+        <p>${escapeHtml(reason)}</p>
+        <p>${escapeHtml(estimateImageCost(count, defaults))}</p>
         <div class="batch-actions">
           <button class="primary" id="confirmBatchImageBtn" type="button">确认生成</button>
           <button id="cancelBatchImageBtn" type="button">取消</button>
@@ -2469,9 +2819,10 @@
         running: true,
         total: tasks.length,
         skipped,
-        message: `正在批量生成配图：0 / ${tasks.length}。${estimateImageCost(tasks.length)}`
+        message: `正在批量生成配图：0 / ${tasks.length}。${estimateImageCost(tasks.length, getImageDefaults())}`
       });
       setBusy(true, "正在批量生成配图...");
+      persistImageProviderKey(getImageDefaults());
 
       for (let index = 0; index < tasks.length; index += 1) {
         if (state.batchImage.abortRequested) break;
@@ -2484,10 +2835,12 @@
           const controller = new AbortController();
           state.batchImageAbortController = controller;
           const form = batchImageFormForItem(item);
-          const imageUrl = await callOpenRouterImage(form, controller.signal);
+          const imageUrl = await callImageProvider(form, controller.signal);
           item.imageResult = {
             url: imageUrl,
             prompt: form.prompt,
+            provider: form.provider,
+            quality: form.quality,
             model: form.model,
             useCase: form.useCase,
             style: form.style,
@@ -2504,7 +2857,7 @@
             state.batchImage.abortRequested = true;
             state.batchImage.failures.push(`${title}：已中止当前请求`);
           } else {
-            const message = friendlyImageError(error.message, getImageDefaults().model);
+            const message = friendlyImageError(error.message, batchImageFormForItem(item));
             item.imageStatus = "error";
             item.imageMessage = message;
             state.batchImage.failures.push(`${title}：${message}`);
@@ -2604,6 +2957,39 @@
         if ($("rememberOpenRouterKey")) $("rememberOpenRouterKey").checked = false;
       } catch (error) {
         setStatus("当前浏览器不允许删除 OpenRouter Key 保存状态。", true);
+      }
+    }
+
+    function loadSavedKieKey() {
+      try {
+        const savedKey = localStorage.getItem(KIE_KEY_STORAGE_KEY);
+        if (!savedKey) return;
+        state.kieApiKey = savedKey;
+        state.rememberKieKey = true;
+        if ($("kieApiKey")) $("kieApiKey").value = savedKey;
+        if ($("rememberKieKey")) $("rememberKieKey").checked = true;
+      } catch (error) {
+        setStatus("当前浏览器不允许读取 Kie.ai Key 保存状态。", true);
+      }
+    }
+
+    function saveKieKey() {
+      try {
+        localStorage.setItem(KIE_KEY_STORAGE_KEY, state.kieApiKey);
+      } catch (error) {
+        setStatus("当前浏览器不允许保存 Kie.ai Key 到本机。", true);
+      }
+    }
+
+    function removeKieKey() {
+      try {
+        localStorage.removeItem(KIE_KEY_STORAGE_KEY);
+        state.kieApiKey = "";
+        state.rememberKieKey = false;
+        if ($("kieApiKey")) $("kieApiKey").value = "";
+        if ($("rememberKieKey")) $("rememberKieKey").checked = false;
+      } catch (error) {
+        setStatus("当前浏览器不允许删除 Kie.ai Key 保存状态。", true);
       }
     }
 
@@ -3926,6 +4312,25 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
         setStatus("已取消记住 OpenRouter Key。");
       }
     });
+    $("kieApiKey").addEventListener("input", () => {
+      state.kieApiKey = $("kieApiKey").value.trim();
+      if ($("rememberKieKey").checked) saveKieKey();
+    });
+    $("rememberKieKey").addEventListener("change", () => {
+      state.rememberKieKey = $("rememberKieKey").checked;
+      state.kieApiKey = $("kieApiKey").value.trim();
+      if (state.rememberKieKey) {
+        saveKieKey();
+        setStatus("已记住本机 Kie.ai Key。");
+      } else {
+        removeKieKey();
+        setStatus("已取消记住 Kie.ai Key。");
+      }
+    });
+    $("defaultImageQuality").addEventListener("change", () => {
+      state.defaultImageQuality = $("defaultImageQuality").value;
+      render();
+    });
     $("defaultImageModel").addEventListener("change", () => {
       state.defaultImageModel = $("defaultImageModel").value;
       render();
@@ -4003,6 +4408,7 @@ ${JSON.stringify(toPromptItems(items), null, 2)}`;
 
     loadSavedApiKey();
     loadSavedOpenRouterKey();
+    loadSavedKieKey();
     syncIdeaCountControls();
     updateAssociationModeHint();
     updateApiStatus();
