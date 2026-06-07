@@ -1,10 +1,10 @@
 # AI灵感生成器
 
-一个可部署到 Vercel 的静态网页工具，用来把一句想法快速发散成一面点子墙，再把选中的灵感深入成公众号、小红书、朋友圈、小说架构或歌曲方案。支持 PWA 安装，朋友打开链接后可以添加到桌面，像小软件一样使用。
+一个部署在 Cloudflare Pages 的静态网页工具，用来把一句想法快速发散成一面点子墙，再把选中的灵感深入成公众号、小红书、朋友圈、小说架构或歌曲方案。支持 PWA 安装，朋友打开链接后可以添加到桌面，像小软件一样使用。
 
 ## 线上地址
 
-https://ai-inspiration-generator.vercel.app
+https://ai-inspiration-generator.pages.dev
 
 ## 文件
 
@@ -13,6 +13,9 @@ https://ai-inspiration-generator.vercel.app
 - `manifest.json`：PWA 应用名称、图标和安装配置。
 - `service-worker.js`：PWA 缓存和离线兜底。
 - `assets/`：应用图标和分享封面资源。
+- `docs/admin-deployment.md`：管理员配置、用户邀请码流程和 Cloudflare 部署手册。
+- `docs/knowledge-base-brainstorm-requirements.md`：知识库脑暴模式的需求说明，面向 Obsidian/Markdown 本地知识库工作流。
+- `AGENTS.md`：给后续 AI 维护者看的项目规则和验证命令。
 - `vercel.json`：Vercel 静态部署配置。
 - `sync-to-lark.ps1`：旧版飞书同步脚本，当前新版主流程暂未接入页面。
 
@@ -20,24 +23,36 @@ https://ai-inspiration-generator.vercel.app
 
 1. 把线上地址发给朋友。
 2. 朋友打开网址即可使用，不需要下载代码或配置本地环境。
-3. 朋友点击右上角 `未接入 AI`，在“接入 AI / API Key 设置”里填写自己的 DeepSeek API Key。
-4. 如果要生成配图，再填写自己的 OpenRouter API Key；需要高质封面时可再填写 Kie.ai API Key。
-5. 在 Chrome 或 Edge 里可以选择“安装应用”或“添加到桌面”，以后从桌面图标打开。
+3. 顶部分为 `游客登录` 和 `管理员` 两个独立入口。
+4. 管理员点击 `管理员`，用默认账号 `admin`、默认密码 `124816` 进入后台。
+5. 管理员在后台保存共享 API Key、模型默认值、配图 Key，并按需生成邀请码。
+6. 普通用户只需要输入想法并点击生成；`游客登录` 窗口只保留一页内的登录和邀请码注册，不展示用量统计。
+7. 在 Chrome 或 Edge 里可以选择“安装应用”或“添加到桌面”，以后从桌面图标打开。
 
-页面首屏是一个极简创作启动器：输入想法后可直接生成灵感；数量和模式默认收起为 `10 个灵感 · 脑暴发散`，点击后再调整。链接分享时会使用 `assets/og-cover.png` 作为传播封面。
+页面首屏是一个极简创作启动器：输入想法后可直接生成灵感；数量和模式默认收起为 `10 个灵感 · 脑暴发散`，点击后再调整。主输入区提供 `知识库` 入口，可临时读取本地 Obsidian/Markdown 笔记作为脑暴上下文。链接分享时会使用 `assets/og-cover.png` 作为传播封面。
 
 ## 主流程
 
 1. 首页只输入一句想法、名称或几个关键词。
-2. 默认生成 10 个脑暴点子。
-3. 在点子墙里浏览，点击卡片查看右侧详情，也可以全选或全不选。
-4. 在详情面板里对单个点子继续发散：
+2. 可选：点击 `知识库`，选择 Obsidian 知识库文件夹或多个 Markdown 文件，进入知识库脑暴；也可以随时关闭回到自由脑暴。
+3. 默认生成 10 个脑暴点子。启用知识库时，点子墙和后续扩写会优先基于选中的 Markdown 内容。
+4. 在点子墙里浏览，点击卡片查看右侧详情，也可以全选或全不选。
+5. 在详情面板里对单个点子继续发散：
    - 150 字以内内容介绍
    - 公众号方案
    - 小红书方案
    - 朋友圈文案
-5. 用卡片上的勾选框加入批量处理。
-6. 在“批量导出与高级操作”里生成小说架构、歌曲方案，或导出 Excel、Word、MD、TXT、PPT 文本大纲。
+6. 用卡片上的勾选框加入批量处理。
+7. 在“批量导出与高级操作”里生成小说架构、歌曲方案，或导出 Excel、Word、MD、TXT、PPT 文本大纲。
+
+## 知识库脑暴
+
+- `知识库` 按钮位于首页主输入框下方。
+- 可选择 Obsidian 知识库文件夹，也可手动选择一个或多个 `.md` / `.markdown` 文件。
+- 选中文件只保存在当前页面内存里，不写入 `localStorage`；刷新页面或点击 `关闭知识库` 后恢复自由脑暴。
+- 生成时会把 Markdown 相关片段注入提示词，第一轮点子墙和后续内容方案都会优先依据知识库内容。
+- 当前最多读取 80 个 Markdown 文件；单次提示词最多注入约 14000 字知识库内容，超出时按输入关键词优先选相关片段。
+- 文件内容不会上传到本站服务器，但会在用户点击生成时随请求发送给配置好的 AI 服务商。
 
 ## 公众号方案字段
 
@@ -49,7 +64,7 @@ https://ai-inspiration-generator.vercel.app
 - 适合配图建议 3 张
 - 目标读者
 - 写作口吻
-- 默认字数 1000 字，可在高级设置里修改
+- 默认字数 1000 字，可在管理员后台修改
 
 ## 小红书方案字段
 
@@ -71,25 +86,35 @@ https://ai-inspiration-generator.vercel.app
 
 当前版本真实接入 DeepSeek。
 
-在页面的“接入 AI / 高级设置”里填写：
+AI 配置改为管理员后台统一管理：
 
-- DeepSeek API Key
-- 接口地址，默认 `https://api.deepseek.com/chat/completions`
-- 模型，默认 `deepseek-v4-flash`，也可切换 `deepseek-v4-pro`
-- 默认只在当前页面内存里使用 API Key；勾选“记住本机 API Key”后，才会保存到当前浏览器的 `localStorage`。
+- 默认管理员账号：`admin`
+- 默认管理员密码：`124816`
+- 管理员可在后台修改密码。
+- 管理员可保存 DeepSeek 共享 API Key、接口地址、模型、发散程度、内容默认值和配图 API Key。
+- 普通用户不看到 API Key、模型、接口地址、token 或 API 调用统计。
+- 静态网页版本会把账号、邀请码、共享 Key 和用量数据保存在当前浏览器本地。
 
 页面提供 DeepSeek API Key 获取入口：`https://platform.deepseek.com/api_keys`
 
-如果没有填写 API Key，页面会生成可复制提示词，可以手动粘贴到 DeepSeek 或其他 AI 对话中使用。
+如果管理员尚未配置共享 API Key，普通用户会看到简单的不可用提示。
+
+## 管理员、邀请码与用量
+
+- 无邀请码游客和普通注册用户默认可使用 10 次，但普通用户界面不展示额度数字。
+- 邀请码只在注册时绑定，邀请码可配置用户使用上限，例如 20 次。
+- 管理员可生成、复制、编辑、删除邀请码。
+- 管理员可查看每个用户的邀请码、使用上限、已用次数、剩余次数、API 调用次数和 token 使用量。
+- 管理员可单独调整任意非管理员用户的使用上限。
+- 用户达到上限后，系统会限制继续调用 AI，并提示联系陆同学 AI：`1455234504@qq.com`。
 
 ## 图片生成
 
-在首页“接入 AI / 高级设置”里可以统一填写生图配置。生成点子并打开某个点子的详情后，详情面板底部提供极简“生成配图”区。
+管理员可在后台统一填写生图配置。生成点子并打开某个点子的详情后，详情面板底部提供极简“生成配图”区。
 
-- 标准配图：填写 OpenRouter API Key，默认使用 `bytedance-seed/seedream-4.5`，适合批量生成。
-- 高质成稿：填写 Kie.ai API Key，使用 `gpt-image-2-text-to-image`，适合精选封面。
-- 两类 Key 都只保存在当前浏览器，可分别勾选记住本机 Key。
-- 在首页选择默认图片质量、用途、风格和标准配图模型。
+- 标准配图：管理员填写 OpenRouter API Key，默认使用 `bytedance-seed/seedream-4.5`，适合批量生成。
+- 高质成稿：管理员填写 Kie.ai API Key，使用 `gpt-image-2-text-to-image`，适合精选封面。
+- 在管理员后台选择默认图片质量、用途、风格和标准配图模型。
 - 在详情页点击“生成配图”，页面会根据当前点子的标题、摘要和配图建议自动生成提示词并生成 1 张图。
 - 生成成功后，图片会在当前详情面板里预览，并可下载或重新生成。
 - 如需微调，打开详情页的“高级编辑”，可改图片用途、风格、标准配图模型、清晰度和提示词。
@@ -109,7 +134,8 @@ https://ai-inspiration-generator.vercel.app
 - 本工具是静态网页，不设置业务服务器。
 - API Key 不会上传到本站服务器，也不会写入云端数据库。
 - 调用模型时，请求从用户浏览器直接发送到 DeepSeek API、OpenRouter API 或 Kie.ai API。
-- 不建议把自己的统一 API Key 写进前端代码；用户应填写自己的 Key。
+- 知识库 Markdown 只在浏览器本地读取，不做长期保存；启用知识库脑暴并点击生成时，选中的相关片段会作为 AI 请求上下文发送给 DeepSeek。
+- 当前静态版本的管理员配置保存在当前浏览器本地；如需跨设备统一管理，需要后续接入后端数据库。
 
 ## 批量小说与作曲
 
@@ -135,9 +161,25 @@ https://ai-inspiration-generator.vercel.app
 - 不再使用 zip。一个文件直接导出；多个文件在已选择导出目录时写入一个文件夹。
 - 高级模式可以点击“浏览文件夹”选择导出位置。未选择时，按浏览器下载设置保存，建议把浏览器默认下载位置设为桌面。
 
-## Vercel 部署
+## Cloudflare Pages 部署
 
-这是纯静态网页项目，推荐部署到 Vercel。
+当前生产部署使用 Cloudflare Pages，项目名是 `ai-inspiration-generator`。
+
+部署命令：
+
+```powershell
+wrangler pages deploy . --project-name ai-inspiration-generator --branch main
+```
+
+部署后优先验证生产地址：
+
+```powershell
+Invoke-WebRequest -Uri "https://ai-inspiration-generator.pages.dev" -UseBasicParsing
+```
+
+## Vercel 备用部署
+
+这是纯静态网页项目，仍保留 Vercel 配置作为备用路径。
 
 最简单流程：
 
@@ -151,12 +193,12 @@ https://ai-inspiration-generator.vercel.app
 
 ## PWA 安装
 
-部署到 Vercel 后，用 Chrome 或 Edge 打开网页：
+部署后，用 Chrome 或 Edge 打开网页：
 
 1. 地址栏右侧如果出现安装图标，点击安装。
 2. 如果没有出现，打开浏览器菜单，选择“安装应用”或“应用 > 将此站点作为应用安装”。
 3. 安装后桌面会出现 `AI灵感生成器` 图标。
 4. 后续你更新 Vercel 项目，朋友再次打开应用会使用新版页面。
 
-浏览器建议使用 Chrome 或 Edge；“浏览文件夹”导出功能依赖浏览器支持，不支持时会退回到普通下载。
+浏览器建议使用 Chrome 或 Edge；知识库文件夹选择和“浏览文件夹”导出功能依赖浏览器支持，不支持时可改用 Markdown 多文件选择或普通下载。
 
