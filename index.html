@@ -1199,6 +1199,19 @@
       margin: 0;
     }
 
+    .draft-body {
+      display: grid;
+      gap: 9px;
+      color: #48534f;
+      font-size: 14px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+    }
+
+    .draft-body p {
+      margin: 0;
+    }
+
     .image-tool {
       margin-top: 12px;
       border-top: 1px solid var(--line);
@@ -1901,6 +1914,13 @@
                 <button id="batchOfficialBtn" type="button">批量转公众号</button>
                 <button id="batchXhsBtn" type="button">批量转小红书</button>
                 <button id="batchMomentsBtn" type="button">批量转朋友圈</button>
+              </div>
+              <div class="batch-actions">
+                <button id="batchOfficialArticleBtn" type="button">批量公众号正文</button>
+                <button id="batchXhsArticleBtn" type="button">批量小红书长文</button>
+                <button id="batchMomentsArticleBtn" type="button">批量朋友圈长文</button>
+                <button id="batchNovelDraftBtn" type="button">批量小说正文</button>
+                <button id="batchSongDraftBtn" type="button">批量完整歌词</button>
               </div>
             </div>
           </details>
@@ -3407,7 +3427,7 @@ ${context.text}
     function updateStageNav() {
       const hasIdeas = state.ideas.length > 0;
       const hasActive = Boolean(activeItem());
-      const hasContent = state.ideas.some(item => item.official || item.xhs || item.moments || item.novel || item.song);
+      const hasContent = state.ideas.some(item => item.official || item.xhs || item.moments || item.novel || item.song || hasFullDraft(item));
       const activeStage = hasContent ? "content" : hasActive ? "detail" : hasIdeas ? "ideas" : "input";
       const order = ["input", "ideas", "detail", "content", "export"];
       const activeIndex = order.indexOf(activeStage);
@@ -3432,6 +3452,7 @@ ${context.text}
       const hasActive = Boolean(activeItem());
       [
         "batchBriefBtn", "batchOfficialBtn", "batchXhsBtn", "batchMomentsBtn", "batchNovelBtn", "batchSongBtn",
+        "batchOfficialArticleBtn", "batchXhsArticleBtn", "batchMomentsArticleBtn", "batchNovelDraftBtn", "batchSongDraftBtn",
         "copyBtn", "excelBtn", "wordFilesBtn", "mdBtn", "txtBtn", "pptOutlineBtn"
       ].forEach(id => {
         const button = $(id);
@@ -3441,7 +3462,11 @@ ${context.text}
         const button = $(id);
         if (button) button.disabled = state.busy || !state.ideas.length;
       });
-      ["singleBriefBtn", "singleOfficialBtn", "singleXhsBtn", "singleMomentsBtn", "copyActiveBtn", "editActiveBtn", "prevIdeaBtn", "nextIdeaBtn"].forEach(id => {
+      [
+        "singleBriefBtn", "singleOfficialBtn", "singleXhsBtn", "singleMomentsBtn",
+        "singleOfficialArticleBtn", "singleXhsArticleBtn", "singleMomentsArticleBtn", "singleNovelDraftBtn", "singleSongDraftBtn",
+        "copyActiveBtn", "editActiveBtn", "prevIdeaBtn", "nextIdeaBtn"
+      ].forEach(id => {
         const button = $(id);
         if (button) button.disabled = state.busy || !hasActive;
       });
@@ -3522,9 +3547,14 @@ ${context.text}
             <span class="badge">${escapeHtml(item.category || "未分类")}</span>
             ${item.brief ? `<span class="badge selected">已发散</span>` : ""}
             ${item.official || item.xhs || item.moments || item.novel || item.song ? `<span class="badge selected">有方案</span>` : ""}
+            ${hasFullDraft(item) ? `<span class="badge selected">有正文</span>` : ""}
           </div>
         </article>
       `;
+    }
+
+    function hasFullDraft(item) {
+      return Boolean(item.officialArticle || item.xhsArticle || item.momentsArticle || item.novelDraft || item.songDraft);
     }
 
     function renderDetail() {
@@ -3561,6 +3591,11 @@ ${context.text}
           <button id="singleOfficialBtn" type="button">转公众号</button>
           <button id="singleXhsBtn" type="button">转小红书</button>
           <button id="singleMomentsBtn" type="button">转朋友圈</button>
+          <button id="singleOfficialArticleBtn" type="button">公众号正文</button>
+          <button id="singleXhsArticleBtn" type="button">小红书长文</button>
+          <button id="singleMomentsArticleBtn" type="button">朋友圈长文</button>
+          <button id="singleNovelDraftBtn" type="button">小说正文</button>
+          <button id="singleSongDraftBtn" type="button">完整歌词</button>
           <button id="copyActiveBtn" type="button">复制当前</button>
           <button id="editActiveBtn" type="button">编辑内容</button>
         </div>
@@ -3570,6 +3605,7 @@ ${context.text}
         ${item.moments ? momentsHtml(item.moments) : ""}
         ${item.novel ? novelHtml(item.novel) : ""}
         ${item.song ? songHtml(item.song) : ""}
+        ${fullDraftsHtml(item)}
         ${imageToolHtml(item)}
       `;
 
@@ -3577,6 +3613,11 @@ ${context.text}
       $("singleOfficialBtn").addEventListener("click", () => generateOfficial([item]));
       $("singleXhsBtn").addEventListener("click", () => generateXhs([item]));
       $("singleMomentsBtn").addEventListener("click", () => generateMoments([item]));
+      $("singleOfficialArticleBtn").addEventListener("click", () => generateOfficialArticles([item]));
+      $("singleXhsArticleBtn").addEventListener("click", () => generateXhsArticles([item]));
+      $("singleMomentsArticleBtn").addEventListener("click", () => generateMomentsArticles([item]));
+      $("singleNovelDraftBtn").addEventListener("click", () => generateNovelDrafts([item]));
+      $("singleSongDraftBtn").addEventListener("click", () => generateSongDrafts([item]));
       $("copyActiveBtn").addEventListener("click", () => copyText(formatItemText(item), "已复制当前内容。"));
       $("editActiveBtn").addEventListener("click", () => renderEditDetail(item));
       $("prevIdeaBtn").addEventListener("click", () => moveActiveIdea(-1));
@@ -4617,6 +4658,16 @@ ${context.text}
               ${editTextarea("editSongLyric", "歌词", item.song.lyric)}
             </section>
           ` : ""}
+          ${hasFullDraft(item) ? `
+            <section class="edit-section">
+              <h3>完整内容</h3>
+              ${item.officialArticle ? editTextarea("editOfficialArticle", "公众号正文", item.officialArticle) : ""}
+              ${item.xhsArticle ? editTextarea("editXhsArticle", "小红书长文", item.xhsArticle) : ""}
+              ${item.momentsArticle ? editTextarea("editMomentsArticle", "朋友圈长文", item.momentsArticle) : ""}
+              ${item.novelDraft ? editTextarea("editNovelDraft", "小说正文", item.novelDraft) : ""}
+              ${item.songDraft ? editTextarea("editSongDraft", "完整歌词", item.songDraft) : ""}
+            </section>
+          ` : ""}
         </div>
       `;
 
@@ -4699,6 +4750,12 @@ ${context.text}
         item.song.structure = normalizeList(getValue("editSongStructure"));
         item.song.lyric = getValue("editSongLyric");
       }
+
+      if ($("editOfficialArticle")) item.officialArticle = getValue("editOfficialArticle");
+      if ($("editXhsArticle")) item.xhsArticle = getValue("editXhsArticle");
+      if ($("editMomentsArticle")) item.momentsArticle = getValue("editMomentsArticle");
+      if ($("editNovelDraft")) item.novelDraft = getValue("editNovelDraft");
+      if ($("editSongDraft")) item.songDraft = getValue("editSongDraft");
 
       render();
       setStatus("已保存修改。左侧卡片、复制和导出都会使用新版内容。");
@@ -4797,6 +4854,35 @@ ${context.text}
           <p class="detail-summary">${escapeHtml(data.lyric)}</p>
         </section>
       `;
+    }
+
+    function fullDraftsHtml(item) {
+      const sections = [
+        item.officialArticle ? fullDraftHtml("公众号正文", item.officialArticle) : "",
+        item.xhsArticle ? fullDraftHtml("小红书长文", item.xhsArticle) : "",
+        item.momentsArticle ? fullDraftHtml("朋友圈长文", item.momentsArticle) : "",
+        item.novelDraft ? fullDraftHtml("小说正文", item.novelDraft) : "",
+        item.songDraft ? fullDraftHtml("完整歌词", item.songDraft) : ""
+      ].filter(Boolean);
+      return sections.join("");
+    }
+
+    function fullDraftHtml(title, text) {
+      return `
+        <section class="generated">
+          <h3>${escapeHtml(title)}</h3>
+          <div class="draft-body">${paragraphHtml(text)}</div>
+        </section>
+      `;
+    }
+
+    function paragraphHtml(text) {
+      return String(text || "")
+        .split(/\n{2,}/)
+        .map(part => part.trim())
+        .filter(Boolean)
+        .map(part => `<p>${escapeHtml(part)}</p>`)
+        .join("");
     }
 
     function listHtml(title, items) {
@@ -4928,6 +5014,88 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
 ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
     }
 
+    function fullDraftStyleRules(form) {
+      return `
+
+完整内容生成规则：
+1. 这是从方案/大纲进入成稿的第二步，不要再输出方案、提纲或写作建议。
+2. 如果启用了知识库模式，把知识库当成隐性素材库，吸收观点、案例、意象和表达倾向后重写成目标体裁。
+3. 不要大段照搬知识库原文，不要写得像论文、资料摘编或机械总结。
+4. 不要出现“根据知识库”“从上述材料可知”“笔记中提到”“资料显示”等暴露来源的表达。
+5. 成稿要保持各自文体的自然感、节奏感和可发布感。
+6. 必须返回 JSON 数组，不要解释，不要包 Markdown 代码块。正文可以在字段里用换行分段。${knowledgePromptBlock(form)}`;
+    }
+
+    function buildOfficialArticlePrompt(items, form) {
+      return `你是一个公众号长文作者。请基于每个点子已有的公众号方案，生成可直接发布的公众号正文。
+
+要求：
+1. 每篇正文围绕 official 里的标题、摘要、核心观点、文章大纲、开头切入、目标读者和写作口吻展开。
+2. 默认目标字数以 official.targetWords 为准；没有时按 ${form.contentWords} 字。
+3. 正文要有清楚开头、自然分段、观点推进和结尾行动建议。
+4. 不要只复述大纲，不要写成标题清单。
+5. 每个对象必须包含字段：id、officialArticle。
+
+已选点子与公众号方案：
+${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(form)}`;
+    }
+
+    function buildXhsArticlePrompt(items, form) {
+      return `你是一个小红书长文图文作者。请基于每个点子已有的小红书方案，生成适合发布的小红书长文。
+
+要求：
+1. 结合 xhs 里的标题、短正文、图片创意、标签和评论引导。
+2. 正文要轻、具体、有画面感，像真实经验分享，不要像公众号长文或硬广。
+3. 可以包含分段小标题、清单和口语化表达，但整体必须是完整可发布正文。
+4. 每篇控制在 600-1200 个中文字符左右。
+5. 每个对象必须包含字段：id、xhsArticle。
+
+已选点子与小红书方案：
+${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(form)}`;
+    }
+
+    function buildMomentsArticlePrompt(items, form) {
+      return `你是一个擅长真人感表达的朋友圈文案作者。请基于每个点子已有的朋友圈方案，生成更完整的朋友圈长文。
+
+要求：
+1. 结合 moments 里的文案、风格、发布场景、互动引导和配图建议。
+2. 像一个真实的人在朋友圈表达近况、感受或观点，不要像正式文章，不要像广告。
+3. 保留生活感、停顿感和自然口吻，可以有轻微故事性。
+4. 每篇控制在 300-700 个中文字符左右。
+5. 每个对象必须包含字段：id、momentsArticle。
+
+已选点子与朋友圈方案：
+${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(form)}`;
+    }
+
+    function buildNovelDraftPrompt(items, form) {
+      return `你是一个中文小说作者。请基于每个点子已有的小说架构，生成小说正文草稿。
+
+要求：
+1. 结合 novel 里的标题、主题、一句话故事、人物、故事结构、章节大纲和结尾。
+2. 直接写正文，不要再输出架构说明。
+3. 如果目标字数很长，本次写成开篇或第一章，但必须是连续可读的小说正文。
+4. 注意人物行动、场景、冲突和细节，不要写成设定集。
+5. 每个对象必须包含字段：id、novelDraft。
+
+已选点子与小说架构：
+${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(form)}`;
+    }
+
+    function buildSongDraftPrompt(items, form) {
+      return `你是一个中文歌词作者。请基于每个点子已有的歌曲方案，生成完整歌词稿。
+
+要求：
+1. 结合 song 里的歌名、音乐类型、风格、曲风说明、歌曲结构和已有歌词。
+2. 歌词要可唱，有主歌、副歌、桥段等段落，情绪递进清楚。
+3. 可以保留段落标识，如 [主歌]、[副歌]、[桥段]，但不要输出解释。
+4. 不要写成散文或口号堆砌。
+5. 每个对象必须包含字段：id、songDraft。
+
+已选点子与歌曲方案：
+${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(form)}`;
+    }
+
     function toPromptItems(items) {
       return items.map(item => ({
         id: item.id,
@@ -4937,6 +5105,17 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
         brief: item.brief,
         angle: item.angle,
         audience: item.audience
+      }));
+    }
+
+    function toFullDraftPromptItems(items) {
+      return items.map(item => ({
+        ...toPromptItems([item])[0],
+        official: item.official,
+        xhs: item.xhs,
+        moments: item.moments,
+        novel: item.novel,
+        song: item.song
       }));
     }
 
@@ -5022,6 +5201,11 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
           moments: null,
           novel: null,
           song: null,
+          officialArticle: "",
+          xhsArticle: "",
+          momentsArticle: "",
+          novelDraft: "",
+          songDraft: "",
           imageResult: null,
           imageStatus: "",
           imageMessage: ""
@@ -5185,6 +5369,95 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
       );
     }
 
+    function readyItems(items, field, message) {
+      const ready = items.filter(item => item?.[field]);
+      if (!ready.length) {
+        setStatus(message, true);
+        return [];
+      }
+      return ready;
+    }
+
+    function skippedText(items, ready) {
+      const skipped = items.length - ready.length;
+      return skipped > 0 ? ` ${skipped} 个点子缺少对应方案，已跳过。` : "";
+    }
+
+    function generateOfficialArticles(items) {
+      const ready = readyItems(items, "official", "先生成公众号方案。");
+      if (!ready.length) return;
+      return runGeneration(
+        ready,
+        buildOfficialArticlePrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (item) item.officialArticle = String(row.officialArticle || "").trim();
+        },
+        "正在生成公众号正文...",
+        count => `已生成 ${count} 篇公众号正文。${skippedText(items, ready)}`
+      );
+    }
+
+    function generateXhsArticles(items) {
+      const ready = readyItems(items, "xhs", "先生成小红书方案。");
+      if (!ready.length) return;
+      return runGeneration(
+        ready,
+        buildXhsArticlePrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (item) item.xhsArticle = String(row.xhsArticle || "").trim();
+        },
+        "正在生成小红书长文...",
+        count => `已生成 ${count} 篇小红书长文。${skippedText(items, ready)}`
+      );
+    }
+
+    function generateMomentsArticles(items) {
+      const ready = readyItems(items, "moments", "先生成朋友圈文案。");
+      if (!ready.length) return;
+      return runGeneration(
+        ready,
+        buildMomentsArticlePrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (item) item.momentsArticle = String(row.momentsArticle || "").trim();
+        },
+        "正在生成朋友圈长文...",
+        count => `已生成 ${count} 篇朋友圈长文。${skippedText(items, ready)}`
+      );
+    }
+
+    function generateNovelDrafts(items) {
+      const ready = readyItems(items, "novel", "先生成小说架构。");
+      if (!ready.length) return;
+      return runGeneration(
+        ready,
+        buildNovelDraftPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (item) item.novelDraft = String(row.novelDraft || "").trim();
+        },
+        "正在生成小说正文...",
+        count => `已生成 ${count} 篇小说正文。${skippedText(items, ready)}`
+      );
+    }
+
+    function generateSongDrafts(items) {
+      const ready = readyItems(items, "song", "先生成歌曲方案。");
+      if (!ready.length) return;
+      return runGeneration(
+        ready,
+        buildSongDraftPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (item) item.songDraft = String(row.songDraft || "").trim();
+        },
+        "正在生成完整歌词...",
+        count => `已生成 ${count} 份完整歌词。${skippedText(items, ready)}`
+      );
+    }
+
     function normalizeList(value) {
       const toLine = item => {
         if (item && typeof item === "object") return Object.values(item).map(v => String(v).trim()).filter(Boolean).join(" - ");
@@ -5256,7 +5529,16 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
         lines.push(`歌曲结构：${item.song.structure.join("；")}`);
         lines.push(`歌词：${item.song.lyric}`);
       }
+      appendFullDraftText(lines, item);
       return lines.join("\n");
+    }
+
+    function appendFullDraftText(lines, item) {
+      if (item.officialArticle) lines.push("", "公众号正文：", item.officialArticle);
+      if (item.xhsArticle) lines.push("", "小红书长文：", item.xhsArticle);
+      if (item.momentsArticle) lines.push("", "朋友圈长文：", item.momentsArticle);
+      if (item.novelDraft) lines.push("", "小说正文：", item.novelDraft);
+      if (item.songDraft) lines.push("", "完整歌词：", item.songDraft);
     }
 
     async function copySelected() {
@@ -5317,6 +5599,11 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
         小说架构: item.novel?.chapterOutline?.join("；") || "",
         歌名: item.song?.songTitle || "",
         歌词: item.song?.lyric || "",
+        已生成公众号正文: item.officialArticle ? "是" : "否",
+        已生成小红书长文: item.xhsArticle ? "是" : "否",
+        已生成朋友圈长文: item.momentsArticle ? "是" : "否",
+        已生成小说正文: item.novelDraft ? "是" : "否",
+        已生成完整歌词: item.songDraft ? "是" : "否",
         创建时间: new Date().toLocaleString("zh-CN")
       }));
     }
@@ -5424,6 +5711,12 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
         addHeading(label, HeadingLevel.HEADING_2);
         values.forEach((value, index) => children.push(new Paragraph(`${index + 1}. ${value}`)));
       };
+      const addBlock = (label, value) => {
+        if (!value) return;
+        addHeading(label, HeadingLevel.HEADING_2);
+        String(value).split(/\n{2,}/).map(row => row.trim()).filter(Boolean)
+          .forEach(row => children.push(new Paragraph(row)));
+      };
 
       if (kind === "official" && item.official) {
         addHeading(item.official.officialTitle || item.direction);
@@ -5508,6 +5801,11 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
             addList("歌曲结构", item.song.structure);
             addLine("歌词", item.song.lyric);
           }
+          addBlock("公众号正文", item.officialArticle);
+          addBlock("小红书长文", item.xhsArticle);
+          addBlock("朋友圈长文", item.momentsArticle);
+          addBlock("小说正文", item.novelDraft);
+          addBlock("完整歌词", item.songDraft);
         }
       }
 
@@ -5549,6 +5847,11 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
         lines.push("", "## 歌曲方案", "", `歌名：${item.song.songTitle || ""}`, "", `音乐类型：${item.song.musicType || ""}`, "", `风格：${item.song.style || ""}`, "", `曲风说明：${item.song.arrangement || ""}`);
         lines.push("", "### 歌曲结构", ...item.song.structure.map(row => `- ${row}`), "", "### 歌词", "", item.song.lyric || "");
       }
+      if (item.officialArticle) lines.push("", "## 公众号正文", "", item.officialArticle);
+      if (item.xhsArticle) lines.push("", "## 小红书长文", "", item.xhsArticle);
+      if (item.momentsArticle) lines.push("", "## 朋友圈长文", "", item.momentsArticle);
+      if (item.novelDraft) lines.push("", "## 小说正文", "", item.novelDraft);
+      if (item.songDraft) lines.push("", "## 完整歌词", "", item.songDraft);
       return lines.join("\n");
     }
 
@@ -5830,6 +6133,11 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
     $("batchOfficialBtn").addEventListener("click", () => generateOfficial(selectedItems()));
     $("batchXhsBtn").addEventListener("click", () => generateXhs(selectedItems()));
     $("batchMomentsBtn").addEventListener("click", () => generateMoments(selectedItems()));
+    $("batchOfficialArticleBtn").addEventListener("click", () => generateOfficialArticles(selectedItems()));
+    $("batchXhsArticleBtn").addEventListener("click", () => generateXhsArticles(selectedItems()));
+    $("batchMomentsArticleBtn").addEventListener("click", () => generateMomentsArticles(selectedItems()));
+    $("batchNovelDraftBtn").addEventListener("click", () => generateNovelDrafts(selectedItems()));
+    $("batchSongDraftBtn").addEventListener("click", () => generateSongDrafts(selectedItems()));
     $("batchNovelBtn").addEventListener("click", () => generateNovel(selectedItems()));
     $("batchSongBtn").addEventListener("click", () => generateSong(selectedItems()));
     $("batchImageMissingBtn").addEventListener("click", () => prepareBatchImage("missing"));

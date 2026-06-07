@@ -106,6 +106,114 @@ Recommended states:
 
 The interface should stay lightweight. Do not add API configuration, model configuration, token usage, or quota information to the normal user flow.
 
+## Full Content Generation Requirement
+
+The next product layer should extend the existing continuation flow from plans/outlines into full draft content.
+
+The intended user journey is:
+
+1. The user selects one or more ideas from the idea wall.
+2. The user generates a plan or outline, such as an official-account plan, Xiaohongshu plan, Moments copy direction, novel structure, or song plan.
+3. The user clicks the next matching action to turn that plan into a complete draft.
+4. The user can then copy or export the generated complete content.
+
+This should not feel like a separate advanced module. It should be a second step inside the existing continuation flow:
+
+- `点子 -> 公众号方案 -> 公众号正文`
+- `点子 -> 小红书方案 -> 小红书长文`
+- `点子 -> 朋友圈文案方案 -> 朋友圈长文`
+- `点子 -> 小说架构 -> 小说正文`
+- `点子 -> 作曲方案 -> 完整歌词`
+
+### Single-Idea Actions
+
+In the idea detail panel, each existing generated plan should expose the matching next action:
+
+- `公众号正文`: generate a complete official-account article from the official-account plan.
+- `小红书长文`: generate a publishable Xiaohongshu long-form post from the Xiaohongshu plan.
+- `朋友圈长文`: generate a longer natural Moments post from the Moments plan.
+- `小说正文`: generate a fiction draft from the novel structure.
+- `完整歌词`: generate or refine a complete lyric draft from the song plan.
+
+The first implementation should require the corresponding plan to exist before generating the complete draft. If the plan is missing, show a clear message such as `先生成公众号方案。` Future versions can optionally auto-generate the missing plan first.
+
+### Batch Actions
+
+Batch generation should preserve the same beginner-friendly mental model:
+
+1. Select ideas.
+2. Batch-generate plans/outlines.
+3. Batch-generate complete drafts from those plans/outlines.
+4. Export.
+
+Recommended batch buttons:
+
+- `批量公众号正文`
+- `批量小红书长文`
+- `批量朋友圈长文`
+- `批量小说正文`
+- `批量完整歌词`
+
+These buttons should sit near the existing batch continuation actions, not in a separate unrelated area. The user should understand that they are the next step after generating the matching plan.
+
+### Data Fields
+
+Each idea should store complete drafts separately by content type:
+
+- `officialArticle`
+- `xhsArticle`
+- `momentsArticle`
+- `novelDraft`
+- `songDraft`
+
+This keeps display, copy, and export behavior explicit and avoids one ambiguous `fullContent` field.
+
+### Knowledge-Base Inheritance For Complete Drafts
+
+If knowledge-base mode is active, complete draft generation should inherit knowledge-base context, but the output must not visibly read like a knowledge-base excerpt, research note, or paper.
+
+The knowledge base should be treated as an invisible material source:
+
+- Use its concepts, arguments, examples, details, worldview, emotional cues, and expression tendencies.
+- Transform those materials into the target content format.
+- Keep the final draft natural and coherent in its own genre.
+- Avoid obvious pasted sections, mechanical summaries, and paper-like paragraphs.
+- Avoid phrases that expose the process, such as `根据知识库`, `从上述材料可知`, `笔记中提到`, or `资料显示`.
+- Avoid mixing one dry source-like paragraph into otherwise natural writing.
+
+Genre-specific expectations:
+
+- Official-account articles should be readable, opinionated, structured, and story-aware, not academic.
+- Xiaohongshu long posts should be concrete, light, visual, and publishable.
+- Moments long posts should sound like a real person, not a formal article or marketing copy.
+- Fiction drafts should use the knowledge base as inspiration for setting, conflict, image, or theme, but read like fiction.
+- Lyric drafts should use the knowledge base as theme, imagery, or emotion, but read like singable lyrics.
+
+The prompt rule should be explicit: knowledge-base content is source material to absorb and rewrite, not text to quote or paste.
+
+### Export Expectations
+
+Complete drafts should be included in existing copy and export flows:
+
+- Word export should include generated complete drafts.
+- Markdown/TXT export should include generated complete drafts.
+- Copy-current and copy-selected flows should include complete drafts when present.
+- Excel can record whether a complete draft exists, but should avoid dumping very long full text unless the UI explicitly supports it.
+
+### Implementation Status
+
+Implemented in `index.html`:
+
+- The detail panel exposes single-idea actions for `公众号正文`, `小红书长文`, `朋友圈长文`, `小说正文`, and `完整歌词`.
+- The batch content group exposes `批量公众号正文`, `批量小红书长文`, `批量朋友圈长文`, `批量小说正文`, and `批量完整歌词`.
+- Each complete draft action requires the matching upstream plan to exist first. Missing-plan cases show messages such as `先生成公众号方案。`
+- Complete drafts are stored on each idea with the required fields: `officialArticle`, `xhsArticle`, `momentsArticle`, `novelDraft`, and `songDraft`.
+- Complete drafts are displayed in the detail panel and can be edited through the existing edit flow.
+- Complete drafts inherit knowledge-base context when knowledge-base mode is active.
+- Complete draft prompts explicitly treat knowledge-base content as invisible source material to absorb and rewrite, not text to quote, paste, or expose.
+- Copy-current, copy-selected, Word export, Markdown export, and TXT export include generated complete drafts.
+- Excel export records whether each complete draft type exists, without dumping long body text into the sheet.
+
 ## Out Of Scope For First Version
 
 - Full Obsidian vault indexing.
