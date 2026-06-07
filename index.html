@@ -2497,8 +2497,9 @@ ${context.text}
       return state.ideas.slice().sort((a, b) => b.score - a.score);
     }
 
-    function setStatus(text, isError = false) {
+    function setStatus(text, isError = false, reveal = false) {
       $("status").innerHTML = isError ? `<strong>${escapeHtml(text)}</strong>` : escapeHtml(text);
+      if (reveal) $("status").scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
     function setBusy(isBusy, text = "") {
@@ -5369,11 +5370,18 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       );
     }
 
-    function readyItems(items, field, message) {
+    function readyItems(items, field, config) {
       const ready = items.filter(item => item?.[field]);
       if (!ready.length) {
-        setStatus(message, true);
+        const total = items.length;
+        const message = total
+          ? `已选择 ${total} 个点子，但还没有可生成${config.draftName}的${config.planName}。请先点击「${config.planAction}」。${config.hint || ""}`
+          : "先勾选要生成正文的点子。";
+        setStatus(message, true, true);
         return [];
+      }
+      if (ready.length < items.length) {
+        setStatus(`已选择 ${items.length} 个点子，其中 ${ready.length} 个已有${config.planName}，其余会跳过。正在准备生成${config.draftName}...`, false, true);
       }
       return ready;
     }
@@ -5384,7 +5392,12 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     }
 
     function generateOfficialArticles(items) {
-      const ready = readyItems(items, "official", "先生成公众号方案。");
+      const ready = readyItems(items, "official", {
+        draftName: "公众号正文",
+        planName: "公众号方案",
+        planAction: "批量转公众号",
+        hint: "「批量继续发散」只会生成 150 字介绍，不是公众号大纲。"
+      });
       if (!ready.length) return;
       return runGeneration(
         ready,
@@ -5399,7 +5412,12 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     }
 
     function generateXhsArticles(items) {
-      const ready = readyItems(items, "xhs", "先生成小红书方案。");
+      const ready = readyItems(items, "xhs", {
+        draftName: "小红书长文",
+        planName: "小红书方案",
+        planAction: "批量转小红书",
+        hint: "「批量继续发散」只会生成 150 字介绍，不是小红书方案。"
+      });
       if (!ready.length) return;
       return runGeneration(
         ready,
@@ -5414,7 +5432,12 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     }
 
     function generateMomentsArticles(items) {
-      const ready = readyItems(items, "moments", "先生成朋友圈文案。");
+      const ready = readyItems(items, "moments", {
+        draftName: "朋友圈长文",
+        planName: "朋友圈文案方案",
+        planAction: "批量转朋友圈",
+        hint: "「批量继续发散」只会生成 150 字介绍，不是朋友圈方案。"
+      });
       if (!ready.length) return;
       return runGeneration(
         ready,
@@ -5429,7 +5452,11 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     }
 
     function generateNovelDrafts(items) {
-      const ready = readyItems(items, "novel", "先生成小说架构。");
+      const ready = readyItems(items, "novel", {
+        draftName: "小说正文",
+        planName: "小说架构",
+        planAction: "批量生成小说架构"
+      });
       if (!ready.length) return;
       return runGeneration(
         ready,
@@ -5444,7 +5471,11 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     }
 
     function generateSongDrafts(items) {
-      const ready = readyItems(items, "song", "先生成歌曲方案。");
+      const ready = readyItems(items, "song", {
+        draftName: "完整歌词",
+        planName: "歌曲方案",
+        planAction: "批量作曲"
+      });
       if (!ready.length) return;
       return runGeneration(
         ready,
