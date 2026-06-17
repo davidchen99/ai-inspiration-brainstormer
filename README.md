@@ -51,6 +51,10 @@ https://ai-inspiration-generator.pages.dev
 7. 用卡片上的勾选框加入批量处理。
 8. 在“批量导出与高级操作”里批量生成方案、完整正文、小说架构、歌曲方案，或导出 Excel、Word、MD、TXT、PPT 文本大纲。
 
+点子墙支持搜索、分类筛选、平台筛选、按生成状态查看，以及 `只看已选`。筛选只影响当前点子墙显示，不会删除点子，也不会改变已选和导出数据。
+
+页面提供本地 `历史` 入口，会自动保存本次点子、已选状态、方案、正文和图片提示词。历史只保存在当前浏览器，不保存 API Key、管理员配置或知识库原文。
+
 ## 知识库脑暴
 
 - `知识库` 按钮位于首页主输入框下方。
@@ -66,7 +70,7 @@ https://ai-inspiration-generator.pages.dev
 
 - 单个点子详情里可基于已有方案继续生成：`公众号正文`、`小红书长文`、`朋友圈长文`、`小说正文`、`完整歌词`。
 - 批量操作区支持：`批量公众号正文`、`批量小红书长文`、`批量朋友圈长文`、`批量小说正文`、`批量完整歌词`。
-- 生成完整内容前必须先有对应方案；例如没有公众号方案时，点击公众号正文会提示先生成公众号方案。
+- 生成完整内容前需要对应方案；如果缺少方案，系统会先自动补齐方案，再继续生成正文。
 - 启用知识库脑暴时，完整内容会继承知识库上下文，但提示词会要求把知识库作为隐性素材吸收重写，避免论文感、机械摘抄或显式暴露“知识库来源”。
 - 完整内容会保存在点子里，复制当前、复制已选、Word、Markdown、TXT 导出都会包含正文；Excel 只记录是否已生成完整内容。
 
@@ -93,6 +97,7 @@ https://ai-inspiration-generator.pages.dev
 ## 朋友圈文案字段
 
 - 2-3 句话朋友圈文案
+- 有趣版、利他版、生活感版三种变体
 - 文案风格
 - 3 张配图建议
 - 发布场景
@@ -100,18 +105,20 @@ https://ai-inspiration-generator.pages.dev
 
 ## AI 接入
 
-当前版本真实接入 DeepSeek。
+当前版本真实接入 OpenAI Chat Completions 兼容的文本模型接口，管理员后台可配置 DeepSeek、Kimi 或自定义 OpenAI 兼容接口。
 
 AI 配置改为管理员后台统一管理：
 
 - 默认管理员账号：`admin`
 - 默认管理员密码：`124816`
 - 管理员可在后台修改密码。
-- 管理员可保存 DeepSeek 共享 API Key、接口地址、模型、发散程度、内容默认值和配图 API Key。
+- 管理员可保存共享文本模型 API Key、服务商、接口地址、模型、发散程度、内容默认值和配图 API Key。
 - 普通用户不看到 API Key、模型、接口地址、token 或 API 调用统计。
 - 静态网页版本会把账号、邀请码、共享 Key 和用量数据保存在当前浏览器本地。
 
-页面提供 DeepSeek API Key 获取入口：`https://platform.deepseek.com/api_keys`
+DeepSeek API Key 获取入口：`https://platform.deepseek.com/api_keys`
+
+Kimi / Moonshot API Key 获取入口：`https://platform.moonshot.cn/console/api-keys`
 
 如果管理员尚未配置共享 API Key，普通用户会看到简单的不可用提示。
 
@@ -174,9 +181,19 @@ AI 配置改为管理员后台统一管理：
 - Excel 会记录公众号正文、小红书长文、朋友圈长文、小说正文、完整歌词是否已经生成，但不塞入长正文。
 - “批量导出 Word”：每个点子导出一个 Word 文件。
 - “批量导出 Word / MD / TXT”：每个点子导出一个文件，并包含已生成的完整正文。
+- “导出小红书图 prompt”：把已选点子汇总成一份 Markdown，包含小红书封面场景的图片提示词。
+- “导出飞书 Base 同步包”：把已选点子导出为 JSON，包含自动推断的 Base 字段 schema 和一行一个点子的 records；不包含 API Key、后台配置、用量数据或知识库原文。
 - “批量导出 PPT 大纲”：每个点子导出一份 5 页、10 页或 15 页的 PPT 文本大纲，格式可选 MD 或 TXT。
 - 不再使用 zip。一个文件直接导出；多个文件在已选择导出目录时写入一个文件夹。
 - 高级模式可以点击“浏览文件夹”选择导出位置。未选择时，按浏览器下载设置保存，建议把浏览器默认下载位置设为桌面。
+
+飞书 Base 同步包可用本地脚本预览或写入已有 Base 表：
+
+```powershell
+./sync-to-lark.ps1 -PackagePath .\飞书Base同步包-20260617-1200.json -BaseUrl "https://..." -TableName "公众号选题库" -EnsureFields -DryRun
+```
+
+去掉 `-DryRun` 后会通过 `lark-cli` 写入已有 Base 表；加上 `-EnsureFields` 会先按同步包 schema 创建缺失字段。
 
 ## Cloudflare Pages 部署
 

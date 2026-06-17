@@ -916,6 +916,102 @@
       justify-content: flex-end;
     }
 
+    .idea-filters {
+      display: grid;
+      grid-template-columns: minmax(180px, 1.2fr) repeat(3, minmax(110px, .72fr)) auto;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 14px;
+      border: 1px solid rgba(217, 210, 198, .82);
+      border-radius: 8px;
+      padding: 9px;
+      background: #fffdfa;
+    }
+
+    .idea-filters input,
+    .idea-filters select {
+      min-height: 34px;
+      padding: 7px 9px;
+      font-size: 13px;
+    }
+
+    .selected-filter {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 10px;
+      background: #fff;
+      color: #4d5a55;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .selected-filter input {
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      accent-color: var(--accent-dark);
+    }
+
+    .filter-meta {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .history-panel {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+      border: 1px solid rgba(217, 210, 198, .82);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fffdfa;
+    }
+
+    .history-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      border-bottom: 1px solid rgba(217, 210, 198, .72);
+      padding-bottom: 8px;
+    }
+
+    .history-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .history-title {
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .history-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .history-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .history-actions button {
+      min-height: 30px;
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+
     .density-control {
       display: inline-flex;
       gap: 4px;
@@ -1512,6 +1608,9 @@
 
       .masonry { column-count: 2; }
       .density-control { display: none; }
+      .idea-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 680px) {
@@ -1539,6 +1638,10 @@
       }
 
       .masonry { column-count: 1; }
+
+      .idea-filters {
+        grid-template-columns: 1fr;
+      }
 
       .toolbar,
       .detail-actions,
@@ -1682,6 +1785,7 @@
             </div>
             <div class="knowledge-bar">
               <button class="knowledge-btn" id="knowledgeBaseBtn" type="button" aria-expanded="false" aria-controls="knowledgePanel">知识库</button>
+              <button class="knowledge-btn" id="historyBtn" type="button" aria-expanded="false" aria-controls="historyPanel">历史</button>
               <span class="knowledge-state" id="knowledgeStatus">自由脑暴</span>
               <button class="knowledge-clear" id="knowledgeClearBtn" type="button" hidden>关闭知识库</button>
             </div>
@@ -1693,6 +1797,9 @@
               <p class="knowledge-note">适合选择 Obsidian 里的 Markdown 笔记。内容只在本页面读取，生成时作为上下文发送给 AI。</p>
               <input id="knowledgeFolderInput" type="file" accept=".md,.markdown,text/markdown" webkitdirectory multiple hidden>
               <input id="knowledgeFilesInput" type="file" accept=".md,.markdown,text/markdown" multiple hidden>
+            </div>
+            <div class="history-panel" id="historyPanel" hidden>
+              <div id="historyList"></div>
             </div>
             <div class="input-action-row">
               <div class="creator-controls">
@@ -1739,18 +1846,18 @@
           <summary>接入 AI / API Key 设置</summary>
           <div class="settings-body">
             <div class="note field">
-              当前版本默认接入 DeepSeek。API Key 由管理员统一配置，普通用户无需填写。
+              文本模型由管理员统一配置，普通用户无需填写 API Key 或模型参数。
             </div>
             <div class="field">
               <label for="provider">AI 服务商</label>
               <select id="provider">
                 <option value="deepseek" selected>DeepSeek</option>
-                <option value="kimi" disabled>Kimi（预留）</option>
-                <option value="custom" disabled>自定义模型（预留）</option>
+                <option value="kimi">Kimi</option>
+                <option value="custom">自定义 OpenAI 兼容接口</option>
               </select>
             </div>
             <div class="field">
-              <label for="apiKey">DeepSeek 共享 API Key <span class="hint">仅管理员可修改</span></label>
+              <label for="apiKey">共享文本模型 API Key <span class="hint">仅管理员可修改</span></label>
               <input id="apiKey" type="password" placeholder="请用 admin 登录后配置共享 Key">
             </div>
             <label class="detail-select" for="rememberApiKey">
@@ -1770,6 +1877,10 @@
                 <select id="model">
                   <option value="deepseek-v4-flash" selected>deepseek-v4-flash</option>
                   <option value="deepseek-v4-pro">deepseek-v4-pro</option>
+                  <option value="moonshot-v1-8k">moonshot-v1-8k</option>
+                  <option value="moonshot-v1-32k">moonshot-v1-32k</option>
+                  <option value="moonshot-v1-128k">moonshot-v1-128k</option>
+                  <option value="custom">自定义模型名</option>
                 </select>
               </div>
               <div class="field">
@@ -1885,6 +1996,28 @@
           </div>
         </div>
 
+        <div class="idea-filters" id="ideaFilters" aria-label="点子筛选">
+          <input id="ideaSearch" type="search" placeholder="搜索标题、方向、正文">
+          <select id="ideaCategoryFilter" aria-label="按分类筛选">
+            <option value="">全部分类</option>
+          </select>
+          <select id="ideaPlatformFilter" aria-label="按平台筛选">
+            <option value="">全部平台</option>
+          </select>
+          <select id="ideaStatusFilter" aria-label="按生成状态筛选">
+            <option value="">全部状态</option>
+            <option value="brief">已发散</option>
+            <option value="plan">有方案</option>
+            <option value="draft">有正文</option>
+            <option value="image">有配图</option>
+          </select>
+          <label class="selected-filter">
+            <input id="ideaSelectedOnly" type="checkbox">
+            只看已选
+          </label>
+          <div class="filter-meta" id="ideaFilterMeta">生成后可以搜索、筛选和只看已选。</div>
+        </div>
+
         <div id="ideaWall">
           <div class="empty">还没有点子。先输入一个想法，然后点击“生成灵感”。</div>
         </div>
@@ -1976,6 +2109,8 @@
                 <button id="wordFilesBtn" type="button">批量导出 Word</button>
                 <button id="mdBtn" type="button">批量导出 MD</button>
                 <button id="txtBtn" type="button">批量导出 TXT</button>
+                <button id="xhsPromptBtn" type="button">导出小红书图 prompt</button>
+                <button id="larkBasePackageBtn" type="button">导出飞书 Base 同步包</button>
               </div>
             </div>
           </details>
@@ -2069,6 +2204,13 @@
       exportDirHandle: null,
       exportDirName: "",
       layoutDensity: "loose",
+      ideaFilters: {
+        query: "",
+        category: "",
+        platform: "",
+        status: "",
+        selectedOnly: false
+      },
       openRouterApiKey: "",
       rememberOpenRouterKey: false,
       kieApiKey: "",
@@ -2083,6 +2225,9 @@
       accountPanelOpen: false,
       accountPanelMode: "user",
       adminSession: false,
+      historyPanelOpen: false,
+      historySessions: [],
+      currentHistoryId: "",
       knowledgeBase: {
         active: false,
         files: [],
@@ -2115,6 +2260,8 @@
     const ACCOUNT_STORAGE_KEY = "ai_brainstorm_account_store_v1";
     const SESSION_STORAGE_KEY = "ai_brainstorm_session_user_v1";
     const ADMIN_SESSION_STORAGE_KEY = "ai_brainstorm_admin_session_v1";
+    const HISTORY_STORAGE_KEY = "ai_brainstorm_history_v1";
+    const MAX_HISTORY_SESSIONS = 20;
     const DEFAULT_GUEST_LIMIT = 10;
     const DEFAULT_INVITE_LIMIT = 20;
     const ADMIN_USERNAME = "admin";
@@ -2191,8 +2338,9 @@
         contentWords: Number($("contentWords").value || 1000),
         provider: $("provider").value,
         apiKey: getDeepSeekApiKey(),
-        apiUrl: $("apiUrl").value.trim() || "https://api.deepseek.com/chat/completions",
+        apiUrl: $("apiUrl").value.trim() || defaultApiUrlForProvider($("provider").value),
         model: $("model").value,
+        customModel: getAccountStore().settings.customModel || "",
         temperature: Number($("temperature").value),
         associationMode: $("associationMode").checked,
         styleHint: $("styleHint").value.trim(),
@@ -2367,6 +2515,162 @@
       status.textContent = `知识库脑暴：${firstName}${extraCount}${usage}`;
     }
 
+    function loadHistoryStore() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || "[]");
+        state.historySessions = Array.isArray(parsed) ? parsed.slice(0, MAX_HISTORY_SESSIONS) : [];
+      } catch (error) {
+        state.historySessions = [];
+      }
+    }
+
+    function saveHistoryStore() {
+      try {
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(state.historySessions.slice(0, MAX_HISTORY_SESSIONS)));
+      } catch (error) {
+        setStatus("历史记录保存失败，可能是浏览器本地空间已满。", true);
+      }
+    }
+
+    function sanitizeImageResult(result) {
+      if (!result) return null;
+      const url = String(result.url || "");
+      return {
+        prompt: String(result.prompt || ""),
+        provider: String(result.provider || ""),
+        model: String(result.model || ""),
+        quality: String(result.quality || ""),
+        useCase: String(result.useCase || ""),
+        style: String(result.style || ""),
+        aspectRatio: String(result.aspectRatio || ""),
+        imageSize: String(result.imageSize || ""),
+        url: url.startsWith("data:") ? "" : url
+      };
+    }
+
+    function ideaForHistory(item) {
+      return {
+        ...item,
+        imageResult: sanitizeImageResult(item.imageResult),
+        imageStatus: "",
+        imageMessage: ""
+      };
+    }
+
+    function historyTitle() {
+      const seed = $("seedIdea")?.value.trim();
+      const active = activeItem();
+      return (seed || active?.direction || active?.title || `脑暴记录 ${new Date().toLocaleDateString("zh-CN")}`).slice(0, 48);
+    }
+
+    function historySettingsSnapshot() {
+      return {
+        seedIdea: $("seedIdea")?.value || "",
+        ideaCount: $("ideaCount")?.value || "10",
+        associationMode: Boolean($("associationMode")?.checked),
+        contentWords: $("contentWords")?.value || "",
+        styleHint: $("styleHint")?.value || "",
+        avoidHint: $("avoidHint")?.value || "",
+        categories: $("categories")?.value || "",
+        novelWords: $("novelWords")?.value || "",
+        novelStyle: $("novelStyle")?.value || "",
+        pptPages: $("pptPages")?.value || "",
+        pptFormat: $("pptFormat")?.value || "",
+        musicType: $("musicType")?.value || "",
+        musicStyle: $("musicStyle")?.value || ""
+      };
+    }
+
+    function knowledgeHistoryMeta() {
+      const kb = state.knowledgeBase;
+      return {
+        active: Boolean(kb.active),
+        fileCount: kb.files.length,
+        sourceName: kb.sourceName,
+        totalChars: kb.totalChars,
+        lastUsedChars: kb.lastUsedChars,
+        lastTruncated: kb.lastTruncated
+      };
+    }
+
+    function saveCurrentHistory() {
+      if (!state.ideas.length) return;
+      const now = new Date().toISOString();
+      const id = state.currentHistoryId || `history-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const existing = state.historySessions.find(session => session.id === id);
+      const session = {
+        id,
+        title: historyTitle(),
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+        settings: historySettingsSnapshot(),
+        knowledgeMeta: knowledgeHistoryMeta(),
+        activeId: state.activeId,
+        ideas: state.ideas.map(ideaForHistory)
+      };
+      state.currentHistoryId = id;
+      state.historySessions = [session, ...state.historySessions.filter(item => item.id !== id)].slice(0, MAX_HISTORY_SESSIONS);
+      saveHistoryStore();
+      renderHistoryPanel();
+    }
+
+    function restoreHistory(id) {
+      const session = state.historySessions.find(item => item.id === id);
+      if (!session) return setStatus("没有找到这条历史记录。", true);
+      state.currentHistoryId = session.id;
+      state.ideas = (session.ideas || []).map(item => ({ ...item, selected: Boolean(item.selected) }));
+      state.activeId = session.activeId || state.ideas[0]?.id || null;
+      state.lastPrompt = "";
+      state.ideaFilters = { query: "", category: "", platform: "", status: "", selectedOnly: false };
+      if (session.settings) {
+        Object.entries(session.settings).forEach(([key, value]) => {
+          const control = $(key);
+          if (!control) return;
+          if (control.type === "checkbox") control.checked = Boolean(value);
+          else control.value = value;
+        });
+        syncIdeaCountControls();
+        updateAssociationModeHint();
+      }
+      render();
+      $("ideasSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setStatus(`已恢复历史记录：${session.title}`);
+    }
+
+    function deleteHistory(id) {
+      const session = state.historySessions.find(item => item.id === id);
+      state.historySessions = state.historySessions.filter(item => item.id !== id);
+      if (state.currentHistoryId === id) state.currentHistoryId = "";
+      saveHistoryStore();
+      renderHistoryPanel();
+      setStatus(session ? `已删除历史记录：${session.title}` : "已删除历史记录。");
+    }
+
+    function renderHistoryPanel() {
+      const panel = $("historyPanel");
+      const button = $("historyBtn");
+      const list = $("historyList");
+      if (!panel || !button || !list) return;
+      panel.hidden = !state.historyPanelOpen;
+      button.setAttribute("aria-expanded", state.historyPanelOpen ? "true" : "false");
+      if (!state.historySessions.length) {
+        list.innerHTML = `<div class="history-meta">还没有历史记录。生成灵感后会自动保存到本地浏览器。</div>`;
+        return;
+      }
+      list.innerHTML = state.historySessions.map(session => `
+        <div class="history-item">
+          <div>
+            <div class="history-title">${escapeHtml(session.title || "未命名记录")}</div>
+            <div class="history-meta">${escapeHtml(new Date(session.updatedAt || session.createdAt).toLocaleString("zh-CN"))} · ${Number(session.ideas?.length || 0)} 个点子</div>
+          </div>
+          <div class="history-actions">
+            <button type="button" data-restore-history="${escapeAttr(session.id)}">恢复</button>
+            <button type="button" data-delete-history="${escapeAttr(session.id)}">删除</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
     function knowledgeKeywords(seedIdea) {
       const text = String(seedIdea || "").toLowerCase();
       const words = text.match(/[a-z0-9][a-z0-9_-]{1,}/gi) || [];
@@ -2476,7 +2780,7 @@ ${context.text}
       const button = $("apiStatusBtn");
       if (!button) return;
       const connected = Boolean(getDeepSeekApiKey());
-      button.textContent = connected ? "AI 已配置" : "AI 未配置";
+      button.textContent = connected ? `${textProviderLabel(getAccountStore().settings.provider)} 已配置` : "AI 未配置";
       button.classList.toggle("connected", connected);
     }
 
@@ -2495,6 +2799,102 @@ ${context.text}
 
     function orderedIdeas() {
       return state.ideas.slice().sort((a, b) => b.score - a.score);
+    }
+
+    function uniqueIdeaValues(field) {
+      return [...new Set(state.ideas.map(item => String(item[field] || "").trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "zh-Hans-CN"));
+    }
+
+    function hasPlan(item) {
+      return Boolean(item.official || item.xhs || item.moments || item.novel || item.song);
+    }
+
+    function ideaSearchText(item) {
+      return [
+        item.category,
+        item.direction,
+        item.title,
+        item.summary,
+        item.angle,
+        item.audience,
+        item.platform,
+        item.reason,
+        item.brief,
+        JSON.stringify(item.official || {}),
+        JSON.stringify(item.xhs || {}),
+        JSON.stringify(item.moments || {}),
+        JSON.stringify(item.novel || {}),
+        JSON.stringify(item.song || {}),
+        item.officialArticle,
+        item.xhsArticle,
+        item.momentsArticle,
+        item.novelDraft,
+        item.songDraft,
+        item.imageResult?.prompt
+      ].join("\n").toLowerCase();
+    }
+
+    function itemMatchesStatus(item, status) {
+      if (!status) return true;
+      if (status === "brief") return Boolean(item.brief);
+      if (status === "plan") return hasPlan(item);
+      if (status === "draft") return hasFullDraft(item);
+      if (status === "image") return Boolean(item.imageResult?.url);
+      return true;
+    }
+
+    function filteredIdeas() {
+      const filters = state.ideaFilters;
+      const query = filters.query.trim().toLowerCase();
+      return orderedIdeas().filter(item => {
+        if (filters.category && item.category !== filters.category) return false;
+        if (filters.platform && item.platform !== filters.platform) return false;
+        if (filters.selectedOnly && !item.selected) return false;
+        if (!itemMatchesStatus(item, filters.status)) return false;
+        if (query && !ideaSearchText(item).includes(query)) return false;
+        return true;
+      });
+    }
+
+    function optionListHtml(values, activeValue, emptyLabel) {
+      return [
+        `<option value="">${escapeHtml(emptyLabel)}</option>`,
+        ...values.map(value => `<option value="${escapeAttr(value)}" ${value === activeValue ? "selected" : ""}>${escapeHtml(value)}</option>`)
+      ].join("");
+    }
+
+    function renderIdeaFilters() {
+      const filters = state.ideaFilters;
+      const hasIdeas = state.ideas.length > 0;
+      const visibleCount = filteredIdeas().length;
+      const categoryValues = uniqueIdeaValues("category");
+      const platformValues = uniqueIdeaValues("platform");
+      if (filters.category && !categoryValues.includes(filters.category)) filters.category = "";
+      if (filters.platform && !platformValues.includes(filters.platform)) filters.platform = "";
+
+      const search = $("ideaSearch");
+      const category = $("ideaCategoryFilter");
+      const platform = $("ideaPlatformFilter");
+      const status = $("ideaStatusFilter");
+      const selectedOnly = $("ideaSelectedOnly");
+      const meta = $("ideaFilterMeta");
+
+      if (search) search.value = filters.query;
+      if (category) category.innerHTML = optionListHtml(categoryValues, filters.category, "全部分类");
+      if (platform) platform.innerHTML = optionListHtml(platformValues, filters.platform, "全部平台");
+      if (status) status.value = filters.status;
+      if (selectedOnly) selectedOnly.checked = filters.selectedOnly;
+
+      [search, category, platform, status, selectedOnly].forEach(control => {
+        if (control) control.disabled = state.busy || !hasIdeas;
+      });
+
+      if (meta) {
+        meta.textContent = hasIdeas
+          ? `当前显示 ${visibleCount} 个 / 共 ${state.ideas.length} 个点子。筛选只影响点子墙显示，不会删除内容。`
+          : "生成后可以搜索、筛选和只看已选。";
+      }
     }
 
     function setStatus(text, isError = false, reveal = false) {
@@ -2522,7 +2922,7 @@ ${context.text}
         const store = getAccountStore();
         store.settings.sharedDeepSeekApiKey = $("apiKey").value.trim();
         saveAccountStore();
-        setStatus(store.settings.sharedDeepSeekApiKey ? "已保存管理员共享 API Key。" : "已清空管理员共享 API Key。");
+        setStatus(store.settings.sharedDeepSeekApiKey ? "已保存管理员共享文本模型 API Key。" : "已清空管理员共享文本模型 API Key。");
         syncDeepSeekKeyControl();
         updateApiStatus();
       } catch (error) {
@@ -2540,6 +2940,7 @@ ${context.text}
           provider: "deepseek",
           apiUrl: "https://api.deepseek.com/chat/completions",
           model: "deepseek-v4-flash",
+          customModel: "",
           temperature: 0.85,
           contentWords: 1000,
           styleHint: "",
@@ -2733,6 +3134,22 @@ ${context.text}
       return hasAdminAccess() ? $("apiKey")?.value.trim() || "" : "";
     }
 
+    function defaultApiUrlForProvider(provider) {
+      if (provider === "kimi") return "https://api.moonshot.cn/v1/chat/completions";
+      return "https://api.deepseek.com/chat/completions";
+    }
+
+    function textProviderLabel(provider) {
+      if (provider === "kimi") return "Kimi";
+      if (provider === "custom") return "自定义 OpenAI 兼容接口";
+      return "DeepSeek";
+    }
+
+    function resolvedTextModel(form) {
+      const settings = getAccountStore().settings;
+      return form.model === "custom" ? (settings.customModel || "custom-model") : form.model;
+    }
+
     function syncDeepSeekKeyControl() {
       const input = $("apiKey");
       const remember = $("rememberApiKey");
@@ -2743,7 +3160,7 @@ ${context.text}
         input.type = "password";
         input.disabled = false;
         input.value = sharedKey;
-        input.placeholder = "sk-...";
+        input.placeholder = "sk-... / Moonshot Key / 自定义服务 Key";
         if (remember) {
           remember.disabled = false;
           remember.checked = Boolean(sharedKey);
@@ -2751,7 +3168,7 @@ ${context.text}
       } else {
         input.type = "text";
         input.disabled = true;
-        input.value = sharedKey ? "管理员已配置共享 Key" : "管理员尚未配置共享 Key";
+        input.value = sharedKey ? `管理员已配置 ${textProviderLabel(store.settings.provider)} Key` : "管理员尚未配置共享 Key";
         input.placeholder = "请联系管理员配置共享 Key";
         if (remember) {
           remember.disabled = true;
@@ -2763,7 +3180,7 @@ ${context.text}
     function applyAdminSettingsToControls() {
       const settings = getAccountStore().settings;
       setControlValue("provider", settings.provider || "deepseek");
-      setControlValue("apiUrl", settings.apiUrl || "https://api.deepseek.com/chat/completions");
+      setControlValue("apiUrl", settings.apiUrl || defaultApiUrlForProvider(settings.provider || "deepseek"));
       setControlValue("model", settings.model || "deepseek-v4-flash");
       setControlValue("temperature", settings.temperature || 0.85);
       setControlValue("contentWords", settings.contentWords || 1000);
@@ -2969,8 +3386,16 @@ ${context.text}
             <section class="account-card">
               <h3>AI 设置</h3>
               <div class="field">
-                <label for="adminSharedApiKey">DeepSeek 共享 API Key</label>
+                <label for="adminSharedApiKey">共享文本模型 API Key</label>
                 <input id="adminSharedApiKey" type="password" value="${escapeAttr(settings.sharedDeepSeekApiKey || "")}" placeholder="sk-...">
+              </div>
+              <div class="field">
+                <label for="adminProvider">文本模型服务商</label>
+                <select id="adminProvider">
+                  <option value="deepseek" ${selectedAttr(settings.provider, "deepseek")}>DeepSeek</option>
+                  <option value="kimi" ${selectedAttr(settings.provider, "kimi")}>Kimi</option>
+                  <option value="custom" ${selectedAttr(settings.provider, "custom")}>自定义 OpenAI 兼容接口</option>
+                </select>
               </div>
               <div class="field">
                 <label for="adminGuestLimit">无邀请码基础上限</label>
@@ -2989,8 +3414,16 @@ ${context.text}
                       <select id="adminModel">
                         <option value="deepseek-v4-flash" ${selectedAttr(settings.model, "deepseek-v4-flash")}>deepseek-v4-flash</option>
                         <option value="deepseek-v4-pro" ${selectedAttr(settings.model, "deepseek-v4-pro")}>deepseek-v4-pro</option>
+                        <option value="moonshot-v1-8k" ${selectedAttr(settings.model, "moonshot-v1-8k")}>moonshot-v1-8k</option>
+                        <option value="moonshot-v1-32k" ${selectedAttr(settings.model, "moonshot-v1-32k")}>moonshot-v1-32k</option>
+                        <option value="moonshot-v1-128k" ${selectedAttr(settings.model, "moonshot-v1-128k")}>moonshot-v1-128k</option>
+                        <option value="custom" ${selectedAttr(settings.model, "custom")}>自定义模型名</option>
                       </select>
                     </div>
+                  </div>
+                  <div class="field">
+                    <label for="adminCustomModel">自定义模型名</label>
+                    <input id="adminCustomModel" value="${escapeAttr(settings.customModel || "")}" placeholder="例如：gpt-4.1-mini / kimi-k2 / 自有模型名">
                   </div>
                   <div class="compact">
                     <div class="field">
@@ -3252,8 +3685,10 @@ ${context.text}
       const store = getAccountStore();
       store.settings.sharedDeepSeekApiKey = $("adminSharedApiKey").value.trim();
       store.settings.guestLimit = Math.max(1, positiveInt($("adminGuestLimit").value || DEFAULT_GUEST_LIMIT, DEFAULT_GUEST_LIMIT));
-      store.settings.apiUrl = $("adminApiUrl")?.value.trim() || "https://api.deepseek.com/chat/completions";
+      store.settings.provider = $("adminProvider")?.value || "deepseek";
+      store.settings.apiUrl = $("adminApiUrl")?.value.trim() || defaultApiUrlForProvider(store.settings.provider);
       store.settings.model = $("adminModel")?.value || "deepseek-v4-flash";
+      store.settings.customModel = $("adminCustomModel")?.value.trim() || "";
       store.settings.temperature = Number($("adminTemperature")?.value || 0.85);
       store.settings.contentWords = Math.max(500, positiveInt($("adminContentWords")?.value || 1000, 1000));
       store.settings.styleHint = $("adminStyleHint")?.value.trim() || "";
@@ -3454,7 +3889,7 @@ ${context.text}
       [
         "batchBriefBtn", "batchOfficialBtn", "batchXhsBtn", "batchMomentsBtn", "batchNovelBtn", "batchSongBtn",
         "batchOfficialArticleBtn", "batchXhsArticleBtn", "batchMomentsArticleBtn", "batchNovelDraftBtn", "batchSongDraftBtn",
-        "copyBtn", "excelBtn", "wordFilesBtn", "mdBtn", "txtBtn", "pptOutlineBtn"
+        "copyBtn", "excelBtn", "wordFilesBtn", "mdBtn", "txtBtn", "xhsPromptBtn", "larkBasePackageBtn", "pptOutlineBtn"
       ].forEach(id => {
         const button = $(id);
         if (button) button.disabled = state.busy || !hasSelected;
@@ -3496,10 +3931,12 @@ ${context.text}
       $("appRoot").classList.toggle("layout-compact", state.layoutDensity === "compact");
       updateAccountStatus();
       syncDeepSeekKeyControl();
+      renderIdeaFilters();
       renderIdeaWall();
       renderDetail();
       renderAccountPanel();
       renderKnowledgeBaseState();
+      renderHistoryPanel();
       updateStageNav();
       updateButtons();
       const count = selectedItems().length;
@@ -3522,8 +3959,14 @@ ${context.text}
       }
 
       const hasChecked = selectedItems().length > 0;
+      const visibleIdeas = filteredIdeas();
+      if (!visibleIdeas.length) {
+        wall.className = "";
+        wall.innerHTML = `<div class="empty">没有符合当前筛选条件的点子。调整搜索、分类或只看已选后再试。</div>`;
+        return;
+      }
       wall.className = "masonry";
-      wall.innerHTML = orderedIdeas()
+      wall.innerHTML = visibleIdeas
         .map(item => ideaCardHtml(item, hasChecked))
         .join("");
     }
@@ -3547,7 +3990,7 @@ ${context.text}
             <span class="badge">${escapeHtml(item.platform || "都适合")}</span>
             <span class="badge">${escapeHtml(item.category || "未分类")}</span>
             ${item.brief ? `<span class="badge selected">已发散</span>` : ""}
-            ${item.official || item.xhs || item.moments || item.novel || item.song ? `<span class="badge selected">有方案</span>` : ""}
+            ${hasPlan(item) ? `<span class="badge selected">有方案</span>` : ""}
             ${hasFullDraft(item) ? `<span class="badge selected">有正文</span>` : ""}
           </div>
         </article>
@@ -4122,6 +4565,7 @@ ${context.text}
         };
         item.imageStatus = "success";
         item.imageMessage = "图片已生成，可以下载或重新生成。";
+        saveCurrentHistory();
         render();
         setStatus("已生成 1 张配图，可预览或下载。");
       } catch (error) {
@@ -4462,6 +4906,7 @@ ${context.text}
       state.batchImage.unprocessed = Math.max(0, state.batchImage.total - state.batchImage.done);
       const stopped = state.batchImage.abortRequested ? "已中止批量生成。" : "批量生成完成。";
       state.batchImage.message = `${stopped} 成功：${state.batchImage.success}，失败：${state.batchImage.failed}，跳过：${state.batchImage.skipped}，未处理：${state.batchImage.unprocessed}。`;
+      if (state.batchImage.success > 0) saveCurrentHistory();
       setBusy(false);
       render();
       setStatus(state.batchImage.message, state.batchImage.failed > 0);
@@ -4628,6 +5073,9 @@ ${context.text}
             <section class="edit-section">
               <h3>朋友圈文案</h3>
               ${editTextarea("editMomentsCopy", "文案", item.moments.copy)}
+              ${editTextarea("editMomentsFunny", "有趣版", item.moments.variants?.funny || "")}
+              ${editTextarea("editMomentsUseful", "利他版", item.moments.variants?.useful || "")}
+              ${editTextarea("editMomentsLifestyle", "生活感版", item.moments.variants?.lifestyle || "")}
               ${editInput("editMomentsStyle", "风格", item.moments.style)}
               ${editList("editMomentsImages", "配图建议", item.moments.imageIdeas)}
               ${editInput("editMomentsScene", "发布场景", item.moments.scene)}
@@ -4725,6 +5173,11 @@ ${context.text}
 
       if (item.moments) {
         item.moments.copy = getValue("editMomentsCopy");
+        item.moments.variants = {
+          funny: getValue("editMomentsFunny"),
+          useful: getValue("editMomentsUseful"),
+          lifestyle: getValue("editMomentsLifestyle")
+        };
         item.moments.style = getValue("editMomentsStyle");
         item.moments.imageIdeas = normalizeList(getValue("editMomentsImages"));
         item.moments.scene = getValue("editMomentsScene");
@@ -4758,6 +5211,7 @@ ${context.text}
       if ($("editNovelDraft")) item.novelDraft = getValue("editNovelDraft");
       if ($("editSongDraft")) item.songDraft = getValue("editSongDraft");
 
+      saveCurrentHistory();
       render();
       setStatus("已保存修改。左侧卡片、复制和导出都会使用新版内容。");
     }
@@ -4816,8 +5270,20 @@ ${context.text}
             <div><dt>发布场景：</dt><dd>${escapeHtml(data.scene)}</dd></div>
             <div><dt>互动引导：</dt><dd>${escapeHtml(data.interaction)}</dd></div>
           </dl>
+          ${momentsVariantsHtml(data.variants)}
           ${listHtml("配图建议", data.imageIdeas)}
         </section>
+      `;
+    }
+
+    function momentsVariantsHtml(variants = {}) {
+      const rows = momentsVariantRows(variants);
+      if (!rows.length) return "";
+      return `
+        <div class="detail-line"><strong>三种朋友圈版本：</strong></div>
+        <dl>
+          ${rows.map(([label, text]) => `<div><dt>${escapeHtml(label)}：</dt><dd>${escapeHtml(text)}</dd></div>`).join("")}
+        </dl>
       `;
     }
 
@@ -4974,8 +5440,9 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
 3. imageIdeas 必须返回 3 条，说明三张配图分别拍什么或生成什么，画面要具体。
 4. scene 写适合发布的场景。
 5. interaction 写一句自然的互动引导，可以为空但不要硬凑。
-6. 必须返回 JSON 数组，不要 Markdown，不要解释。
-7. 每个对象必须包含字段：id、copy、style、imageIdeas、scene、interaction。
+6. variants 必须返回一个对象，包含 funny、useful、lifestyle 三个字段，分别对应有趣版、利他版、生活感版，每个字段写一条可直接发朋友圈的文案。
+7. 必须返回 JSON 数组，不要 Markdown，不要解释。
+8. 每个对象必须包含字段：id、copy、style、imageIdeas、scene、interaction、variants。
 
 已选选题：
 ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
@@ -5121,15 +5588,13 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     }
 
     async function callDeepSeek(prompt, form) {
-      if (form.provider !== "deepseek") {
-        throw new Error("当前版本只接入 DeepSeek，其他模型先作为高级设置预留。");
-      }
       if (!form.apiKey) {
         state.lastPrompt = prompt;
         if (hasAdminAccess()) showPrompt(prompt);
-        throw new Error(hasAdminAccess() ? "请先在管理员后台配置 DeepSeek 共享 API Key。" : "管理员尚未配置 AI，暂时无法生成。");
+        throw new Error(hasAdminAccess() ? `请先在管理员后台配置 ${textProviderLabel(form.provider)} 共享 API Key。` : "管理员尚未配置 AI，暂时无法生成。");
       }
       ensureUsageCapacity();
+      const model = resolvedTextModel(form);
 
       const response = await fetch(form.apiUrl, {
         method: "POST",
@@ -5138,7 +5603,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
           "Authorization": `Bearer ${form.apiKey}`
         },
         body: JSON.stringify({
-          model: form.model,
+          model,
           messages: [
             { role: "system", content: "你只输出可解析 JSON，不输出 Markdown。你擅长中文内容选题、公众号、小红书和朋友圈文案策划。" },
             { role: "user", content: prompt }
@@ -5149,7 +5614,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`DeepSeek 返回错误：${response.status} ${errText.slice(0, 160)}`);
+        throw new Error(`${textProviderLabel(form.provider)} 返回错误：${response.status} ${errText.slice(0, 160)}`);
       }
 
       const data = await response.json();
@@ -5212,7 +5677,9 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
           imageMessage: ""
         })).filter(item => item.direction || item.title);
         state.activeId = state.ideas[0]?.id || null;
+        state.currentHistoryId = "";
         $("promptBox").style.display = "none";
+        saveCurrentHistory();
         render();
         $("ideasSection").scrollIntoView({ behavior: "smooth", block: "start" });
         const kbText = form.knowledgeContext?.active ? `知识库模式已使用约 ${form.knowledgeContext.usedChars} 字上下文。` : "";
@@ -5237,12 +5704,15 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         const parsed = parseJsonArray(content);
         parsed.forEach(applyResult);
         $("promptBox").style.display = "none";
+        saveCurrentHistory();
         render();
         const kbText = form.knowledgeContext?.active ? ` 知识库模式已使用约 ${form.knowledgeContext.usedChars} 字上下文。` : "";
         setStatus(`${doneText(parsed.length)}${kbText}`);
+        return parsed;
       } catch (error) {
         render();
         setStatus(error.message, true);
+        return [];
       } finally {
         setBusy(false);
       }
@@ -5317,7 +5787,8 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
             style: String(row.style || "").trim(),
             imageIdeas: normalizeList(row.imageIdeas).slice(0, 3),
             scene: String(row.scene || "").trim(),
-            interaction: String(row.interaction || "").trim()
+            interaction: String(row.interaction || "").trim(),
+            variants: normalizeMomentsVariants(row.variants, row.copy)
           };
         },
         "正在生成朋友圈文案...",
@@ -5370,33 +5841,42 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       );
     }
 
-    function readyItems(items, field, config) {
+    async function readyItems(items, field, config) {
+      if (!items.length) {
+        setStatus("先勾选要生成正文的点子。", true, true);
+        return [];
+      }
+      const missing = items.filter(item => !item?.[field]);
+      if (missing.length) {
+        const existing = items.length - missing.length;
+        const prefix = existing
+          ? `已选择 ${items.length} 个点子，其中 ${existing} 个已有${config.planName}，`
+          : `已选择 ${items.length} 个点子，`;
+        setStatus(`${prefix}正在为 ${missing.length} 个点子补齐${config.planName}，然后生成${config.draftName}...`, false, true);
+        await config.generatePlan(missing);
+      }
+
       const ready = items.filter(item => item?.[field]);
       if (!ready.length) {
-        const total = items.length;
-        const message = total
-          ? `已选择 ${total} 个点子，但还没有可生成${config.draftName}的${config.planName}。请先点击「${config.planAction}」。${config.hint || ""}`
-          : "先勾选要生成正文的点子。";
-        setStatus(message, true, true);
+        setStatus(`还没有可生成${config.draftName}的${config.planName}。补齐失败或模型没有返回可用方案。`, true, true);
         return [];
       }
       if (ready.length < items.length) {
-        setStatus(`已选择 ${items.length} 个点子，其中 ${ready.length} 个已有${config.planName}，其余会跳过。正在准备生成${config.draftName}...`, false, true);
+        setStatus(`已选择 ${items.length} 个点子，其中 ${ready.length} 个已有${config.planName}，其余暂时跳过。正在生成${config.draftName}...`, false, true);
       }
       return ready;
     }
 
     function skippedText(items, ready) {
       const skipped = items.length - ready.length;
-      return skipped > 0 ? ` ${skipped} 个点子缺少对应方案，已跳过。` : "";
+      return skipped > 0 ? ` ${skipped} 个点子仍缺少对应方案，已跳过。` : "";
     }
 
-    function generateOfficialArticles(items) {
-      const ready = readyItems(items, "official", {
+    async function generateOfficialArticles(items) {
+      const ready = await readyItems(items, "official", {
         draftName: "公众号正文",
         planName: "公众号方案",
-        planAction: "批量转公众号",
-        hint: "「批量继续发散」只会生成 150 字介绍，不是公众号大纲。"
+        generatePlan: generateOfficial
       });
       if (!ready.length) return;
       return runGeneration(
@@ -5411,12 +5891,11 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       );
     }
 
-    function generateXhsArticles(items) {
-      const ready = readyItems(items, "xhs", {
+    async function generateXhsArticles(items) {
+      const ready = await readyItems(items, "xhs", {
         draftName: "小红书长文",
         planName: "小红书方案",
-        planAction: "批量转小红书",
-        hint: "「批量继续发散」只会生成 150 字介绍，不是小红书方案。"
+        generatePlan: generateXhs
       });
       if (!ready.length) return;
       return runGeneration(
@@ -5431,12 +5910,11 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       );
     }
 
-    function generateMomentsArticles(items) {
-      const ready = readyItems(items, "moments", {
+    async function generateMomentsArticles(items) {
+      const ready = await readyItems(items, "moments", {
         draftName: "朋友圈长文",
         planName: "朋友圈文案方案",
-        planAction: "批量转朋友圈",
-        hint: "「批量继续发散」只会生成 150 字介绍，不是朋友圈方案。"
+        generatePlan: generateMoments
       });
       if (!ready.length) return;
       return runGeneration(
@@ -5451,11 +5929,11 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       );
     }
 
-    function generateNovelDrafts(items) {
-      const ready = readyItems(items, "novel", {
+    async function generateNovelDrafts(items) {
+      const ready = await readyItems(items, "novel", {
         draftName: "小说正文",
         planName: "小说架构",
-        planAction: "批量生成小说架构"
+        generatePlan: generateNovel
       });
       if (!ready.length) return;
       return runGeneration(
@@ -5470,11 +5948,11 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       );
     }
 
-    function generateSongDrafts(items) {
-      const ready = readyItems(items, "song", {
+    async function generateSongDrafts(items) {
+      const ready = await readyItems(items, "song", {
         draftName: "完整歌词",
         planName: "歌曲方案",
-        planAction: "批量作曲"
+        generatePlan: generateSong
       });
       if (!ready.length) return;
       return runGeneration(
@@ -5497,6 +5975,25 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       if (Array.isArray(value)) return value.map(toLine).filter(Boolean);
       if (!value) return [];
       return String(value).split(/\n|;|；/).map(item => item.trim()).filter(Boolean);
+    }
+
+    function normalizeMomentsVariants(value, fallback = "") {
+      const source = value && typeof value === "object" ? value : {};
+      const pick = (...keys) => keys.map(key => source[key]).find(Boolean);
+      const base = String(fallback || "").trim();
+      return {
+        funny: String(pick("funny", "有趣版", "interesting") || base).trim(),
+        useful: String(pick("useful", "利他版", "helpful") || base).trim(),
+        lifestyle: String(pick("lifestyle", "生活感版", "life") || base).trim()
+      };
+    }
+
+    function momentsVariantRows(variants = {}) {
+      return [
+        ["有趣版", variants.funny],
+        ["利他版", variants.useful],
+        ["生活感版", variants.lifestyle]
+      ].filter(([, text]) => String(text || "").trim());
     }
 
     function formatItemText(item) {
@@ -5534,6 +6031,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       if (item.moments) {
         lines.push("", "朋友圈文案：");
         lines.push(`文案：${item.moments.copy}`);
+        momentsVariantRows(item.moments.variants).forEach(([label, text]) => lines.push(`${label}：${text}`));
         lines.push(`风格：${item.moments.style}`);
         lines.push(`配图建议：${item.moments.imageIdeas.join("；")}`);
         lines.push(`发布场景：${item.moments.scene}`);
@@ -5625,6 +6123,9 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         小红书标题: item.xhs?.xhsTitle || "",
         小红书正文: item.xhs?.body || "",
         朋友圈文案: item.moments?.copy || "",
+        朋友圈有趣版: item.moments?.variants?.funny || "",
+        朋友圈利他版: item.moments?.variants?.useful || "",
+        朋友圈生活感版: item.moments?.variants?.lifestyle || "",
         朋友圈配图建议: item.moments?.imageIdeas?.join("；") || "",
         小说标题: item.novel?.novelTitle || "",
         小说架构: item.novel?.chapterOutline?.join("；") || "",
@@ -5707,6 +6208,141 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       await saveFiles(files, `AI灵感生成器-TXT-${dateStamp()}`);
     }
 
+    function formatXhsImagePrompts(items) {
+      const defaults = getImageDefaults();
+      const form = {
+        ...defaults,
+        useCase: "xhs_cover",
+        aspectRatio: IMAGE_USE_CASES.xhs_cover?.aspectRatio || "3:4"
+      };
+      const lines = [
+        "# 小红书图片提示词",
+        "",
+        `导出时间：${new Date().toLocaleString("zh-CN")}`,
+        `默认风格：${IMAGE_STYLES[form.style]?.split("，")[0] || form.style || "默认风格"}`,
+        "",
+        "> 每个 prompt 已按小红书封面场景生成，可复制到生图工具继续使用。",
+        ""
+      ];
+
+      items.forEach((item, index) => {
+        const title = item.xhs?.xhsTitle || item.title || item.direction || `点子 ${index + 1}`;
+        const imageIdeas = pickImageIdeas(item, "xhs_cover");
+        lines.push(`## ${index + 1}. ${title}`);
+        lines.push("");
+        if (item.xhs?.body) lines.push(`小红书正文摘要：${item.xhs.body}`, "");
+        if (imageIdeas.length) {
+          lines.push("图片创意：");
+          imageIdeas.slice(0, 3).forEach((idea, ideaIndex) => lines.push(`${ideaIndex + 1}. ${idea}`));
+          lines.push("");
+        }
+        lines.push("```text");
+        lines.push(buildImagePrompt(item, form));
+        lines.push("```", "");
+      });
+
+      return lines.join("\n");
+    }
+
+    async function exportXhsImagePrompts() {
+      const items = selectedItems();
+      if (!items.length) return setStatus("先勾选要导出图片提示词的点子。", true);
+      if (!(await ensureExportDestination())) return;
+      const content = formatXhsImagePrompts(items);
+      await saveFiles([{
+        name: `小红书图片提示词-${dateStamp()}.md`,
+        blob: new Blob([content], { type: "text/markdown;charset=utf-8" })
+      }], `AI灵感生成器-小红书图片提示词-${dateStamp()}`);
+    }
+
+    function larkBaseRows(items) {
+      return items.map(item => ({
+        sessionTitle: historyTitle(),
+        seedIdea: $("seedIdea")?.value.trim() || "",
+        id: item.id,
+        selected: Boolean(item.selected),
+        category: item.category || "",
+        direction: item.direction || "",
+        title: item.title || "",
+        summary: item.summary || "",
+        angle: item.angle || "",
+        audience: item.audience || "",
+        platform: item.platform || "",
+        score: Number(item.score || 0),
+        reason: item.reason || "",
+        brief: item.brief || "",
+        hasBrief: Boolean(item.brief),
+        hasOfficialPlan: Boolean(item.official),
+        hasXhsPlan: Boolean(item.xhs),
+        hasMomentsPlan: Boolean(item.moments),
+        hasNovel: Boolean(item.novel),
+        hasSong: Boolean(item.song),
+        hasOfficialArticle: Boolean(item.officialArticle),
+        hasXhsArticle: Boolean(item.xhsArticle),
+        hasMomentsArticle: Boolean(item.momentsArticle),
+        hasNovelDraft: Boolean(item.novelDraft),
+        hasSongDraft: Boolean(item.songDraft),
+        officialTitle: item.official?.officialTitle || "",
+        officialAbstract: item.official?.abstract || "",
+        officialCorePoint: item.official?.corePoint || "",
+        officialOutline: item.official?.outline?.join("\n") || "",
+        xhsTitle: item.xhs?.xhsTitle || "",
+        xhsBody: item.xhs?.body || "",
+        momentsCopy: item.moments?.copy || "",
+        momentsFunny: item.moments?.variants?.funny || "",
+        momentsUseful: item.moments?.variants?.useful || "",
+        momentsLifestyle: item.moments?.variants?.lifestyle || "",
+        novelTitle: item.novel?.novelTitle || "",
+        songTitle: item.song?.songTitle || "",
+        officialArticle: item.officialArticle || "",
+        xhsArticle: item.xhsArticle || "",
+        momentsArticle: item.momentsArticle || "",
+        novelDraft: item.novelDraft || "",
+        songDraft: item.songDraft || "",
+        imagePrompt: item.imageResult?.prompt || "",
+        imageUrl: item.imageResult?.url || "",
+        imageProvider: item.imageResult?.provider || "",
+        imageModel: item.imageResult?.model || "",
+        createdAt: item.createdAt || "",
+        updatedAt: new Date().toISOString()
+      }));
+    }
+
+    function inferBaseFieldType(name, values) {
+      if (/^(selected|has[A-Z])/.test(name)) return "checkbox";
+      if (values.every(value => value === "" || value === null || typeof value === "number")) return "number";
+      if (/url$/i.test(name)) return "url";
+      if (values.some(value => String(value || "").length > 180 || String(value || "").includes("\n"))) return "multiline_text";
+      return "text";
+    }
+
+    function buildLarkBasePackage(items) {
+      const records = larkBaseRows(items);
+      const fieldNames = Object.keys(records[0] || {});
+      return {
+        version: 1,
+        app: "AI灵感生成器",
+        exportedAt: new Date().toISOString(),
+        note: "本文件不包含 API Key、管理员配置、用量数据或知识库原文。schema 由当前点子结构自动推断。",
+        schema: fieldNames.map(name => ({
+          name,
+          type: inferBaseFieldType(name, records.map(row => row[name]))
+        })),
+        records: records.map(row => ({ fields: row }))
+      };
+    }
+
+    async function exportLarkBasePackage() {
+      const items = selectedItems();
+      if (!items.length) return setStatus("先勾选要同步到飞书 Base 的点子。", true);
+      if (!(await ensureExportDestination())) return;
+      const content = JSON.stringify(buildLarkBasePackage(items), null, 2);
+      await saveFiles([{
+        name: `飞书Base同步包-${dateStamp()}.json`,
+        blob: new Blob([content], { type: "application/json;charset=utf-8" })
+      }], `AI灵感生成器-飞书Base同步包-${dateStamp()}`);
+    }
+
     async function exportPptOutline(format) {
       const items = selectedItems();
       if (!items.length) return setStatus("先勾选要导出的点子。", true);
@@ -5768,6 +6404,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       } else if (kind === "moments" && item.moments) {
         addHeading(item.direction || "朋友圈文案");
         addLine("朋友圈文案", item.moments.copy);
+        momentsVariantRows(item.moments.variants).forEach(([label, text]) => addLine(label, text));
         addLine("风格", item.moments.style);
         addLine("发布场景", item.moments.scene);
         addLine("互动引导", item.moments.interaction);
@@ -5806,6 +6443,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
           if (item.moments) {
             addHeading("朋友圈文案", HeadingLevel.HEADING_2);
             addLine("文案", item.moments.copy);
+            momentsVariantRows(item.moments.variants).forEach(([label, text]) => addLine(label, text));
             addLine("风格", item.moments.style);
             addList("配图建议", item.moments.imageIdeas);
             addLine("发布场景", item.moments.scene);
@@ -5869,6 +6507,11 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       }
       if (item.moments) {
         lines.push("", "## 朋友圈文案", "", item.moments.copy || "", "", `风格：${item.moments.style || ""}`, "", `发布场景：${item.moments.scene || ""}`, "", `互动引导：${item.moments.interaction || ""}`);
+        const variants = momentsVariantRows(item.moments.variants);
+        if (variants.length) {
+          lines.push("", "### 三种朋友圈版本");
+          variants.forEach(([label, text]) => lines.push("", `#### ${label}`, "", text));
+        }
       }
       if (item.novel) {
         lines.push("", "## 小说架构", "", `### ${item.novel.novelTitle || ""}`, "", `一句话故事：${item.novel.logline || ""}`, "", `主题：${item.novel.theme || ""}`, "", `风格：${item.novel.style || ""}`, "", `目标字数：${item.novel.targetWords || ""}`);
@@ -6112,6 +6755,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       state.ideas = [];
       state.activeId = null;
       state.lastPrompt = "";
+      state.currentHistoryId = "";
       $("promptText").value = "";
       $("promptBox").style.display = "none";
       render();
@@ -6150,6 +6794,10 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     $("promptBtn").addEventListener("click", () => showPrompt());
     $("defaultSummaryBtn").addEventListener("click", toggleDefaultPanel);
     $("knowledgeBaseBtn").addEventListener("click", toggleKnowledgePanel);
+    $("historyBtn").addEventListener("click", () => {
+      state.historyPanelOpen = !state.historyPanelOpen;
+      renderHistoryPanel();
+    });
     $("knowledgeFolderBtn").addEventListener("click", () => $("knowledgeFolderInput").click());
     $("knowledgeFilesBtn").addEventListener("click", () => $("knowledgeFilesInput").click());
     $("knowledgeClearBtn").addEventListener("click", clearKnowledgeBase);
@@ -6180,6 +6828,8 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     $("wordFilesBtn").addEventListener("click", exportWordFiles);
     $("mdBtn").addEventListener("click", exportMarkdownFiles);
     $("txtBtn").addEventListener("click", exportTxtFiles);
+    $("xhsPromptBtn").addEventListener("click", exportXhsImagePrompts);
+    $("larkBasePackageBtn").addEventListener("click", exportLarkBasePackage);
     $("pptOutlineBtn").addEventListener("click", () => exportPptOutline(getForm().pptFormat));
     $("chooseFolderBtn").addEventListener("click", chooseExportFolder);
     $("exportMode").addEventListener("change", () => {
@@ -6242,13 +6892,35 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       state.defaultImageStyle = $("defaultImageStyle").value;
       render();
     });
+    $("ideaSearch").addEventListener("input", () => {
+      state.ideaFilters.query = $("ideaSearch").value;
+      render();
+    });
+    $("ideaCategoryFilter").addEventListener("change", () => {
+      state.ideaFilters.category = $("ideaCategoryFilter").value;
+      render();
+    });
+    $("ideaPlatformFilter").addEventListener("change", () => {
+      state.ideaFilters.platform = $("ideaPlatformFilter").value;
+      render();
+    });
+    $("ideaStatusFilter").addEventListener("change", () => {
+      state.ideaFilters.status = $("ideaStatusFilter").value;
+      render();
+    });
+    $("ideaSelectedOnly").addEventListener("change", () => {
+      state.ideaFilters.selectedOnly = $("ideaSelectedOnly").checked;
+      render();
+    });
     $("selectAllBtn").addEventListener("click", () => {
       state.ideas.forEach(item => item.selected = true);
+      saveCurrentHistory();
       render();
       setStatus(`已全选 ${state.ideas.length} 个点子。`);
     });
     $("clearSelectBtn").addEventListener("click", () => {
       state.ideas.forEach(item => item.selected = false);
+      saveCurrentHistory();
       render();
       setStatus("已取消全部选择。");
     });
@@ -6271,6 +6943,18 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     });
 
     document.addEventListener("click", event => {
+      const restoreId = event.target.getAttribute?.("data-restore-history");
+      if (restoreId) {
+        restoreHistory(restoreId);
+        return;
+      }
+
+      const deleteId = event.target.getAttribute?.("data-delete-history");
+      if (deleteId) {
+        deleteHistory(deleteId);
+        return;
+      }
+
       if (event.target.closest("[data-stop]")) return;
       const card = event.target.closest("[data-open]");
       if (!card) return;
@@ -6286,6 +6970,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         if (!item) return;
         item.selected = event.target.checked;
         state.activeId = item.id;
+        saveCurrentHistory();
         if (item.selected && state.ideas.length > 1) {
           setStatus("已加入选择，自动切到下一个。");
           moveActiveIdea(1);
@@ -6302,10 +6987,12 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       if (!item) return;
       item.selected = event.target.checked;
       if (item.selected) state.activeId = item.id;
+      saveCurrentHistory();
       render();
     });
 
     initAccountStore();
+    loadHistoryStore();
     syncIdeaCountControls();
     updateAssociationModeHint();
     updateApiStatus();
