@@ -1749,6 +1749,7 @@
         <p class="sub">输入一句想法，先生成可选方向，再决定要扩写、导出或批量处理。</p>
       </div>
       <div class="hero-actions">
+        <button class="ghost" id="downloadOfflineBtn" type="button">下载线下电脑版</button>
         <button class="account-status" id="userAccountBtn" type="button">游客登录</button>
         <button class="account-status admin" id="adminAccountBtn" type="button">管理员</button>
         <button class="ghost" id="resetBtn" type="button">清空本次脑暴</button>
@@ -1838,14 +1839,14 @@
           </div>
         </div>
 
-        <div class="quick-start">
+        <div class="quick-start" id="quickStartNote">
           输入想法后直接生成，账号和额度由管理员统一管理。
         </div>
 
         <details class="settings" id="apiSettings" hidden>
           <summary>接入 AI / API Key 设置</summary>
           <div class="settings-body">
-            <div class="note field">
+            <div class="note field" id="apiSettingsNote">
               文本模型由管理员统一配置，普通用户无需填写 API Key 或模型参数。
             </div>
             <div class="field">
@@ -1857,14 +1858,14 @@
               </select>
             </div>
             <div class="field">
-              <label for="apiKey">共享文本模型 API Key <span class="hint">仅管理员可修改</span></label>
+              <label for="apiKey" id="apiKeyLabel">共享文本模型 API Key <span class="hint">仅管理员可修改</span></label>
               <input id="apiKey" type="password" placeholder="请用 admin 登录后配置共享 Key">
             </div>
             <label class="detail-select" for="rememberApiKey">
-              <span>保存共享 API Key <span class="hint">保存到当前浏览器的管理员配置</span></span>
+              <span id="rememberApiKeyLabel">保存共享 API Key <span class="hint">保存到当前浏览器的管理员配置</span></span>
               <input id="rememberApiKey" type="checkbox">
             </label>
-            <div class="note field">
+            <div class="note field" id="apiStorageNote">
               说明：当前项目仍是静态网页，账号、邀请码、用量和共享 Key 会保存在当前浏览器本地。
             </div>
             <div class="field">
@@ -1891,6 +1892,10 @@
                   <option value="1">更发散</option>
                 </select>
               </div>
+            </div>
+            <div class="field">
+              <label for="customModel">自定义模型名 <span class="hint">选择自定义模型时填写</span></label>
+              <input id="customModel" placeholder="例如：gpt-4.1-mini / kimi-k2 / 自有模型名">
             </div>
             <div class="field">
               <label for="contentWords">公众号目标字数</label>
@@ -2255,21 +2260,40 @@
     };
 
     const $ = (id) => document.getElementById(id);
+    const APP_MODE = new URLSearchParams(location.search).get("mode") === "offline"
+      || document.documentElement.dataset.appMode === "offline"
+      || document.documentElement.dataset.mode === "offline"
+      ? "offline"
+      : "online";
     const OPENROUTER_KEY_STORAGE_KEY = "ai_brainstorm_openrouter_api_key";
     const KIE_KEY_STORAGE_KEY = "ai_brainstorm_kie_api_key";
     const ACCOUNT_STORAGE_KEY = "ai_brainstorm_account_store_v1";
     const SESSION_STORAGE_KEY = "ai_brainstorm_session_user_v1";
     const ADMIN_SESSION_STORAGE_KEY = "ai_brainstorm_admin_session_v1";
     const HISTORY_STORAGE_KEY = "ai_brainstorm_history_v1";
+    const OFFLINE_TEXT_SETTINGS_STORAGE_KEY = "ai_brainstorm_offline_text_settings_v1";
     const MAX_HISTORY_SESSIONS = 20;
     const DEFAULT_GUEST_LIMIT = 10;
     const DEFAULT_INVITE_LIMIT = 20;
     const ADMIN_USERNAME = "admin";
     const ADMIN_DEFAULT_PASSWORD = "124816";
     const LIMIT_CONTACT_TEXT = "您的使用次数已达上限，如需继续使用，请联系陆同学 AI。联系邮箱：1455234504@qq.com";
-    const KNOWLEDGE_MAX_FILES = 80;
-    const KNOWLEDGE_MAX_PROMPT_CHARS = 14000;
-    const KNOWLEDGE_MAX_SECTION_CHARS = 1400;
+    const ONLINE_KNOWLEDGE_DEFAULTS = {
+      enabled: true,
+      allowFolder: true,
+      maxFiles: 80,
+      maxTotalChars: 1000000,
+      maxPromptChars: 14000,
+      maxSectionChars: 1400
+    };
+    const OFFLINE_KNOWLEDGE_DEFAULTS = {
+      enabled: true,
+      allowFolder: true,
+      maxFiles: 5000,
+      maxTotalChars: 20000000,
+      maxPromptChars: 50000,
+      maxSectionChars: 3000
+    };
     const KIE_IMAGE_MODEL = "gpt-image-2-text-to-image";
     const KIE_TASK_CREATE_URL = "https://api.kie.ai/api/v1/jobs/createTask";
     const KIE_TASK_RECORD_URL = "https://api.kie.ai/api/v1/jobs/recordInfo";
@@ -2340,7 +2364,7 @@
         apiKey: getDeepSeekApiKey(),
         apiUrl: $("apiUrl").value.trim() || defaultApiUrlForProvider($("provider").value),
         model: $("model").value,
-        customModel: getAccountStore().settings.customModel || "",
+        customModel: $("customModel")?.value.trim() || getAccountStore().settings.customModel || "",
         temperature: Number($("temperature").value),
         associationMode: $("associationMode").checked,
         styleHint: $("styleHint").value.trim(),
@@ -2358,6 +2382,38 @@
 
     function getValue(id) {
       return $(id)?.value.trim() || "";
+    }
+
+    function isOfflineMode() {
+      return APP_MODE === "offline";
+    }
+
+    function clampPositive(value, fallback, min = 1, max = Number.MAX_SAFE_INTEGER) {
+      const next = positiveInt(value, fallback);
+      return Math.min(max, Math.max(min, next));
+    }
+
+    function getKnowledgeLimits() {
+      const settings = getAccountStore().settings;
+      const defaults = isOfflineMode() ? OFFLINE_KNOWLEDGE_DEFAULTS : ONLINE_KNOWLEDGE_DEFAULTS;
+      if (isOfflineMode()) {
+        return {
+          enabled: true,
+          allowFolder: true,
+          maxFiles: clampPositive(settings.offlineKnowledgeMaxFiles, defaults.maxFiles, 1, 50000),
+          maxTotalChars: clampPositive(settings.offlineKnowledgeMaxTotalChars, defaults.maxTotalChars, 10000, 100000000),
+          maxPromptChars: clampPositive(settings.offlineKnowledgeMaxPromptChars, defaults.maxPromptChars, 1000, 200000),
+          maxSectionChars: clampPositive(settings.offlineKnowledgeMaxSectionChars, defaults.maxSectionChars, 300, 20000)
+        };
+      }
+      return {
+        enabled: settings.onlineKnowledgeEnabled !== false,
+        allowFolder: settings.onlineKnowledgeAllowFolder !== false,
+        maxFiles: clampPositive(settings.onlineKnowledgeMaxFiles, defaults.maxFiles, 1, 5000),
+        maxTotalChars: clampPositive(settings.onlineKnowledgeMaxTotalChars, defaults.maxTotalChars, 10000, 20000000),
+        maxPromptChars: clampPositive(settings.onlineKnowledgeMaxPromptChars, defaults.maxPromptChars, 1000, 100000),
+        maxSectionChars: clampPositive(settings.onlineKnowledgeMaxSectionChars, defaults.maxSectionChars, 300, 10000)
+      };
     }
 
     function validateSeed(form) {
@@ -2439,10 +2495,20 @@
     }
 
     async function loadKnowledgeFiles(fileList, sourceLabel = "知识库") {
+      const limits = getKnowledgeLimits();
+      const isFolderSource = sourceLabel.includes("文件夹");
+      if (!limits.enabled) {
+        setStatus("管理员已关闭线上知识库上传。", true);
+        return;
+      }
+      if (isFolderSource && !limits.allowFolder) {
+        setStatus("管理员当前只允许手动选择 Markdown 文件，暂不开放文件夹读取。", true);
+        return;
+      }
       const pickedFiles = Array.from(fileList || [])
         .filter(isMarkdownFile)
         .sort((a, b) => String(a.webkitRelativePath || a.name).localeCompare(String(b.webkitRelativePath || b.name), "zh-Hans-CN"))
-        .slice(0, KNOWLEDGE_MAX_FILES);
+        .slice(0, limits.maxFiles);
 
       if (!pickedFiles.length) {
         setStatus("没有选到 Markdown 文件。请选择 .md 文件或 Obsidian 知识库文件夹。", true);
@@ -2451,7 +2517,7 @@
 
       setStatus("正在读取知识库 Markdown...");
       try {
-        const files = await Promise.all(pickedFiles.map(async file => {
+        const rawFiles = await Promise.all(pickedFiles.map(async file => {
           const text = normalizeKnowledgeText(await file.text());
           return {
             name: file.name,
@@ -2461,19 +2527,37 @@
           };
         }));
 
-        const totalChars = files.reduce((sum, file) => sum + file.text.length, 0);
+        const files = [];
+        let totalChars = 0;
+        let totalCapped = false;
+        for (const file of rawFiles) {
+          if (totalChars >= limits.maxTotalChars) {
+            totalCapped = true;
+            break;
+          }
+          const remaining = limits.maxTotalChars - totalChars;
+          if (file.text.length > remaining) {
+            files.push({ ...file, text: file.text.slice(0, remaining) });
+            totalChars += remaining;
+            totalCapped = true;
+            break;
+          }
+          files.push(file);
+          totalChars += file.text.length;
+        }
         state.knowledgeBase = {
           active: true,
           files,
           sourceName: sourceLabel,
           totalChars,
           lastUsedChars: 0,
-          lastTruncated: totalChars > KNOWLEDGE_MAX_PROMPT_CHARS
+          lastTruncated: totalChars > limits.maxPromptChars || totalCapped
         };
         renderKnowledgeBaseState();
-        const capped = pickedFiles.length >= KNOWLEDGE_MAX_FILES ? `，已按上限读取前 ${KNOWLEDGE_MAX_FILES} 个` : "";
-        const truncated = totalChars > KNOWLEDGE_MAX_PROMPT_CHARS ? "，生成时会优先使用相关片段" : "";
-        setStatus(`已启用知识库脑暴：${files.length} 个 Markdown 文件${capped}${truncated}。`);
+        const fileCapped = pickedFiles.length >= limits.maxFiles ? `，已按上限读取前 ${limits.maxFiles} 个` : "";
+        const charCapped = totalCapped ? `，已按本模式上限读取约 ${limits.maxTotalChars} 字` : "";
+        const truncated = totalChars > limits.maxPromptChars || totalCapped ? "，生成时会优先使用相关片段" : "";
+        setStatus(`已启用知识库脑暴：${files.length} 个 Markdown 文件${fileCapped}${charCapped}${truncated}。`);
       } catch (error) {
         setStatus(`读取知识库失败：${error.message}`, true);
       }
@@ -2700,6 +2784,7 @@
     }
 
     function splitKnowledgeSections(file) {
+      const limits = getKnowledgeLimits();
       const sections = file.text
         .split(/\n{2,}/)
         .map(section => section.trim())
@@ -2707,7 +2792,7 @@
       return (sections.length ? sections : [file.text]).map((section, index) => ({
         file,
         index,
-        text: section.slice(0, KNOWLEDGE_MAX_SECTION_CHARS)
+        text: section.slice(0, limits.maxSectionChars)
       }));
     }
 
@@ -2717,6 +2802,7 @@
         return { active: false, text: "", fileCount: 0, totalChars: 0, usedChars: 0, truncated: false };
       }
 
+      const limits = getKnowledgeLimits();
       const keywords = knowledgeKeywords(seedIdea);
       const sections = kb.files.flatMap(splitKnowledgeSections);
       const ranked = sections
@@ -2732,11 +2818,11 @@
       for (const section of candidates) {
         const header = `【${section.file.path}】\n`;
         const chunk = `${header}${section.text}`;
-        if (usedChars + chunk.length > KNOWLEDGE_MAX_PROMPT_CHARS) {
-          const remaining = KNOWLEDGE_MAX_PROMPT_CHARS - usedChars - header.length;
+        if (usedChars + chunk.length > limits.maxPromptChars) {
+          const remaining = limits.maxPromptChars - usedChars - header.length;
           if (remaining > 220) {
             blocks.push(`${header}${section.text.slice(0, remaining).trim()}`);
-            usedChars = KNOWLEDGE_MAX_PROMPT_CHARS;
+            usedChars = limits.maxPromptChars;
           }
           break;
         }
@@ -2780,11 +2866,22 @@ ${context.text}
       const button = $("apiStatusBtn");
       if (!button) return;
       const connected = Boolean(getDeepSeekApiKey());
-      button.textContent = connected ? `${textProviderLabel(getAccountStore().settings.provider)} 已配置` : "AI 未配置";
+      const provider = isOfflineMode() ? ($("provider")?.value || "deepseek") : getAccountStore().settings.provider;
+      button.textContent = connected ? `${textProviderLabel(provider)} 已配置` : "AI 未配置";
       button.classList.toggle("connected", connected);
     }
 
     function openApiSettings(focusId = "apiKey") {
+      if (isOfflineMode()) {
+        const settings = $("apiSettings");
+        if (settings) {
+          settings.hidden = false;
+          settings.open = true;
+          settings.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+        $(focusId)?.focus();
+        return;
+      }
       state.accountPanelOpen = true;
       state.accountPanelMode = "admin";
       renderAccountPanel();
@@ -2904,7 +3001,7 @@ ${context.text}
 
     function setBusy(isBusy, text = "") {
       state.busy = isBusy;
-      ["brainstormBtn", "promptBtn", "knowledgeBaseBtn", "knowledgeFolderBtn", "knowledgeFilesBtn", "knowledgeClearBtn"].forEach(id => {
+      ["brainstormBtn", "promptBtn", "downloadOfflineBtn", "knowledgeBaseBtn", "knowledgeFolderBtn", "knowledgeFilesBtn", "knowledgeClearBtn"].forEach(id => {
         const button = $(id);
         if (button) button.disabled = isBusy;
       });
@@ -2912,8 +3009,60 @@ ${context.text}
       if (text) setStatus(text);
     }
 
+    function offlineTextSettingsFromControls() {
+      return {
+        provider: $("provider")?.value || "deepseek",
+        apiKey: $("rememberApiKey")?.checked ? ($("apiKey")?.value.trim() || "") : "",
+        rememberApiKey: Boolean($("rememberApiKey")?.checked),
+        apiUrl: $("apiUrl")?.value.trim() || defaultApiUrlForProvider($("provider")?.value || "deepseek"),
+        model: $("model")?.value || "deepseek-v4-flash",
+        customModel: $("customModel")?.value.trim() || "",
+        temperature: Number($("temperature")?.value || 0.85),
+        contentWords: Number($("contentWords")?.value || 1000),
+        styleHint: $("styleHint")?.value.trim() || "",
+        avoidHint: $("avoidHint")?.value.trim() || "",
+        categories: $("categories")?.value.trim() || ""
+      };
+    }
+
+    function loadOfflineTextSettings() {
+      if (!isOfflineMode()) return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(OFFLINE_TEXT_SETTINGS_STORAGE_KEY) || "{}");
+        setControlValue("provider", saved.provider || "deepseek");
+        setControlValue("apiUrl", saved.apiUrl || defaultApiUrlForProvider(saved.provider || "deepseek"));
+        setControlValue("model", saved.model || "deepseek-v4-flash");
+        setControlValue("customModel", saved.customModel || "");
+        setControlValue("temperature", saved.temperature || 0.85);
+        setControlValue("contentWords", saved.contentWords || 1000);
+        setControlValue("styleHint", saved.styleHint || "");
+        setControlValue("avoidHint", saved.avoidHint || "");
+        setControlValue("categories", saved.categories || "AI工具,公众号日更,小红书转公众号,副业,职场,热点,产品思考");
+        if ($("rememberApiKey")) $("rememberApiKey").checked = Boolean(saved.rememberApiKey && saved.apiKey);
+        if ($("apiKey")) $("apiKey").value = saved.rememberApiKey ? (saved.apiKey || "") : "";
+      } catch (error) {
+        localStorage.removeItem(OFFLINE_TEXT_SETTINGS_STORAGE_KEY);
+      }
+    }
+
+    function saveOfflineTextSettings(showStatus = false) {
+      if (!isOfflineMode()) return;
+      try {
+        const settings = offlineTextSettingsFromControls();
+        localStorage.setItem(OFFLINE_TEXT_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        if (showStatus) setStatus(settings.rememberApiKey ? "已把本机文本模型设置保存到当前浏览器。" : "已保存模型设置；API Key 未勾选保存，不会长期保存。");
+      } catch (error) {
+        setStatus("当前浏览器不允许保存本机 API 设置。", true);
+      }
+    }
+
     function syncApiKeyStorage() {
       try {
+        if (isOfflineMode()) {
+          saveOfflineTextSettings(true);
+          updateApiStatus();
+          return;
+        }
         if (!hasAdminAccess()) {
           setStatus("只有管理员可以保存共享 API Key。", true);
           syncDeepSeekKeyControl();
@@ -2952,7 +3101,17 @@ ${context.text}
           defaultImageModel: "bytedance-seed/seedream-4.5",
           defaultImageUseCase: "wechat_cover",
           defaultImageStyle: "magazine",
-          defaultImageSize: "1K"
+          defaultImageSize: "1K",
+          onlineKnowledgeEnabled: ONLINE_KNOWLEDGE_DEFAULTS.enabled,
+          onlineKnowledgeAllowFolder: ONLINE_KNOWLEDGE_DEFAULTS.allowFolder,
+          onlineKnowledgeMaxFiles: ONLINE_KNOWLEDGE_DEFAULTS.maxFiles,
+          onlineKnowledgeMaxTotalChars: ONLINE_KNOWLEDGE_DEFAULTS.maxTotalChars,
+          onlineKnowledgeMaxPromptChars: ONLINE_KNOWLEDGE_DEFAULTS.maxPromptChars,
+          onlineKnowledgeMaxSectionChars: ONLINE_KNOWLEDGE_DEFAULTS.maxSectionChars,
+          offlineKnowledgeMaxFiles: OFFLINE_KNOWLEDGE_DEFAULTS.maxFiles,
+          offlineKnowledgeMaxTotalChars: OFFLINE_KNOWLEDGE_DEFAULTS.maxTotalChars,
+          offlineKnowledgeMaxPromptChars: OFFLINE_KNOWLEDGE_DEFAULTS.maxPromptChars,
+          offlineKnowledgeMaxSectionChars: OFFLINE_KNOWLEDGE_DEFAULTS.maxSectionChars
         },
         inviteCodes: [],
         users: [
@@ -3012,6 +3171,7 @@ ${context.text}
       if (getCurrentUser()?.role === "admin") state.currentUserId = "guest-local";
       if (!getCurrentUser()) state.currentUserId = "guest-local";
       applyAdminSettingsToControls();
+      loadOfflineTextSettings();
       saveAccountStore();
       syncDeepSeekKeyControl();
       updateAccountStatus();
@@ -3029,6 +3189,16 @@ ${context.text}
         users: Array.isArray(store?.users) ? store.users : []
       };
       next.settings.guestLimit = positiveInt(next.settings.guestLimit, DEFAULT_GUEST_LIMIT);
+      next.settings.onlineKnowledgeEnabled = next.settings.onlineKnowledgeEnabled !== false;
+      next.settings.onlineKnowledgeAllowFolder = next.settings.onlineKnowledgeAllowFolder !== false;
+      next.settings.onlineKnowledgeMaxFiles = clampPositive(next.settings.onlineKnowledgeMaxFiles, ONLINE_KNOWLEDGE_DEFAULTS.maxFiles, 1, 5000);
+      next.settings.onlineKnowledgeMaxTotalChars = clampPositive(next.settings.onlineKnowledgeMaxTotalChars, ONLINE_KNOWLEDGE_DEFAULTS.maxTotalChars, 10000, 20000000);
+      next.settings.onlineKnowledgeMaxPromptChars = clampPositive(next.settings.onlineKnowledgeMaxPromptChars, ONLINE_KNOWLEDGE_DEFAULTS.maxPromptChars, 1000, 100000);
+      next.settings.onlineKnowledgeMaxSectionChars = clampPositive(next.settings.onlineKnowledgeMaxSectionChars, ONLINE_KNOWLEDGE_DEFAULTS.maxSectionChars, 300, 10000);
+      next.settings.offlineKnowledgeMaxFiles = clampPositive(next.settings.offlineKnowledgeMaxFiles, OFFLINE_KNOWLEDGE_DEFAULTS.maxFiles, 1, 50000);
+      next.settings.offlineKnowledgeMaxTotalChars = clampPositive(next.settings.offlineKnowledgeMaxTotalChars, OFFLINE_KNOWLEDGE_DEFAULTS.maxTotalChars, 10000, 100000000);
+      next.settings.offlineKnowledgeMaxPromptChars = clampPositive(next.settings.offlineKnowledgeMaxPromptChars, OFFLINE_KNOWLEDGE_DEFAULTS.maxPromptChars, 1000, 200000);
+      next.settings.offlineKnowledgeMaxSectionChars = clampPositive(next.settings.offlineKnowledgeMaxSectionChars, OFFLINE_KNOWLEDGE_DEFAULTS.maxSectionChars, 300, 20000);
       next.inviteCodes = next.inviteCodes.map(invite => ({
         code: normalizeInviteCode(invite.code),
         usageLimit: positiveInt(invite.usageLimit, DEFAULT_INVITE_LIMIT),
@@ -3128,6 +3298,7 @@ ${context.text}
     }
 
     function getDeepSeekApiKey() {
+      if (isOfflineMode()) return $("apiKey")?.value.trim() || "";
       const store = getAccountStore();
       const sharedKey = store.settings.sharedDeepSeekApiKey || "";
       if (sharedKey) return sharedKey;
@@ -3147,7 +3318,7 @@ ${context.text}
 
     function resolvedTextModel(form) {
       const settings = getAccountStore().settings;
-      return form.model === "custom" ? (settings.customModel || "custom-model") : form.model;
+      return form.model === "custom" ? (form.customModel || settings.customModel || "custom-model") : form.model;
     }
 
     function syncDeepSeekKeyControl() {
@@ -3156,7 +3327,12 @@ ${context.text}
       if (!input) return;
       const store = getAccountStore();
       const sharedKey = store.settings.sharedDeepSeekApiKey || "";
-      if (hasAdminAccess()) {
+      if (isOfflineMode()) {
+        input.type = "password";
+        input.disabled = false;
+        input.placeholder = "填写你自己的文本模型 API Key";
+        if (remember) remember.disabled = false;
+      } else if (hasAdminAccess()) {
         input.type = "password";
         input.disabled = false;
         input.value = sharedKey;
@@ -3182,6 +3358,7 @@ ${context.text}
       setControlValue("provider", settings.provider || "deepseek");
       setControlValue("apiUrl", settings.apiUrl || defaultApiUrlForProvider(settings.provider || "deepseek"));
       setControlValue("model", settings.model || "deepseek-v4-flash");
+      setControlValue("customModel", settings.customModel || "");
       setControlValue("temperature", settings.temperature || 0.85);
       setControlValue("contentWords", settings.contentWords || 1000);
       setControlValue("styleHint", settings.styleHint || "");
@@ -3209,6 +3386,7 @@ ${context.text}
     }
 
     function resolveUsageLimit(user = getCurrentUser()) {
+      if (isOfflineMode()) return null;
       if (!user || isAdminUser(user)) return null;
       if (isGuestUser(user) && !user.customUsageLimit) return getAccountStore().settings.guestLimit;
       return positiveInt(user.usageLimit, getAccountStore().settings.guestLimit);
@@ -3231,6 +3409,7 @@ ${context.text}
     }
 
     function recordAiUsage({ apiCalls = 1, tokens = 0 } = {}) {
+      if (isOfflineMode()) return;
       const user = getCurrentUser();
       if (!user) return;
       user.usedCalls = positiveInt(user.usedCalls, 0) + 1;
@@ -3253,7 +3432,65 @@ ${context.text}
       return text ? Math.ceil(text.length / 2) : 0;
     }
 
+    function applyAppModeUI() {
+      const offline = isOfflineMode();
+      $("appRoot")?.classList.toggle("offline-mode", offline);
+      ["userAccountBtn", "adminAccountBtn", "downloadOfflineBtn"].forEach(id => {
+        const button = $(id);
+        if (button) button.hidden = offline ? id !== "resetBtn" : false;
+      });
+      if (offline) {
+        state.accountPanelOpen = false;
+        $("accountPanel").hidden = true;
+      }
+      const settings = $("apiSettings");
+      if (settings) {
+        settings.hidden = !offline && !hasAdminAccess();
+        if (offline) settings.open = true;
+      }
+      const quickStart = $("quickStartNote");
+      if (quickStart) {
+        quickStart.textContent = offline
+          ? "线下版直接进入创作界面；API Key 和模型设置只保存在这台电脑的当前浏览器。"
+          : "输入想法后直接生成，账号和额度由管理员统一管理。";
+      }
+      const apiNote = $("apiSettingsNote");
+      if (apiNote) {
+        apiNote.textContent = offline
+          ? "线下版使用你自己的 API Key 发起请求；知识库可读取更大的本地 Markdown 库，但每次仍只注入相关片段。"
+          : "文本模型由管理员统一配置，普通用户无需填写 API Key 或模型参数。";
+      }
+      const apiKeyLabel = $("apiKeyLabel");
+      if (apiKeyLabel) {
+        apiKeyLabel.innerHTML = offline
+          ? '本机文本模型 API Key <span class="hint">仅保存在当前浏览器</span>'
+          : '共享文本模型 API Key <span class="hint">仅管理员可修改</span>';
+      }
+      const rememberLabel = $("rememberApiKeyLabel");
+      if (rememberLabel) {
+        rememberLabel.innerHTML = offline
+          ? '保存本机 API Key <span class="hint">只保存到这台电脑</span>'
+          : '保存共享 API Key <span class="hint">保存到当前浏览器的管理员配置</span>';
+      }
+      const apiStorageNote = $("apiStorageNote");
+      if (apiStorageNote) {
+        apiStorageNote.textContent = offline
+          ? "说明：线下版不会保存管理员、游客、邀请码和额度数据；API 请求仍会从本机浏览器发给你配置的模型服务商。"
+          : "说明：当前项目仍是静态网页，账号、邀请码、用量和共享 Key 会保存在当前浏览器本地。";
+      }
+      const knowledgeNote = document.querySelector(".knowledge-note");
+      if (knowledgeNote) {
+        const limits = getKnowledgeLimits();
+        knowledgeNote.textContent = offline
+          ? `线下版适合读取较大的 Obsidian/Markdown 库，默认最多读取 ${limits.maxFiles} 个文件，每次只把相关片段发送给 AI。`
+          : `适合选择 Obsidian 里的 Markdown 笔记。管理员可限制上传规模，当前最多读取 ${limits.maxFiles} 个文件。`;
+      }
+      const folderButton = $("knowledgeFolderBtn");
+      if (folderButton) folderButton.hidden = !getKnowledgeLimits().allowFolder;
+    }
+
     function updateAccountStatus() {
+      if (isOfflineMode()) return;
       const userButton = $("userAccountBtn");
       const adminButton = $("adminAccountBtn");
       const user = getCurrentUser();
@@ -3268,6 +3505,7 @@ ${context.text}
     }
 
     function toggleAccountPanel(force, mode = state.accountPanelMode || "user") {
+      if (isOfflineMode()) return;
       state.accountPanelMode = mode;
       state.accountPanelOpen = typeof force === "boolean" ? force : !state.accountPanelOpen;
       renderAccountPanel();
@@ -3279,6 +3517,11 @@ ${context.text}
       const panel = $("accountPanel");
       const content = $("accountPanelContent");
       if (!panel || !content) return;
+      if (isOfflineMode()) {
+        panel.hidden = true;
+        content.innerHTML = "";
+        return;
+      }
       panel.hidden = !state.accountPanelOpen;
       if (!state.accountPanelOpen) return;
       const user = getCurrentUser();
@@ -3503,6 +3746,42 @@ ${context.text}
                   </div>
                 </div>
               </details>
+              <details class="image-advanced">
+                <summary>线上知识库限制</summary>
+                <div class="image-tool-body">
+                  <label class="detail-select" for="adminOnlineKnowledgeEnabled">
+                    <span>启用线上知识库</span>
+                    <input id="adminOnlineKnowledgeEnabled" type="checkbox" ${settings.onlineKnowledgeEnabled !== false ? "checked" : ""}>
+                  </label>
+                  <label class="detail-select" for="adminOnlineKnowledgeAllowFolder">
+                    <span>允许选择知识库文件夹</span>
+                    <input id="adminOnlineKnowledgeAllowFolder" type="checkbox" ${settings.onlineKnowledgeAllowFolder !== false ? "checked" : ""}>
+                  </label>
+                  <div class="compact">
+                    <div class="field">
+                      <label for="adminOnlineKnowledgeMaxFiles">最大 Markdown 文件数</label>
+                      <input id="adminOnlineKnowledgeMaxFiles" type="number" min="1" max="5000" step="1" value="${escapeAttr(settings.onlineKnowledgeMaxFiles || ONLINE_KNOWLEDGE_DEFAULTS.maxFiles)}">
+                    </div>
+                    <div class="field">
+                      <label for="adminOnlineKnowledgeMaxTotalChars">读取总字数上限</label>
+                      <input id="adminOnlineKnowledgeMaxTotalChars" type="number" min="10000" max="20000000" step="10000" value="${escapeAttr(settings.onlineKnowledgeMaxTotalChars || ONLINE_KNOWLEDGE_DEFAULTS.maxTotalChars)}">
+                    </div>
+                  </div>
+                  <div class="compact">
+                    <div class="field">
+                      <label for="adminOnlineKnowledgeMaxPromptChars">单次注入字数</label>
+                      <input id="adminOnlineKnowledgeMaxPromptChars" type="number" min="1000" max="100000" step="1000" value="${escapeAttr(settings.onlineKnowledgeMaxPromptChars || ONLINE_KNOWLEDGE_DEFAULTS.maxPromptChars)}">
+                    </div>
+                    <div class="field">
+                      <label for="adminOnlineKnowledgeMaxSectionChars">单片段字数</label>
+                      <input id="adminOnlineKnowledgeMaxSectionChars" type="number" min="300" max="10000" step="100" value="${escapeAttr(settings.onlineKnowledgeMaxSectionChars || ONLINE_KNOWLEDGE_DEFAULTS.maxSectionChars)}">
+                    </div>
+                  </div>
+                  <div class="note field">
+                    静态网页只能在当前浏览器保存这些软限制；跨用户统一生效需要后端配置。
+                  </div>
+                </div>
+              </details>
               <button class="primary" id="saveAdminSettingsBtn" type="button">保存设置</button>
             </section>
             <section class="account-card">
@@ -3700,6 +3979,12 @@ ${context.text}
       store.settings.defaultImageModel = $("adminDefaultImageModel")?.value || "bytedance-seed/seedream-4.5";
       store.settings.defaultImageUseCase = $("adminDefaultImageUseCase")?.value || "wechat_cover";
       store.settings.defaultImageStyle = $("adminDefaultImageStyle")?.value || "magazine";
+      store.settings.onlineKnowledgeEnabled = $("adminOnlineKnowledgeEnabled")?.checked !== false;
+      store.settings.onlineKnowledgeAllowFolder = $("adminOnlineKnowledgeAllowFolder")?.checked !== false;
+      store.settings.onlineKnowledgeMaxFiles = clampPositive($("adminOnlineKnowledgeMaxFiles")?.value, ONLINE_KNOWLEDGE_DEFAULTS.maxFiles, 1, 5000);
+      store.settings.onlineKnowledgeMaxTotalChars = clampPositive($("adminOnlineKnowledgeMaxTotalChars")?.value, ONLINE_KNOWLEDGE_DEFAULTS.maxTotalChars, 10000, 20000000);
+      store.settings.onlineKnowledgeMaxPromptChars = clampPositive($("adminOnlineKnowledgeMaxPromptChars")?.value, ONLINE_KNOWLEDGE_DEFAULTS.maxPromptChars, 1000, 100000);
+      store.settings.onlineKnowledgeMaxSectionChars = clampPositive($("adminOnlineKnowledgeMaxSectionChars")?.value, ONLINE_KNOWLEDGE_DEFAULTS.maxSectionChars, 300, 10000);
       store.users.forEach(user => {
         if (isAdminUser(user)) return;
         if (!user.inviteCode && !user.customUsageLimit) user.usageLimit = store.settings.guestLimit;
@@ -3929,6 +4214,7 @@ ${context.text}
       $("appRoot").classList.toggle("layout-ultra", state.layoutDensity === "ultra");
       $("appRoot").classList.toggle("layout-standard", state.layoutDensity === "standard");
       $("appRoot").classList.toggle("layout-compact", state.layoutDensity === "compact");
+      applyAppModeUI();
       updateAccountStatus();
       syncDeepSeekKeyControl();
       renderIdeaFilters();
@@ -5590,6 +5876,10 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     async function callDeepSeek(prompt, form) {
       if (!form.apiKey) {
         state.lastPrompt = prompt;
+        if (isOfflineMode()) {
+          openApiSettings("apiKey");
+          throw new Error(`请先填写本机 ${textProviderLabel(form.provider)} API Key。`);
+        }
         if (hasAdminAccess()) showPrompt(prompt);
         throw new Error(hasAdminAccess() ? `请先在管理员后台配置 ${textProviderLabel(form.provider)} 共享 API Key。` : "管理员尚未配置 AI，暂时无法生成。");
       }
@@ -6690,6 +6980,49 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       }
     }
 
+    async function downloadOfflinePackage() {
+      if (isOfflineMode()) return;
+      setBusy(true, "正在准备线下电脑版...");
+      try {
+        let html = "";
+        try {
+          const response = await fetch("./index.html", { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          html = await response.text();
+        } catch (error) {
+          html = `<!doctype html>\n${document.documentElement.outerHTML}`;
+        }
+
+        html = html.replace(/<html([^>]*)>/i, (match, attrs) => {
+          const cleaned = attrs.replace(/\sdata-(app-)?mode="[^"]*"/gi, "");
+          return `<html${cleaned} data-app-mode="offline">`;
+        });
+        html = html.replace(/<title>.*?<\/title>/i, "<title>AI灵感生成器 - 线下版</title>");
+
+        const readme = [
+          "AI灵感生成器线下版",
+          "",
+          "1. 打开“AI灵感生成器-线下版.html”即可进入功能界面。",
+          "2. 线下版不显示游客登录、管理员后台、邀请码和额度统计。",
+          "3. 在页面里的“接入 AI / API Key 设置”填写你自己的文本模型 API Key。",
+          "4. API Key 只会在你勾选保存时写入当前电脑浏览器的 localStorage。",
+          "5. 知识库可以读取更大的本地 Markdown/Obsidian 文件夹，但每次请求仍只发送相关片段给模型服务商。",
+          "6. 线下版打开本地 HTML 不需要本站服务器；调用 AI 和加载 CDN 库仍需要网络。"
+        ].join("\n");
+
+        const folderName = `AI灵感生成器-线下电脑版-${dateStamp()}`;
+        const files = [
+          { name: "AI灵感生成器-线下版.html", blob: new Blob([html], { type: "text/html;charset=utf-8" }) },
+          { name: "README-offline.txt", blob: new Blob([readme], { type: "text/plain;charset=utf-8" }) }
+        ];
+        await saveFilesAsZip(files, folderName);
+      } catch (error) {
+        setStatus(`线下版打包失败：${error.message}`, true);
+      } finally {
+        setBusy(false);
+      }
+    }
+
     async function saveFilesAsZip(files, folderName) {
       if (!window.JSZip) {
         if (files.length === 1) {
@@ -6807,6 +7140,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     $("ideaCount").addEventListener("change", syncIdeaCountControls);
     $("userAccountBtn").addEventListener("click", () => toggleAccountPanel(true, "user"));
     $("adminAccountBtn").addEventListener("click", () => toggleAccountPanel(true, "admin"));
+    $("downloadOfflineBtn").addEventListener("click", downloadOfflinePackage);
     $("resetBtn").addEventListener("click", resetAll);
     $("batchBriefBtn").addEventListener("click", () => expandBriefs(selectedItems()));
     $("batchOfficialBtn").addEventListener("click", () => generateOfficial(selectedItems()));
@@ -6838,6 +7172,11 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     });
     $("rememberApiKey").addEventListener("change", syncApiKeyStorage);
     $("apiKey").addEventListener("input", () => {
+      if (isOfflineMode()) {
+        saveOfflineTextSettings(false);
+        updateApiStatus();
+        return;
+      }
       if (hasAdminAccess()) {
         const store = getAccountStore();
         store.settings.sharedDeepSeekApiKey = $("apiKey").value.trim();
@@ -6845,6 +7184,16 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         if ($("adminSharedApiKey")) $("adminSharedApiKey").value = store.settings.sharedDeepSeekApiKey;
       }
       updateApiStatus();
+    });
+    ["provider", "apiUrl", "model", "customModel", "temperature", "contentWords", "styleHint", "avoidHint", "categories"].forEach(id => {
+      $(id)?.addEventListener("change", () => {
+        if (id === "provider" && !$("apiUrl").value.trim()) {
+          $("apiUrl").value = defaultApiUrlForProvider($("provider").value);
+        }
+        saveOfflineTextSettings(false);
+        updateApiStatus();
+      });
+      $(id)?.addEventListener("input", () => saveOfflineTextSettings(false));
     });
     $("openRouterApiKey").addEventListener("input", () => {
       state.openRouterApiKey = $("openRouterApiKey").value.trim();

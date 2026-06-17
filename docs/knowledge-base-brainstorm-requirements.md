@@ -93,6 +93,152 @@ Future versions can add better retrieval logic, such as keyword matching, tag fi
 
 The first version now includes lightweight keyword-based snippet selection. More advanced retrieval, tag filters, backlink awareness, and embedding-based retrieval remain future work.
 
+## Online And Offline Knowledge-Base Modes
+
+The product should split knowledge-base behavior into two modes:
+
+- `online`: the public Cloudflare Pages version for friends and normal users.
+- `offline`: the downloaded local/computer version for power users who want large local knowledge bases and their own API key.
+
+The two modes may share most UI and generation code, but they should have different account, API-key, quota, and knowledge-base limit behavior.
+
+### Current Limit Baseline
+
+The current implementation uses one shared browser-side limit set:
+
+- Maximum Markdown files read: `80`.
+- Maximum knowledge text injected into one prompt: about `14000` characters.
+- Maximum section/snippet length: about `1400` characters.
+- Oversized knowledge bases are ranked by lightweight keyword matching, then only relevant snippets are injected into the prompt.
+
+This current limit is acceptable for the online version as a default, but it is too small for the intended offline/computer version.
+
+### Online Version Requirements
+
+The online version should remain constrained and friendly for shared/public use.
+
+Required behavior:
+
+- Keep account entry points: `游客登录` and `管理员`.
+- Keep normal users away from API keys, model settings, token usage, API-call counts, and quota counters.
+- Keep knowledge-base upload limits enabled for normal users.
+- Let administrators configure online knowledge-base limits from the admin backend.
+
+Implementation status:
+
+- The online page now keeps `游客登录` and `管理员`.
+- The online page shows `下载线下电脑版`.
+- The admin backend now exposes online knowledge-base soft limits: enable/disable, folder selection, max files, total read characters, prompt-injection characters, and section characters.
+- These limits are still browser-local soft limits because the app remains a pure static page.
+
+Recommended admin settings:
+
+- `onlineKnowledgeMaxFiles`: maximum Markdown files per selection.
+- `onlineKnowledgeMaxTotalChars`: maximum total local Markdown characters read into memory.
+- `onlineKnowledgeMaxPromptChars`: maximum knowledge characters injected into one model request.
+- `onlineKnowledgeMaxSectionChars`: maximum characters per ranked section.
+- `onlineKnowledgeAllowFolder`: whether folder selection is enabled.
+- `onlineKnowledgeEnabled`: whether normal users can use knowledge-base mode.
+
+Recommended online defaults:
+
+- `onlineKnowledgeMaxFiles`: `80`.
+- `onlineKnowledgeMaxPromptChars`: `14000`.
+- `onlineKnowledgeMaxSectionChars`: `1400`.
+
+Static-app limitation:
+
+- In the current pure static architecture, admin settings are stored in the current browser's `localStorage`. This means online limit changes are local to that admin browser unless a backend store is added.
+- If the product needs one administrator to enforce limits for all online users, a backend configuration store is required, such as Cloudflare Worker + KV/D1.
+- Until then, online limit settings should be treated as front-end soft limits.
+
+### Offline / Computer Version Requirements
+
+The offline version is intended for the user's own computer and should prioritize power-user capacity over public-user guardrails.
+
+Required behavior:
+
+- No `游客登录` entry.
+- No `管理员` entry.
+- No quota UI.
+- No invite-code registration.
+- No user usage counters.
+- Open directly into the creation surface.
+- Let the user configure their own text-model API key and model settings locally.
+- Let the user configure image API keys locally when needed.
+- Knowledge-base mode should not use the small online limit.
+- The offline version should preserve local history and export behavior.
+
+Implementation status:
+
+- The first implementation uses the same source file with an offline-mode flag.
+- The online page generates a ZIP package containing `AI灵感生成器-线下版.html` and `README-offline.txt`.
+- The offline HTML starts with `data-app-mode="offline"`.
+- Offline mode hides `游客登录`, `管理员`, invite-code, quota, and usage UI.
+- Offline mode opens directly into the creation surface and shows local API-key settings.
+- Offline text-model API Key is only saved when the user enables local save.
+- Offline mode skips quota checks and usage counting.
+- Offline knowledge-base defaults are higher than online: 5000 files, 20000000 read characters, 50000 prompt-injection characters, and 3000 characters per section.
+
+Knowledge-base capacity goal:
+
+- The offline version should remove the small fixed file limit or set it high enough that ordinary Obsidian vaults are not blocked by app policy.
+- The app should still avoid sending the whole vault to the model at once.
+- The app should read/index many local Markdown files, then select relevant snippets for each generation request.
+- The real constraints should be browser memory, local machine performance, selected model context length, and API cost, not an arbitrary 80-file product limit.
+
+Recommended first offline defaults:
+
+- `offlineKnowledgeMaxFiles`: no hard product cap, or a very high safety cap such as `5000`.
+- `offlineKnowledgeMaxTotalChars`: high local safety cap, such as `20000000`, with user warning when exceeded.
+- `offlineKnowledgeMaxPromptChars`: configurable, default higher than online, such as `50000`.
+- `offlineKnowledgeMaxSectionChars`: configurable, such as `3000`.
+
+Important constraint:
+
+- "No limit" must not mean "send all Markdown content to the model." It means the app can read a large vault locally and retrieve relevant snippets before each model call.
+
+### Offline Download Entry
+
+The online version should provide a visible action:
+
+- `下载线下电脑版`
+
+First implementation path:
+
+1. Provide a downloadable offline package, such as a ZIP containing an offline HTML entry and required assets.
+2. The user downloads and opens it locally.
+3. The offline entry starts in `offline` mode automatically.
+4. The offline entry hides login/admin/quota surfaces.
+5. The offline entry exposes local API-key settings in the normal creation flow.
+
+Later desktop-app path:
+
+- Package the offline mode as a real desktop app with Electron or Tauri.
+- The app should open directly to the creation surface.
+- A desktop shell can improve file-system access, larger-vault indexing, local cache persistence, and future local embedding/search.
+
+### Mode Detection
+
+Recommended implementation options:
+
+- `index.html?mode=offline`
+- a generated `offline.html`
+- a bundled desktop wrapper that injects offline mode at startup
+
+The first implementation should prefer the lowest-risk option: an `offline.html` or ZIP package generated from the same source code with an offline-mode flag.
+
+### Offline API Key Storage
+
+Offline API keys should be stored only on the user's own machine.
+
+Rules:
+
+- Offline text-model API keys may be saved to local browser storage if the user opts in.
+- Offline image API keys may be saved locally if the user opts in.
+- Offline keys must not be included in exported histories, Base sync packages, Markdown exports, or downloaded offline packages.
+- Offline mode should clearly indicate that API requests still go directly from the user's computer to the configured model provider.
+
 ## UI Expectations
 
 The knowledge-base control should feel like part of the creation surface, not like an admin feature.
