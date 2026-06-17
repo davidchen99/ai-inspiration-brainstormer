@@ -582,11 +582,14 @@ Implementation status for first backend step:
   - `GET /api/admin-config`
   - `POST /api/admin-config`
 - Added optional KV binding contract: `AI_BRAINSTORM_CONFIG`.
+- Added optional account KV binding contract: `AI_BRAINSTORM_ACCOUNTS`.
 - Added admin token contract: `AI_BRAINSTORM_ADMIN_TOKEN` or `ADMIN_TOKEN`.
 - The public runtime config currently contains only online knowledge-base limits.
 - The frontend now calls `/api/runtime-config` in online mode and prefers backend online knowledge-base limits when available.
+- Added `/api/account` for backend account status, session restore, login, register, logout, registered-user usage recording, invite management, and user-limit updates.
+- The frontend now probes `/api/account?action=status` in online mode. When the account backend is enabled, login/register and registered-user usage recording use the backend API; otherwise the previous browser-local account flow remains active.
 - If the backend endpoint, KV binding, or runtime config is unavailable, the frontend falls back to browser-local admin settings.
-- Backend AI proxy, server-side users, server-side invite codes, server-side quota enforcement, and secure provider API-key storage remain future backend steps.
+- Backend AI proxy, stricter server-side guest identity, and secure provider API-key storage remain future backend steps.
 
 ### Phase 2: Real Offline Desktop App
 

@@ -2233,6 +2233,12 @@
       runtimeConfig: null,
       runtimeConfigSource: "local",
       runtimeConfigReady: false,
+      accountBackend: {
+        enabled: false,
+        kvReady: false,
+        token: "",
+        user: null
+      },
       historyPanelOpen: false,
       historySessions: [],
       currentHistoryId: "",
@@ -2276,6 +2282,8 @@
     const HISTORY_STORAGE_KEY = "ai_brainstorm_history_v1";
     const OFFLINE_TEXT_SETTINGS_STORAGE_KEY = "ai_brainstorm_offline_text_settings_v1";
     const RUNTIME_CONFIG_ENDPOINT = "/api/runtime-config";
+    const ACCOUNT_API_ENDPOINT = "/api/account";
+    const ACCOUNT_SESSION_STORAGE_KEY = "ai_brainstorm_account_session_v1";
     const MAX_HISTORY_SESSIONS = 20;
     const DEFAULT_GUEST_LIMIT = 10;
     const DEFAULT_INVITE_LIMIT = 20;
@@ -3111,6 +3119,88 @@ ${context.text}
       }
     }
 
+    function accountBackendAvailable() {
+      return !isOfflineMode() && state.accountBackend.enabled && state.accountBackend.kvReady;
+    }
+
+    function saveAccountSessionToken(token = state.accountBackend.token) {
+      try {
+        if (token) localStorage.setItem(ACCOUNT_SESSION_STORAGE_KEY, token);
+        else localStorage.removeItem(ACCOUNT_SESSION_STORAGE_KEY);
+      } catch (error) {}
+    }
+
+    function loadAccountSessionToken() {
+      try {
+        state.accountBackend.token = localStorage.getItem(ACCOUNT_SESSION_STORAGE_KEY) || "";
+      } catch (error) {
+        state.accountBackend.token = "";
+      }
+    }
+
+    async function accountApi(action, payload = {}, options = {}) {
+      const method = options.method || "POST";
+      const headers = { "Content-Type": "application/json" };
+      if (state.accountBackend.token) headers.Authorization = `Bearer ${state.accountBackend.token}`;
+      const url = method === "GET"
+        ? `${ACCOUNT_API_ENDPOINT}?action=${encodeURIComponent(action)}`
+        : ACCOUNT_API_ENDPOINT;
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: method === "GET" ? undefined : JSON.stringify({ action, ...payload })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.message || `账号后端返回错误：${response.status}`);
+      }
+      return data;
+    }
+
+    function mergeBackendUser(user) {
+      if (!user?.id) return;
+      const store = getAccountStore();
+      const existing = store.users.find(row => row.id === user.id);
+      const next = normalizeUser({
+        ...(existing || {}),
+        ...user,
+        password: existing?.password || "",
+        customUsageLimit: Boolean(user.customUsageLimit)
+      }, store.settings.guestLimit);
+      if (existing) {
+        Object.assign(existing, next);
+      } else {
+        store.users.push(next);
+      }
+      state.currentUserId = user.id;
+      saveAccountStore();
+    }
+
+    async function loadAccountBackend() {
+      if (isOfflineMode() || location.protocol === "file:") return;
+      loadAccountSessionToken();
+      try {
+        const status = await accountApi("status", {}, { method: "GET" });
+        state.accountBackend.enabled = Boolean(status.accountBackend?.enabled);
+        state.accountBackend.kvReady = Boolean(status.accountBackend?.kvReady);
+        if (accountBackendAvailable() && state.accountBackend.token) {
+          const session = await accountApi("session", {}, { method: "GET" });
+          if (session.authenticated && session.user) {
+            state.accountBackend.user = session.user;
+            mergeBackendUser(session.user);
+          } else {
+            state.accountBackend.token = "";
+            state.accountBackend.user = null;
+            saveAccountSessionToken("");
+          }
+        }
+        render();
+      } catch (error) {
+        state.accountBackend.enabled = false;
+        state.accountBackend.kvReady = false;
+      }
+    }
+
     function createDefaultAccountStore() {
       const now = new Date().toISOString();
       return {
@@ -3451,6 +3541,18 @@ ${context.text}
       saveAccountStore();
       updateAccountStatus();
       if (state.accountPanelOpen) renderAccountPanel();
+      if (accountBackendAvailable() && state.accountBackend.token && !isGuestUser(user)) {
+        accountApi("record-usage", { apiCalls, tokens })
+          .then(result => {
+            if (result.user) {
+              state.accountBackend.user = result.user;
+              mergeBackendUser(result.user);
+              updateAccountStatus();
+              if (state.accountPanelOpen) renderAccountPanel();
+            }
+          })
+          .catch(() => {});
+      }
     }
 
     function tokenCountFromUsage(data, fallbackParts = []) {
@@ -3604,6 +3706,9 @@ ${context.text}
     }
 
     function userAccessHtml(user = getCurrentUser()) {
+      const backendNote = accountBackendAvailable()
+        ? `<div class="note field">账号中心：已连接后端，登录、注册和用量会保存到 Cloudflare。</div>`
+        : `<div class="note field">账号中心：当前使用本浏览器本地账号数据。</div>`;
       if (!isGuestUser(user)) {
         return `
           <section class="account-card user-auth-card">
@@ -3611,6 +3716,7 @@ ${context.text}
               <strong>${escapeHtml(user.username)}</strong>
               <span>${escapeHtml(user.inviteCode ? "邀请码账号" : "普通账号")}</span>
             </div>
+            ${backendNote}
             <div class="account-actions">
               <button id="logoutBtn" type="button">退出登录</button>
             </div>
@@ -3619,6 +3725,7 @@ ${context.text}
       }
       return `
         <section class="account-card user-auth-card">
+          ${backendNote}
           <div class="user-auth-grid">
             <div class="auth-block">
               <h3>账号登录</h3>
@@ -3882,7 +3989,15 @@ ${context.text}
       $("loginBtn")?.addEventListener("click", loginUserAccount);
       $("adminLoginBtn")?.addEventListener("click", loginAdminAccount);
       $("registerBtn")?.addEventListener("click", registerAccount);
-      $("logoutBtn")?.addEventListener("click", () => {
+      $("logoutBtn")?.addEventListener("click", async () => {
+        if (accountBackendAvailable() && state.accountBackend.token) {
+          try {
+            await accountApi("logout");
+          } catch (error) {}
+          state.accountBackend.token = "";
+          state.accountBackend.user = null;
+          saveAccountSessionToken("");
+        }
         setCurrentUser("guest-local");
         setStatus("已退出登录。");
       });
@@ -3919,9 +4034,30 @@ ${context.text}
       });
     }
 
-    function loginUserAccount() {
+    async function loginUserAccount() {
       const name = $("loginName").value.trim();
       const password = $("loginPassword").value;
+      if (accountBackendAvailable()) {
+        try {
+          const result = await accountApi("login", { username: name, password });
+          if (result.user?.role === "admin") {
+            state.accountBackend.token = "";
+            saveAccountSessionToken("");
+            return setStatus("请从管理员入口登录。", true);
+          }
+          state.accountBackend.token = result.token || "";
+          state.accountBackend.user = result.user || null;
+          saveAccountSessionToken();
+          mergeBackendUser(result.user);
+          toggleAccountPanel(false, "user");
+          updateAccountStatus();
+          setStatus("登录成功。");
+          return;
+        } catch (error) {
+          setStatus(error.message, true);
+          return;
+        }
+      }
       const user = getAccountStore().users.find(row => row.username.toLowerCase() === name.toLowerCase());
       if (!user || user.password !== password) {
         setStatus("账号或密码不正确。", true);
@@ -3950,11 +4086,27 @@ ${context.text}
       setStatus("已进入管理员后台。");
     }
 
-    function registerAccount() {
+    async function registerAccount() {
       const store = getAccountStore();
       const username = $("registerName").value.trim();
       const password = $("registerPassword").value;
       const inviteCode = normalizeInviteCode($("registerInvite").value);
+      if (accountBackendAvailable()) {
+        try {
+          const result = await accountApi("register", { username, password, inviteCode });
+          state.accountBackend.token = result.token || "";
+          state.accountBackend.user = result.user || null;
+          saveAccountSessionToken();
+          mergeBackendUser(result.user);
+          toggleAccountPanel(false);
+          updateAccountStatus();
+          setStatus("注册成功，已登录。");
+          return;
+        } catch (error) {
+          setStatus(error.message, true);
+          return;
+        }
+      }
       if (!username || !password) {
         setStatus("注册账号和密码不能为空。", true);
         return;
@@ -7382,6 +7534,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     updateApiStatus();
     render();
     loadRuntimeConfig();
+    loadAccountBackend();
 
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       window.addEventListener("load", () => {
