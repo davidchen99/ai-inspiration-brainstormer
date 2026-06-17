@@ -523,6 +523,294 @@ Implemented in `index.html`:
 - A Lark Base sync package export creates inferred schema and records from selected ideas without syncing API keys, admin settings, usage counters, or raw knowledge-base Markdown.
 - The local `sync-to-lark.ps1` helper can consume the JSON sync package, preview it with `-DryRun`, create missing fields with `-EnsureFields`, and batch-create records into an existing Base table via `lark-cli`.
 
+## Future Optimization Roadmap
+
+The following optimizations are all accepted into the product roadmap. They should be implemented in phases while preserving the current restrained, easy-to-start interface. The normal creation surface should remain focused on input, idea selection, continuation, and export. Admin, provider, quota, sync, and indexing complexity should stay behind backend/admin/offline/advanced surfaces.
+
+### Phase 1: Cloud Backend Configuration Center
+
+Priority: highest for the online version.
+
+Problem:
+
+- The online app is currently a static page.
+- Admin settings, invite codes, user usage, shared API keys, and online knowledge-base limits are saved in the current browser's `localStorage`.
+- This means one administrator cannot reliably enforce settings for all online users.
+
+Goal:
+
+- Add a Cloudflare-based backend configuration layer so online settings become real shared product settings rather than browser-local soft settings.
+
+Recommended architecture:
+
+- Cloudflare Worker as the API layer.
+- Cloudflare D1 for structured data such as users, invite codes, quotas, usage, and admin settings.
+- Cloudflare KV or D1 for product configuration such as model defaults and online knowledge-base limits.
+- Optional Cloudflare Pages Functions if keeping deployment tightly coupled to Pages is simpler.
+
+Required capabilities:
+
+- Store admin settings server-side.
+- Store invite codes server-side.
+- Store user accounts and usage counters server-side.
+- Enforce quota and usage limits server-side.
+- Enforce online knowledge-base limits server-side or at least fetch shared limit values from the backend.
+- Let the frontend fetch public-safe runtime config without exposing admin-only data.
+- Keep normal users away from API keys, model settings, token usage, API-call counts, and quota counters.
+
+API-key handling options:
+
+1. Backend proxy mode:
+   - Store shared provider API keys server-side.
+   - Browser sends prompt requests to the Worker.
+   - Worker calls the model provider.
+   - This is better for online shared use because users never receive shared API keys.
+2. Frontend direct-call mode:
+   - Keep the current direct browser-to-provider call.
+   - Use backend only for settings, quota, and invite codes.
+   - This is simpler but less secure for shared API keys.
+
+Preferred direction:
+
+- Use backend proxy mode for online shared text generation once the Worker exists.
+- Keep offline mode as direct local browser-to-provider calls using the user's own API keys.
+
+Implementation status for first backend step:
+
+- Added Cloudflare Pages Functions endpoints:
+  - `GET /api/runtime-config`
+  - `GET /api/admin-config`
+  - `POST /api/admin-config`
+- Added optional KV binding contract: `AI_BRAINSTORM_CONFIG`.
+- Added admin token contract: `AI_BRAINSTORM_ADMIN_TOKEN` or `ADMIN_TOKEN`.
+- The public runtime config currently contains only online knowledge-base limits.
+- The frontend now calls `/api/runtime-config` in online mode and prefers backend online knowledge-base limits when available.
+- If the backend endpoint, KV binding, or runtime config is unavailable, the frontend falls back to browser-local admin settings.
+- Backend AI proxy, server-side users, server-side invite codes, server-side quota enforcement, and secure provider API-key storage remain future backend steps.
+
+### Phase 2: Real Offline Desktop App
+
+Priority: highest for large personal knowledge-base workflows.
+
+Problem:
+
+- The current offline version is a generated HTML package.
+- It can hide online account/admin surfaces and use local API keys, but it is still constrained by browser local-file behavior, CDN availability, and browser storage.
+
+Goal:
+
+- Package offline mode as a real desktop app that opens directly into the creation surface and is optimized for large local Markdown knowledge bases.
+
+Recommended shell:
+
+- Tauri is preferred if the goal is a lightweight desktop app.
+- Electron is acceptable if web compatibility and packaging speed matter more than binary size.
+
+Required capabilities:
+
+- Open directly in offline mode.
+- Hide `游客登录`, `管理员`, invite-code, quota, and usage UI.
+- Let the user configure text-model and image-model API keys locally.
+- Store API keys in OS-level secure storage when possible.
+- Let the user choose one or more local Markdown/Obsidian folders.
+- Remember selected knowledge-base folders between sessions.
+- Support large-vault scanning and incremental refresh.
+- Preserve local history and export behavior.
+- Keep the same visual style and core workflow as the web app.
+
+Desktop-specific knowledge-base requirements:
+
+- Read many Markdown files without relying on browser file picker limits.
+- Track file path, modified time, size, frontmatter, tags, headings, and links where practical.
+- Re-index only changed files after the first scan.
+- Provide a clear status for indexing progress and last refresh time.
+- Avoid sending raw full vault content to AI providers.
+
+### Phase 3: Local Knowledge-Base Index And Retrieval
+
+Priority: high after offline mode is stable.
+
+Problem:
+
+- The current implementation uses lightweight keyword-based section ranking.
+- This is useful but rough for large vaults, synonyms, long-term topic memory, and multi-hop idea discovery.
+
+Goal:
+
+- Upgrade knowledge-base retrieval so the app can use large local Markdown libraries more intelligently without losing the light workflow.
+
+Recommended staged implementation:
+
+1. Better lexical ranking:
+   - Include file name, folder path, frontmatter tags, Markdown headings, wikilinks, and body text in scoring.
+   - Weight headings and tags higher than body text.
+   - Detect exact topic matches, related aliases, and repeated terms.
+2. Local search and filters:
+   - Add optional filters for folder, tag, file name, and modified time.
+   - Let the user search the selected knowledge base before generation.
+   - Let the user pin specific notes as required context.
+3. Local inverted index:
+   - Build a browser/desktop-side index from Markdown sections.
+   - Store only local index metadata, never upload it to the app server.
+   - Use the index to retrieve relevant sections per generation request.
+4. Optional embedding retrieval:
+   - Add local or user-provider embedding only after lexical retrieval is stable.
+   - Store embeddings locally in the desktop app or browser storage.
+   - Make embedding generation explicit because it can cost money and send text to an embedding provider.
+
+Retrieval UI principles:
+
+- Keep the default mode simple: user selects knowledge base, enters idea, generates.
+- Put search, filters, and pinned notes behind a compact advanced knowledge panel.
+- Show a short "used sources" summary after generation without exposing a complex research interface.
+
+### Phase 4: Project-Based Brainstorm History
+
+Priority: medium-high for repeat use.
+
+Problem:
+
+- Local history exists, but as the app grows, simple session history can become hard to navigate.
+
+Goal:
+
+- Upgrade history into project-style brainstorm records while still staying local-first.
+
+Recommended project fields:
+
+- Project title.
+- Seed idea.
+- Created time.
+- Updated time.
+- Generation settings snapshot.
+- Knowledge-base metadata only: active state, file count, source label, last used character count.
+- Generated idea count.
+- Selected idea count.
+- Full-draft completion count.
+- Image prompt/image generation state.
+- Export/sync state where practical.
+
+Required project actions:
+
+- Restore.
+- Rename.
+- Duplicate.
+- Delete.
+- Archive.
+- Search by project title, seed idea, and generated idea text.
+
+Storage rules:
+
+- Do not save API keys.
+- Do not save admin credentials.
+- Do not save raw knowledge-base Markdown.
+- Keep history local unless a future explicit cloud account system is added.
+
+### Phase 5: Export System Organization
+
+Priority: medium.
+
+Problem:
+
+- Export capabilities are expanding: Excel, Word, Markdown, TXT, PPT outline, Xiaohongshu image prompts, image files, Lark Base package.
+- Without grouping, the advanced/export area can become harder to scan.
+
+Goal:
+
+- Organize export actions by user intent without making the main creation flow heavier.
+
+Recommended export groups:
+
+- Content export:
+  - Word.
+  - Markdown.
+  - TXT.
+- Data export:
+  - Excel.
+  - Lark Base sync package.
+- Creative-asset export:
+  - Xiaohongshu image prompts.
+  - PPT outline.
+  - Image files.
+
+UX requirements:
+
+- Keep common exports visible.
+- Put specialized exports in a compact advanced/export section.
+- Preserve existing export behavior.
+- Do not add nested cards or heavy admin-style panels.
+
+### Phase 6: Lark Base Semi-Automatic Sync
+
+Priority: medium after export schemas stabilize.
+
+Problem:
+
+- The current Lark Base path exports a JSON package and provides a local PowerShell helper.
+- This is safe and practical, but the workflow can be smoother.
+
+Goal:
+
+- Make Lark Base sync feel like a guided local workflow before attempting browser-side OAuth/direct sync.
+
+Recommended next step:
+
+- Keep exporting the JSON sync package from the web app.
+- Improve the local helper so it can:
+  - Accept a Base URL.
+  - Detect or ask for the target table.
+  - Preview schema and records with `-DryRun`.
+  - Create missing fields with `-EnsureFields`.
+  - Batch-create records.
+  - Print record counts and created record links after completion.
+  - Fail clearly when `lark-cli` is not authenticated or lacks permission.
+
+Future direct-sync option:
+
+- Add browser auth or a local companion process only after the JSON package and CLI workflow are reliable.
+- Direct sync must not expose normal users to Feishu auth internals unless they explicitly choose the sync action.
+
+### Phase 7: Documentation Restructure
+
+Priority: medium-low, but useful before the next large implementation round.
+
+Problem:
+
+- The current requirements document includes original requirements, implementation status, future plans, and open questions in one long file.
+- This is acceptable for current development, but it will become harder to maintain as backend, desktop, indexing, and sync work expand.
+
+Recommended split:
+
+- `docs/requirements.md`: stable product goals and user-facing requirements.
+- `docs/implementation-status.md`: what is currently implemented and where.
+- `docs/roadmap.md`: accepted future optimizations and phase priorities.
+- `docs/technical-limits.md`: static-app limits, online/offline differences, privacy boundaries, and backend requirements.
+
+Until the split is done:
+
+- Keep this document as the single source of truth.
+- Clearly label implementation status versus future requirements.
+- Avoid leaving outdated "first version" limits unqualified when later online/offline limits differ.
+
+## Roadmap Priority Summary
+
+Recommended implementation order:
+
+1. Cloud backend configuration center.
+2. Real offline desktop app.
+3. Local knowledge-base index and retrieval.
+4. Project-based brainstorm history.
+5. Export system organization.
+6. Lark Base semi-automatic sync.
+7. Documentation restructure.
+
+Rationale:
+
+- The backend configuration center stabilizes online shared use.
+- The desktop app stabilizes the user's large local knowledge-base workflow.
+- Retrieval quality matters most after the app can reliably access larger knowledge bases.
+- History, export, and sync improvements compound once core online/offline architecture is stable.
+
 ## Out Of Scope For First Version
 
 - Full Obsidian vault indexing.

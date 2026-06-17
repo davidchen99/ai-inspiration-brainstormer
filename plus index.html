@@ -2230,6 +2230,9 @@
       accountPanelOpen: false,
       accountPanelMode: "user",
       adminSession: false,
+      runtimeConfig: null,
+      runtimeConfigSource: "local",
+      runtimeConfigReady: false,
       historyPanelOpen: false,
       historySessions: [],
       currentHistoryId: "",
@@ -2272,6 +2275,7 @@
     const ADMIN_SESSION_STORAGE_KEY = "ai_brainstorm_admin_session_v1";
     const HISTORY_STORAGE_KEY = "ai_brainstorm_history_v1";
     const OFFLINE_TEXT_SETTINGS_STORAGE_KEY = "ai_brainstorm_offline_text_settings_v1";
+    const RUNTIME_CONFIG_ENDPOINT = "/api/runtime-config";
     const MAX_HISTORY_SESSIONS = 20;
     const DEFAULT_GUEST_LIMIT = 10;
     const DEFAULT_INVITE_LIMIT = 20;
@@ -2406,13 +2410,16 @@
           maxSectionChars: clampPositive(settings.offlineKnowledgeMaxSectionChars, defaults.maxSectionChars, 300, 20000)
         };
       }
+      const remote = state.runtimeConfig?.onlineKnowledge && typeof state.runtimeConfig.onlineKnowledge === "object"
+        ? state.runtimeConfig.onlineKnowledge
+        : {};
       return {
-        enabled: settings.onlineKnowledgeEnabled !== false,
-        allowFolder: settings.onlineKnowledgeAllowFolder !== false,
-        maxFiles: clampPositive(settings.onlineKnowledgeMaxFiles, defaults.maxFiles, 1, 5000),
-        maxTotalChars: clampPositive(settings.onlineKnowledgeMaxTotalChars, defaults.maxTotalChars, 10000, 20000000),
-        maxPromptChars: clampPositive(settings.onlineKnowledgeMaxPromptChars, defaults.maxPromptChars, 1000, 100000),
-        maxSectionChars: clampPositive(settings.onlineKnowledgeMaxSectionChars, defaults.maxSectionChars, 300, 10000)
+        enabled: "enabled" in remote ? remote.enabled !== false : settings.onlineKnowledgeEnabled !== false,
+        allowFolder: "allowFolder" in remote ? remote.allowFolder !== false : settings.onlineKnowledgeAllowFolder !== false,
+        maxFiles: clampPositive(remote.maxFiles ?? settings.onlineKnowledgeMaxFiles, defaults.maxFiles, 1, 5000),
+        maxTotalChars: clampPositive(remote.maxTotalChars ?? settings.onlineKnowledgeMaxTotalChars, defaults.maxTotalChars, 10000, 20000000),
+        maxPromptChars: clampPositive(remote.maxPromptChars ?? settings.onlineKnowledgeMaxPromptChars, defaults.maxPromptChars, 1000, 100000),
+        maxSectionChars: clampPositive(remote.maxSectionChars ?? settings.onlineKnowledgeMaxSectionChars, defaults.maxSectionChars, 300, 10000)
       };
     }
 
@@ -3079,6 +3086,31 @@ ${context.text}
       }
     }
 
+    async function loadRuntimeConfig() {
+      if (isOfflineMode() || location.protocol === "file:") {
+        state.runtimeConfigReady = true;
+        state.runtimeConfigSource = "local";
+        return;
+      }
+      try {
+        const response = await fetch(RUNTIME_CONFIG_ENDPOINT, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (!data?.ok || !data.config) throw new Error(data?.message || "运行配置返回为空");
+        state.runtimeConfig = data.config;
+        state.runtimeConfigSource = data.source || "remote";
+        state.runtimeConfigReady = true;
+        render();
+      } catch (error) {
+        state.runtimeConfig = null;
+        state.runtimeConfigSource = "local";
+        state.runtimeConfigReady = true;
+        if (hasAdminAccess()) {
+          setStatus("未连接后端配置中心，当前使用本浏览器本地管理员设置。");
+        }
+      }
+    }
+
     function createDefaultAccountStore() {
       const now = new Date().toISOString();
       return {
@@ -3643,6 +3675,9 @@ ${context.text}
               <div class="field">
                 <label for="adminGuestLimit">无邀请码基础上限</label>
                 <input id="adminGuestLimit" type="number" min="1" step="1" value="${resolveGuestLimit()}">
+              </div>
+              <div class="note field">
+                后端配置中心：${state.runtimeConfigSource === "kv" ? "已连接 Cloudflare KV 配置" : state.runtimeConfigSource === "default" ? "已连接后端默认配置" : "未连接，使用当前浏览器本地设置"}。
               </div>
               <details class="image-advanced">
                 <summary>模型与内容默认值</summary>
@@ -7346,6 +7381,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     updateAssociationModeHint();
     updateApiStatus();
     render();
+    loadRuntimeConfig();
 
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       window.addEventListener("load", () => {

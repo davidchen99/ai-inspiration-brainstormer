@@ -13,6 +13,9 @@ https://ai-inspiration-generator.pages.dev
 - `manifest.json`：PWA 应用名称、图标和安装配置。
 - `service-worker.js`：PWA 缓存和离线兜底。
 - `assets/`：应用图标和分享封面资源。
+- `functions/api/runtime-config.js`：Cloudflare Pages Functions 公开运行配置接口，当前用于线上知识库限制。
+- `functions/api/admin-config.js`：Cloudflare Pages Functions 管理员配置接口，需要后端管理员令牌。
+- `docs/backend-config-center.md`：Cloudflare 后端配置中心的绑定、接口和后续步骤说明。
 - `docs/admin-deployment.md`：管理员配置、用户邀请码流程和 Cloudflare 部署手册。
 - `docs/knowledge-base-brainstorm-requirements.md`：知识库脑暴模式的需求说明，面向 Obsidian/Markdown 本地知识库工作流。
 - `AGENTS.md`：给后续 AI 维护者看的项目规则和验证命令。
@@ -139,6 +142,7 @@ Kimi / Moonshot API Key 获取入口：`https://platform.moonshot.cn/console/api
 - 管理员可查看每个用户的邀请码、使用上限、已用次数、剩余次数、API 调用次数和 token 使用量。
 - 管理员可单独调整任意非管理员用户的使用上限。
 - 管理员可调整线上知识库上传软限制；当前纯静态架构下，这些配置保存在当前浏览器本地，如需对所有线上用户统一生效，需要后续接入后端配置存储。
+- 项目已加入第一版 Cloudflare 后端配置中心接口；绑定 `AI_BRAINSTORM_CONFIG` KV 和 `AI_BRAINSTORM_ADMIN_TOKEN` 后，线上知识库限制可从 `/api/runtime-config` 读取共享配置。
 - 用户达到上限后，系统会限制继续调用 AI，并提示联系陆同学 AI：`1455234504@qq.com`。
 
 ## 图片生成
@@ -214,6 +218,13 @@ Kimi / Moonshot API Key 获取入口：`https://platform.moonshot.cn/console/api
 ```powershell
 wrangler pages deploy . --project-name ai-inspiration-generator --branch main
 ```
+
+如需启用后端配置中心，请在 Cloudflare Pages 项目里配置：
+
+- KV namespace binding：`AI_BRAINSTORM_CONFIG`
+- 环境变量：`AI_BRAINSTORM_ADMIN_TOKEN`
+
+详细接口见 `docs/backend-config-center.md`。
 
 部署后优先验证生产地址：
 
