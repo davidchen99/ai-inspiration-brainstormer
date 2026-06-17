@@ -354,6 +354,425 @@ Complete drafts should be included in existing copy and export flows:
 - Copy-current and copy-selected flows should include complete drafts when present.
 - Excel can record whether a complete draft exists, but should avoid dumping very long full text unless the UI explicitly supports it.
 
+## Batch Video Generation Requirement
+
+The product should add a new large module for batch short-video generation by connecting the brainstorm app with the local `moneypriturbo` / automatic video workflow.
+
+The strategic positioning is:
+
+- The brainstorm app is the content production and task-planning center.
+- `moneypriturbo` / `autocut-workflow` is the local video rendering engine.
+- The two systems should be connected through structured tasks, not by copying all video-rendering code into the online brainstorm page.
+
+### Background
+
+The brainstorm app can already generate ideas, plans, long drafts, Xiaohongshu content, Moments copy, image prompts, and export packages. The next opportunity is to turn selected ideas into short-video scripts and then render videos through the existing local video-generation workflow.
+
+The related local workflow lives at:
+
+```text
+C:\Users\lenovo\Desktop\chen vibe coding\自动写作工作流\自动写视频号工作流07版（codex）--html网页\20260605氛围剪辑\autocut-workflow
+```
+
+The local workflow already has:
+
+- A local Node web server.
+- API endpoints such as `/api/state`, `/api/draft`, `/api/run`, `/api/jobs/:id`, and `/api/history`.
+- A simple web console.
+- Voice selection.
+- Voice-style selection.
+- Video-style selection.
+- Output directory selection.
+- Progress tracking.
+- History records.
+- MP4 preview.
+- Local rendering through Python, PowerShell, FFmpeg, and browser-based rendering.
+
+### Feasibility Decision
+
+The integration is feasible, but it should be local-first.
+
+Do not try to run the video rendering workflow inside Cloudflare Pages or Cloudflare Functions. The video workflow depends on:
+
+- Node.js local process.
+- Python scripts.
+- PowerShell.
+- FFmpeg.
+- Local file-system access.
+- Long-running render tasks.
+- D-drive output folders.
+- MiMo TTS API key.
+- Pexels API key.
+- Local browser/frame rendering.
+
+These are not suitable for the online static app runtime.
+
+Preferred architecture:
+
+```text
+Brainstorm app
+-> generate video-ready scripts and task packages
+-> send or export tasks to local moneypriturbo/autocut service
+-> local service generates voice, B-roll, timeline, render frames, and MP4
+-> video status and output path return to the brainstorm app when connected locally
+```
+
+### Product Goal
+
+Add a new `批量视频` capability so the user can:
+
+1. Generate many content ideas in the brainstorm app.
+2. Select promising ideas.
+3. Convert selected ideas into short-video scripts.
+4. Export or send those scripts to the local video-generation engine.
+5. Generate one MP4 per selected idea.
+6. Track task progress and output locations.
+
+The user-facing mental model should remain simple:
+
+```text
+点子
+-> 视频号脚本
+-> 本地生成视频
+-> 预览 / 打开文件夹
+```
+
+### Scope Boundary
+
+The brainstorm app should not duplicate the video engine's rendering pipeline.
+
+The brainstorm app should own:
+
+- Video idea selection.
+- Video-script generation.
+- Script editing.
+- Batch task packaging.
+- Sending tasks to a local video service when available.
+- Displaying task state returned by the local service.
+- Exporting task packages for manual import.
+
+The local video engine should own:
+
+- Voice synthesis.
+- B-roll keyword expansion and download.
+- Timeline construction.
+- Subtitle timing.
+- HTML video template rendering.
+- FFmpeg and browser rendering.
+- MP4 output.
+- Local output folder management.
+- Local render logs.
+
+### First Implementation: Task Package Export
+
+The safest first step is to add export support instead of direct service calls.
+
+New brainstorm app actions:
+
+- `生成视频号脚本`
+- `批量生成视频号脚本`
+- `导出视频任务包`
+
+Current implementation status:
+
+- The brainstorm page now has single-item `视频号脚本`, batch `批量视频号脚本`, and `导出视频任务包` actions.
+- Video scripts are saved on each idea as a separate `videoScript` content type.
+- Video scripts can be edited in the detail edit form.
+- Copy, Word, Markdown, TXT, Excel, and Feishu Base exports include video script fields.
+- The exported video task package targets `moneypriturbo/autocut-workflow` and intentionally excludes API keys, admin settings, usage data, and raw knowledge-base Markdown.
+- Direct local service connection, queue polling, MP4 preview, and output-folder controls remain later phases.
+
+The task package should be a JSON file that `moneypriturbo` can later import or run through a helper script.
+
+Recommended package shape:
+
+```json
+{
+  "version": 1,
+  "exportedAt": "2026-06-17T00:00:00.000Z",
+  "source": "ai-inspiration-generator",
+  "defaults": {
+    "voiceName": "冰糖",
+    "voiceStyle": "自然清晰",
+    "videoStyle": "知识讲解",
+    "outputRoot": "D:\\自动剪辑输出\\氛围剪辑"
+  },
+  "tasks": [
+    {
+      "id": "idea-1",
+      "title": "短视频标题",
+      "sourceText": "完整口播文案",
+      "hook": "开头钩子",
+      "voiceName": "冰糖",
+      "voiceStyle": "自然清晰",
+      "videoStyle": "知识讲解",
+      "outputRoot": "D:\\自动剪辑输出\\氛围剪辑",
+      "sourceIdea": {
+        "category": "AI工具",
+        "direction": "选题方向",
+        "summary": "一句话简介",
+        "platform": "视频号"
+      }
+    }
+  ]
+}
+```
+
+Rules:
+
+- Do not include API keys.
+- Do not include admin settings.
+- Do not include raw knowledge-base Markdown.
+- Do not include user quota or usage data.
+- The package may include lightweight metadata that helps trace a task back to the selected idea.
+
+### Second Implementation: Local Service Connection
+
+After task package export works, add an optional local connection to the video engine.
+
+Potential local service:
+
+```text
+http://127.0.0.1:3000
+```
+
+Useful existing endpoints:
+
+- `GET /api/state`: read available voices, voice styles, video styles, key status, current job, history, and schedule.
+- `POST /api/draft`: clean text and create lines/clips.
+- `POST /api/run`: start a video generation job.
+- `GET /api/jobs/:id`: read job status.
+- `GET /api/jobs/:id/video`: preview generated MP4.
+- `POST /api/jobs/:id/cancel`: stop a job.
+- `POST /api/jobs/:id/open-folder`: open output folder.
+
+Required changes before direct browser connection:
+
+- Add CORS support to the local video service.
+- Keep the service bound to `127.0.0.1`.
+- Add an optional local access token to prevent arbitrary web pages from controlling local file and render operations.
+- Add an endpoint to accept a batch task queue or add one job at a time.
+- Make error messages clear when the local service is not running.
+
+Brainstorm app UI for local connection:
+
+- `连接本地视频生成器`
+- Connection status: `未连接` / `已连接` / `服务未启动`
+- Local service URL, default `http://127.0.0.1:3000`.
+- Optional local token field in offline/local settings.
+- `发送到本地视频生成器`
+- `查看视频队列`
+
+### Third Implementation: Queue-Based Batch Generation
+
+The current local workflow should be treated as a single-render worker.
+
+The video engine currently rejects concurrent runs when a job is already running. Therefore, the brainstorm app should not submit many tasks as simultaneous render calls.
+
+Required batch behavior:
+
+1. Convert selected ideas into video tasks.
+2. Put tasks into a queue.
+3. Submit one task at a time to the local video service.
+4. Poll job status until done, failed, or canceled.
+5. Continue to the next task.
+6. Store per-task output path, video URL, final status, and error message.
+
+Recommended task states:
+
+- `pending`
+- `queued`
+- `running`
+- `done`
+- `failed`
+- `canceled`
+- `skipped`
+
+The UI should show:
+
+- Total tasks.
+- Current task.
+- Done count.
+- Failed count.
+- Remaining count.
+- Current stage and progress when available.
+- A stop button that stops the current local job and pauses the queue.
+
+### Fourth Implementation: Desktop Integration
+
+The final product shape should be a local desktop app or local launcher that can start both systems together:
+
+- Brainstorm offline mode.
+- Local video generation service.
+- Shared local settings.
+- Output directory management.
+- Video task queue.
+
+This can be built later with Tauri or Electron.
+
+The desktop wrapper should:
+
+- Start the local video service automatically.
+- Open the brainstorm app in offline/local mode.
+- Keep video API keys local.
+- Store local service token securely where possible.
+- Expose one user-facing app instead of two separate browser tabs.
+
+### Video Script Generation
+
+The brainstorm app should add a separate content type for short-video scripts. It should not directly reuse long-form official-account articles as video scripts.
+
+Reason:
+
+- Official-account articles are too long and structured for reading.
+- Xiaohongshu long posts are visual but not always spoken-word friendly.
+- A video script needs a strong hook, short sentences, oral rhythm, and clear segment pacing.
+
+Recommended target:
+
+- 60-120 seconds per video by default.
+- 300-700 Chinese characters depending on speaking speed.
+- Clear beginning, middle, and ending.
+- One main point per video.
+- Natural spoken language.
+- Strong opening hook within the first 3 seconds.
+- Ending call-to-action when appropriate.
+
+Recommended script fields:
+
+- `videoTitle`
+- `videoHook`
+- `videoVoiceover`
+- `videoOutline`
+- `videoStyle`
+- `voiceName`
+- `voiceStyle`
+- `brollKeywords`
+- `estimatedDuration`
+- `callToAction`
+
+Suggested idea-level data shape:
+
+```js
+{
+  videoScript: {
+    videoTitle: "",
+    videoHook: "",
+    videoVoiceover: "",
+    videoOutline: [],
+    videoStyle: "知识讲解",
+    voiceName: "冰糖",
+    voiceStyle: "自然清晰",
+    brollKeywords: [],
+    estimatedDuration: 90,
+    callToAction: ""
+  },
+  videoTask: {
+    status: "pending",
+    jobId: "",
+    videoUrl: "",
+    outputFolder: "",
+    error: "",
+    updatedAt: ""
+  }
+}
+```
+
+### Knowledge-Base Inheritance
+
+If knowledge-base mode is active, video-script generation should inherit knowledge-base context, but it must not sound like a note summary or article excerpt.
+
+Rules:
+
+- Use the knowledge base as invisible source material.
+- Convert knowledge into spoken short-video structure.
+- Avoid phrases such as `根据知识库`, `笔记里提到`, or `资料显示`.
+- Prefer concrete examples, short sentences, and oral transitions.
+- If the knowledge base is insufficient, generate a script from the selected idea and mark the source confidence lower internally.
+
+### UI Placement
+
+The new video module should sit near existing batch continuation and export tools, not on the first screen.
+
+Recommended placements:
+
+- Single idea detail:
+  - `视频号脚本`
+  - `生成视频`
+- Batch area:
+  - A new group: `批量视频`
+  - Buttons:
+    - `批量生成视频脚本`
+    - `导出视频任务包`
+    - `发送到本地视频生成器`
+    - `停止视频队列`
+
+The first screen should remain focused on entering an idea and generating the idea wall.
+
+### Online And Offline Behavior
+
+Online version:
+
+- Can generate video scripts.
+- Can export video task packages.
+- Can optionally connect to `http://127.0.0.1:3000` if browser security and local service CORS allow it.
+- Must not imply Cloudflare is rendering video.
+- Must show a clear local-service requirement before sending tasks.
+
+Offline/local version:
+
+- Can generate video scripts.
+- Can export task packages.
+- Can connect to local video service more naturally.
+- Should be the preferred mode for real batch video generation.
+- Can later become a desktop app that starts the video engine automatically.
+
+### Dependencies And Environment
+
+The local video engine requires:
+
+- Node.js 22+.
+- Python 3.11+.
+- FFmpeg.
+- PowerShell on Windows.
+- MiMo API key for TTS.
+- Pexels API key for B-roll when using Pexels downloads.
+- Enough local disk space for frames, assets, logs, and MP4 output.
+
+The brainstorm app should detect or communicate missing requirements through the local video service status instead of trying to validate everything itself.
+
+### Security And Privacy
+
+Security rules:
+
+- Do not send local output paths to the public app server unless the user explicitly syncs metadata.
+- Do not include MiMo or Pexels API keys in brainstorm exports.
+- Do not expose local service control to arbitrary web pages.
+- Keep the local service bound to `127.0.0.1`.
+- Add a local token before allowing cross-origin browser requests from the brainstorm app.
+
+Privacy rules:
+
+- Video scripts may be exported locally.
+- Generated videos remain on the user's machine.
+- Raw knowledge-base Markdown must not be included in video task packages.
+- Task package exports may include only selected idea metadata and generated video scripts.
+
+### Initial Implementation Status
+
+Not implemented in the brainstorm app yet.
+
+Existing external capability:
+
+- The local `autocut-workflow` already has a usable web console and local API surface for video generation.
+- It supports source text, voice, voice style, video style, output root, progress, history, preview, stop, and folder opening.
+
+Next accepted first step:
+
+- Add video-script fields and prompts to the brainstorm app.
+- Add single and batch actions for generating video scripts.
+- Add `导出视频任务包` as the first integration path.
+
 ## Next-Phase Product Requirements
 
 The next phase should keep the current restrained, easy-to-start style. New capabilities should sit behind lightweight controls, detail panels, or advanced/export areas instead of making the main creation surface feel like an admin console.
@@ -709,13 +1128,53 @@ Storage rules:
 - Do not save raw knowledge-base Markdown.
 - Keep history local unless a future explicit cloud account system is added.
 
-### Phase 5: Export System Organization
+### Phase 5: Batch Video Generation Integration
+
+Priority: high for expanding the product from text generation to video production.
+
+Problem:
+
+- The brainstorm app can generate strong ideas and copy, but it does not yet turn them into short videos.
+- The local `moneypriturbo` / `autocut-workflow` can generate MP4 videos, but it needs ready-to-use video scripts and structured task input.
+- Directly merging the full video-rendering pipeline into the online static app is not appropriate because video rendering is local, long-running, and file-system heavy.
+
+Goal:
+
+- Let the brainstorm app generate and manage batch video tasks while the local video engine renders the final MP4 files.
+
+Recommended staged implementation:
+
+1. Video script generation:
+   - Add `视频号脚本` as a new content type.
+   - Generate short spoken scripts from selected ideas.
+   - Store `videoTitle`, `videoHook`, `videoVoiceover`, `videoOutline`, `videoStyle`, `voiceName`, `voiceStyle`, `brollKeywords`, and estimated duration.
+2. Video task package export:
+   - Add `导出视频任务包`.
+   - Export selected video scripts as JSON tasks compatible with the local video workflow.
+   - Do not include API keys, admin settings, quota data, or raw knowledge-base Markdown.
+3. Local service connection:
+   - Add optional connection to `http://127.0.0.1:3000`.
+   - Read local video service state.
+   - Send one selected task to `/api/run`.
+   - Poll `/api/jobs/:id`.
+4. Batch queue:
+   - Submit tasks one by one.
+   - Show queue state, current task, success count, failure count, and stop controls.
+   - Store returned job id, video URL, output folder, status, and error message.
+5. Desktop integration:
+   - Later, let a desktop app start both the brainstorm offline mode and the local video engine.
+
+Accepted first step:
+
+- Build video-script generation and video task package export before attempting direct local service control.
+
+### Phase 6: Export System Organization
 
 Priority: medium.
 
 Problem:
 
-- Export capabilities are expanding: Excel, Word, Markdown, TXT, PPT outline, Xiaohongshu image prompts, image files, Lark Base package.
+- Export capabilities are expanding: Excel, Word, Markdown, TXT, PPT outline, Xiaohongshu image prompts, image files, Lark Base package, and video task package.
 - Without grouping, the advanced/export area can become harder to scan.
 
 Goal:
@@ -735,6 +1194,7 @@ Recommended export groups:
   - Xiaohongshu image prompts.
   - PPT outline.
   - Image files.
+  - Video task package.
 
 UX requirements:
 
@@ -743,7 +1203,7 @@ UX requirements:
 - Preserve existing export behavior.
 - Do not add nested cards or heavy admin-style panels.
 
-### Phase 6: Lark Base Semi-Automatic Sync
+### Phase 7: Lark Base Semi-Automatic Sync
 
 Priority: medium after export schemas stabilize.
 
@@ -773,7 +1233,7 @@ Future direct-sync option:
 - Add browser auth or a local companion process only after the JSON package and CLI workflow are reliable.
 - Direct sync must not expose normal users to Feishu auth internals unless they explicitly choose the sync action.
 
-### Phase 7: Documentation Restructure
+### Phase 8: Documentation Restructure
 
 Priority: medium-low, but useful before the next large implementation round.
 
@@ -803,16 +1263,19 @@ Recommended implementation order:
 2. Real offline desktop app.
 3. Local knowledge-base index and retrieval.
 4. Project-based brainstorm history.
-5. Export system organization.
-6. Lark Base semi-automatic sync.
-7. Documentation restructure.
+5. Batch video generation integration.
+6. Export system organization.
+7. Lark Base semi-automatic sync.
+8. Documentation restructure.
 
 Rationale:
 
 - The backend configuration center stabilizes online shared use.
 - The desktop app stabilizes the user's large local knowledge-base workflow.
 - Retrieval quality matters most after the app can reliably access larger knowledge bases.
-- History, export, and sync improvements compound once core online/offline architecture is stable.
+- Project history gives batch video tasks a place to persist.
+- Batch video generation expands the product from text output to publishable media while reusing the existing local video engine.
+- Export and sync improvements compound once core online/offline architecture and media task flow are stable.
 
 ## Out Of Scope For First Version
 

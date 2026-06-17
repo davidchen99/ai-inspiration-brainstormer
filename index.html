@@ -2014,6 +2014,7 @@
             <option value="brief">已发散</option>
             <option value="plan">有方案</option>
             <option value="draft">有正文</option>
+            <option value="video">有视频脚本</option>
             <option value="image">有配图</option>
           </select>
           <label class="selected-filter">
@@ -2052,6 +2053,7 @@
                 <button id="batchOfficialBtn" type="button">批量转公众号</button>
                 <button id="batchXhsBtn" type="button">批量转小红书</button>
                 <button id="batchMomentsBtn" type="button">批量转朋友圈</button>
+                <button id="batchVideoScriptBtn" type="button">批量视频号脚本</button>
               </div>
               <div class="batch-actions">
                 <button id="batchOfficialArticleBtn" type="button">批量公众号正文</button>
@@ -2116,6 +2118,7 @@
                 <button id="txtBtn" type="button">批量导出 TXT</button>
                 <button id="xhsPromptBtn" type="button">导出小红书图 prompt</button>
                 <button id="larkBasePackageBtn" type="button">导出飞书 Base 同步包</button>
+                <button id="videoTaskPackageBtn" type="button">导出视频任务包</button>
               </div>
             </div>
           </details>
@@ -2357,6 +2360,17 @@
       illustration: "扁平插画，清晰色块，亲和但不幼稚",
       infographic: "极简信息图，结构清楚，留白充足"
     };
+
+    const VIDEO_DEFAULTS = {
+      voiceName: "冰糖",
+      voiceStyle: "自然清晰",
+      videoStyle: "知识讲解",
+      outputRoot: "D:\\自动剪辑输出\\氛围剪辑"
+    };
+
+    const VIDEO_STYLES = ["知识讲解", "科技感", "城市夜景", "办公效率", "生活氛围", "治愈自然", "商业产品"];
+    const VIDEO_VOICES = ["冰糖", "青柠", "蜜桃", "茉莉", "苏打", "白桦"];
+    const VIDEO_VOICE_STYLES = ["自然清晰", "活泼俏皮", "沉稳讲解", "新闻播报", "温柔治愈", "情绪感强"];
 
     const stageTargets = {
       input: "inputSection",
@@ -2919,7 +2933,7 @@ ${context.text}
     }
 
     function hasPlan(item) {
-      return Boolean(item.official || item.xhs || item.moments || item.novel || item.song);
+      return Boolean(item.official || item.xhs || item.moments || item.novel || item.song || item.videoScript);
     }
 
     function ideaSearchText(item) {
@@ -2938,6 +2952,8 @@ ${context.text}
         JSON.stringify(item.moments || {}),
         JSON.stringify(item.novel || {}),
         JSON.stringify(item.song || {}),
+        JSON.stringify(item.videoScript || {}),
+        JSON.stringify(item.videoTask || {}),
         item.officialArticle,
         item.xhsArticle,
         item.momentsArticle,
@@ -2952,6 +2968,7 @@ ${context.text}
       if (status === "brief") return Boolean(item.brief);
       if (status === "plan") return hasPlan(item);
       if (status === "draft") return hasFullDraft(item);
+      if (status === "video") return Boolean(item.videoScript);
       if (status === "image") return Boolean(item.imageResult?.url);
       return true;
     }
@@ -4335,7 +4352,7 @@ ${context.text}
     function updateStageNav() {
       const hasIdeas = state.ideas.length > 0;
       const hasActive = Boolean(activeItem());
-      const hasContent = state.ideas.some(item => item.official || item.xhs || item.moments || item.novel || item.song || hasFullDraft(item));
+      const hasContent = state.ideas.some(item => item.official || item.xhs || item.moments || item.novel || item.song || item.videoScript || hasFullDraft(item));
       const activeStage = hasContent ? "content" : hasActive ? "detail" : hasIdeas ? "ideas" : "input";
       const order = ["input", "ideas", "detail", "content", "export"];
       const activeIndex = order.indexOf(activeStage);
@@ -4360,8 +4377,8 @@ ${context.text}
       const hasActive = Boolean(activeItem());
       [
         "batchBriefBtn", "batchOfficialBtn", "batchXhsBtn", "batchMomentsBtn", "batchNovelBtn", "batchSongBtn",
-        "batchOfficialArticleBtn", "batchXhsArticleBtn", "batchMomentsArticleBtn", "batchNovelDraftBtn", "batchSongDraftBtn",
-        "copyBtn", "excelBtn", "wordFilesBtn", "mdBtn", "txtBtn", "xhsPromptBtn", "larkBasePackageBtn", "pptOutlineBtn"
+        "batchVideoScriptBtn", "batchOfficialArticleBtn", "batchXhsArticleBtn", "batchMomentsArticleBtn", "batchNovelDraftBtn", "batchSongDraftBtn",
+        "copyBtn", "excelBtn", "wordFilesBtn", "mdBtn", "txtBtn", "xhsPromptBtn", "larkBasePackageBtn", "videoTaskPackageBtn", "pptOutlineBtn"
       ].forEach(id => {
         const button = $(id);
         if (button) button.disabled = state.busy || !hasSelected;
@@ -4372,7 +4389,7 @@ ${context.text}
       });
       [
         "singleBriefBtn", "singleOfficialBtn", "singleXhsBtn", "singleMomentsBtn",
-        "singleOfficialArticleBtn", "singleXhsArticleBtn", "singleMomentsArticleBtn", "singleNovelDraftBtn", "singleSongDraftBtn",
+        "singleVideoScriptBtn", "singleOfficialArticleBtn", "singleXhsArticleBtn", "singleMomentsArticleBtn", "singleNovelDraftBtn", "singleSongDraftBtn",
         "copyActiveBtn", "editActiveBtn", "prevIdeaBtn", "nextIdeaBtn"
       ].forEach(id => {
         const button = $(id);
@@ -4465,6 +4482,7 @@ ${context.text}
             ${item.brief ? `<span class="badge selected">已发散</span>` : ""}
             ${hasPlan(item) ? `<span class="badge selected">有方案</span>` : ""}
             ${hasFullDraft(item) ? `<span class="badge selected">有正文</span>` : ""}
+            ${item.videoScript ? `<span class="badge selected">视频脚本</span>` : ""}
           </div>
         </article>
       `;
@@ -4508,6 +4526,7 @@ ${context.text}
           <button id="singleOfficialBtn" type="button">转公众号</button>
           <button id="singleXhsBtn" type="button">转小红书</button>
           <button id="singleMomentsBtn" type="button">转朋友圈</button>
+          <button id="singleVideoScriptBtn" type="button">视频号脚本</button>
           <button id="singleOfficialArticleBtn" type="button">公众号正文</button>
           <button id="singleXhsArticleBtn" type="button">小红书长文</button>
           <button id="singleMomentsArticleBtn" type="button">朋友圈长文</button>
@@ -4522,6 +4541,7 @@ ${context.text}
         ${item.moments ? momentsHtml(item.moments) : ""}
         ${item.novel ? novelHtml(item.novel) : ""}
         ${item.song ? songHtml(item.song) : ""}
+        ${item.videoScript ? videoScriptHtml(item.videoScript) : ""}
         ${fullDraftsHtml(item)}
         ${imageToolHtml(item)}
       `;
@@ -4530,6 +4550,7 @@ ${context.text}
       $("singleOfficialBtn").addEventListener("click", () => generateOfficial([item]));
       $("singleXhsBtn").addEventListener("click", () => generateXhs([item]));
       $("singleMomentsBtn").addEventListener("click", () => generateMoments([item]));
+      $("singleVideoScriptBtn").addEventListener("click", () => generateVideoScripts([item]));
       $("singleOfficialArticleBtn").addEventListener("click", () => generateOfficialArticles([item]));
       $("singleXhsArticleBtn").addEventListener("click", () => generateXhsArticles([item]));
       $("singleMomentsArticleBtn").addEventListener("click", () => generateMomentsArticles([item]));
@@ -5580,6 +5601,21 @@ ${context.text}
               ${editTextarea("editSongLyric", "歌词", item.song.lyric)}
             </section>
           ` : ""}
+          ${item.videoScript ? `
+            <section class="edit-section">
+              <h3>视频号脚本</h3>
+              ${editInput("editVideoTitle", "视频标题", item.videoScript.videoTitle)}
+              ${editTextarea("editVideoHook", "开头钩子", item.videoScript.videoHook)}
+              ${editTextarea("editVideoVoiceover", "完整口播", item.videoScript.videoVoiceover)}
+              ${editList("editVideoOutline", "分镜节奏", item.videoScript.videoOutline)}
+              ${editInput("editVideoStyle", "视频风格", item.videoScript.videoStyle)}
+              ${editInput("editVideoVoiceName", "声音名称", item.videoScript.voiceName)}
+              ${editInput("editVideoVoiceStyle", "声音风格", item.videoScript.voiceStyle)}
+              ${editList("editVideoBroll", "B-roll 关键词", item.videoScript.brollKeywords)}
+              ${editInput("editVideoDuration", "预计时长（秒）", item.videoScript.estimatedDuration)}
+              ${editTextarea("editVideoCta", "行动引导", item.videoScript.callToAction)}
+            </section>
+          ` : ""}
           ${hasFullDraft(item) ? `
             <section class="edit-section">
               <h3>完整内容</h3>
@@ -5676,6 +5712,26 @@ ${context.text}
         item.song.arrangement = getValue("editSongArrangement");
         item.song.structure = normalizeList(getValue("editSongStructure"));
         item.song.lyric = getValue("editSongLyric");
+      }
+
+      if (item.videoScript) {
+        item.videoScript = normalizeVideoScript({
+          videoTitle: getValue("editVideoTitle"),
+          videoHook: getValue("editVideoHook"),
+          videoVoiceover: getValue("editVideoVoiceover"),
+          videoOutline: normalizeList(getValue("editVideoOutline")),
+          videoStyle: getValue("editVideoStyle"),
+          voiceName: getValue("editVideoVoiceName"),
+          voiceStyle: getValue("editVideoVoiceStyle"),
+          brollKeywords: normalizeList(getValue("editVideoBroll")),
+          estimatedDuration: getValue("editVideoDuration"),
+          callToAction: getValue("editVideoCta")
+        }, item);
+        item.videoTask = {
+          ...(item.videoTask || {}),
+          status: "script_ready",
+          updatedAt: new Date().toISOString()
+        };
       }
 
       if ($("editOfficialArticle")) item.officialArticle = getValue("editOfficialArticle");
@@ -5792,6 +5848,26 @@ ${context.text}
           ${listHtml("歌曲结构", data.structure)}
           <div class="detail-line"><strong>歌词：</strong></div>
           <p class="detail-summary">${escapeHtml(data.lyric)}</p>
+        </section>
+      `;
+    }
+
+    function videoScriptHtml(data) {
+      return `
+        <section class="generated">
+          <h3>视频号脚本</h3>
+          <dl>
+            <div><dt>标题：</dt><dd>${escapeHtml(data.videoTitle)}</dd></div>
+            <div><dt>开头钩子：</dt><dd>${escapeHtml(data.videoHook)}</dd></div>
+            <div><dt>视频风格：</dt><dd>${escapeHtml(data.videoStyle || VIDEO_DEFAULTS.videoStyle)}</dd></div>
+            <div><dt>声音：</dt><dd>${escapeHtml(`${data.voiceName || VIDEO_DEFAULTS.voiceName} / ${data.voiceStyle || VIDEO_DEFAULTS.voiceStyle}`)}</dd></div>
+            <div><dt>预计时长：</dt><dd>${escapeHtml(data.estimatedDuration || 90)} 秒</dd></div>
+          </dl>
+          ${listHtml("分镜节奏", data.videoOutline)}
+          ${listHtml("B-roll 关键词", data.brollKeywords)}
+          <div class="detail-line"><strong>完整口播：</strong></div>
+          <p class="detail-summary">${escapeHtml(data.videoVoiceover)}</p>
+          ${data.callToAction ? `<p class="detail-line"><strong>行动引导：</strong>${escapeHtml(data.callToAction)}</p>` : ""}
         </section>
       `;
     }
@@ -5955,6 +6031,27 @@ ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
 ${JSON.stringify(toPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
     }
 
+    function buildVideoScriptPrompt(items, form) {
+      return `你是一个视频号短视频口播编导。请把用户选中的每个选题分别转成适合本地自动剪辑工作流的短视频脚本。
+
+要求：
+1. 每个脚本适合 60-120 秒短视频，口播要短句、自然、有节奏，不要像公众号长文。
+2. videoHook 写 1-2 句开头钩子，必须能在前 3 秒建立好奇或痛点。
+3. videoVoiceover 写完整口播稿，控制在 300-700 个中文字符，适合直接配音。
+4. videoOutline 返回 5-8 个分镜节奏，每条说明这一段讲什么，以及适合出现什么画面。
+5. brollKeywords 返回 6-12 个可用于素材检索的中文关键词或短语。
+6. videoStyle 必须从这些值里选一个：${VIDEO_STYLES.join("、")}。
+7. voiceName 优先使用：${VIDEO_DEFAULTS.voiceName}；也可以从 ${VIDEO_VOICES.join("、")} 中选择更适合的声音。
+8. voiceStyle 优先使用：${VIDEO_DEFAULTS.voiceStyle}；也可以从 ${VIDEO_VOICE_STYLES.join("、")} 中选择更适合的声音风格。
+9. estimatedDuration 返回数字，单位秒，建议 60-120。
+10. callToAction 写一句自然的结尾引导，可以为空，但不要硬广。
+11. 必须返回 JSON 数组，不要 Markdown，不要解释。
+12. 每个对象必须包含字段：id、videoTitle、videoHook、videoVoiceover、videoOutline、videoStyle、voiceName、voiceStyle、brollKeywords、estimatedDuration、callToAction。
+
+已选点子与可用内容素材：
+${JSON.stringify(toVideoPromptItems(items), null, 2)}${knowledgePromptBlock(form)}`;
+    }
+
     function fullDraftStyleRules(form) {
       return `
 
@@ -6056,7 +6153,25 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         xhs: item.xhs,
         moments: item.moments,
         novel: item.novel,
-        song: item.song
+        song: item.song,
+        videoScript: item.videoScript
+      }));
+    }
+
+    function toVideoPromptItems(items) {
+      return items.map(item => ({
+        ...toPromptItems([item])[0],
+        official: item.official,
+        xhs: item.xhs,
+        moments: item.moments,
+        officialArticle: item.officialArticle,
+        xhsArticle: item.xhsArticle,
+        momentsArticle: item.momentsArticle,
+        imageIdeas: [
+          ...(item.official?.imageIdeas || []),
+          ...(item.xhs?.imageIdeas || []),
+          ...(item.moments?.imageIdeas || [])
+        ].slice(0, 9)
       }));
     }
 
@@ -6082,7 +6197,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         body: JSON.stringify({
           model,
           messages: [
-            { role: "system", content: "你只输出可解析 JSON，不输出 Markdown。你擅长中文内容选题、公众号、小红书和朋友圈文案策划。" },
+            { role: "system", content: "你只输出可解析 JSON，不输出 Markdown。你擅长中文内容选题、公众号、小红书、朋友圈文案和短视频口播脚本策划。" },
             { role: "user", content: prompt }
           ],
           temperature: form.temperature
@@ -6144,6 +6259,8 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
           moments: null,
           novel: null,
           song: null,
+          videoScript: null,
+          videoTask: null,
           officialArticle: "",
           xhsArticle: "",
           momentsArticle: "",
@@ -6318,6 +6435,25 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       );
     }
 
+    function generateVideoScripts(items) {
+      return runGeneration(
+        items,
+        buildVideoScriptPrompt,
+        row => {
+          const item = state.ideas.find(x => String(x.id) === String(row.id));
+          if (!item) return;
+          item.videoScript = normalizeVideoScript(row, item);
+          item.videoTask = {
+            ...(item.videoTask || {}),
+            status: "script_ready",
+            updatedAt: new Date().toISOString()
+          };
+        },
+        "正在生成视频号脚本...",
+        count => `已生成 ${count} 个视频号脚本。`
+      );
+    }
+
     async function readyItems(items, field, config) {
       if (!items.length) {
         setStatus("先勾选要生成正文的点子。", true, true);
@@ -6473,6 +6609,26 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       ].filter(([, text]) => String(text || "").trim());
     }
 
+    function normalizeVideoScript(row, item = {}) {
+      const duration = Math.max(30, Math.min(240, Number(row.estimatedDuration || row.duration || 90)));
+      const videoTitle = String(row.videoTitle || row.title || item.title || item.direction || "").trim();
+      const voiceName = String(row.voiceName || VIDEO_DEFAULTS.voiceName).trim();
+      const voiceStyle = String(row.voiceStyle || VIDEO_DEFAULTS.voiceStyle).trim();
+      const videoStyle = String(row.videoStyle || VIDEO_DEFAULTS.videoStyle).trim();
+      return {
+        videoTitle,
+        videoHook: String(row.videoHook || row.hook || "").trim(),
+        videoVoiceover: String(row.videoVoiceover || row.voiceover || row.sourceText || "").trim(),
+        videoOutline: normalizeList(row.videoOutline || row.outline),
+        videoStyle: VIDEO_STYLES.includes(videoStyle) ? videoStyle : VIDEO_DEFAULTS.videoStyle,
+        voiceName: VIDEO_VOICES.includes(voiceName) ? voiceName : voiceName || VIDEO_DEFAULTS.voiceName,
+        voiceStyle: VIDEO_VOICE_STYLES.includes(voiceStyle) ? voiceStyle : voiceStyle || VIDEO_DEFAULTS.voiceStyle,
+        brollKeywords: normalizeList(row.brollKeywords || row.keywords || row.broll).slice(0, 12),
+        estimatedDuration: duration,
+        callToAction: String(row.callToAction || row.cta || "").trim()
+      };
+    }
+
     function formatItemText(item) {
       const lines = [
         `分类：${item.category}`,
@@ -6534,6 +6690,18 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         lines.push(`曲风说明：${item.song.arrangement}`);
         lines.push(`歌曲结构：${item.song.structure.join("；")}`);
         lines.push(`歌词：${item.song.lyric}`);
+      }
+      if (item.videoScript) {
+        lines.push("", "视频号脚本：");
+        lines.push(`视频标题：${item.videoScript.videoTitle}`);
+        lines.push(`开头钩子：${item.videoScript.videoHook}`);
+        lines.push(`完整口播：${item.videoScript.videoVoiceover}`);
+        lines.push(`分镜节奏：${item.videoScript.videoOutline.join("；")}`);
+        lines.push(`视频风格：${item.videoScript.videoStyle}`);
+        lines.push(`声音：${item.videoScript.voiceName} / ${item.videoScript.voiceStyle}`);
+        lines.push(`B-roll关键词：${item.videoScript.brollKeywords.join("；")}`);
+        lines.push(`预计时长：${item.videoScript.estimatedDuration} 秒`);
+        lines.push(`行动引导：${item.videoScript.callToAction}`);
       }
       appendFullDraftText(lines, item);
       return lines.join("\n");
@@ -6608,6 +6776,13 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         小说架构: item.novel?.chapterOutline?.join("；") || "",
         歌名: item.song?.songTitle || "",
         歌词: item.song?.lyric || "",
+        视频标题: item.videoScript?.videoTitle || "",
+        视频开头钩子: item.videoScript?.videoHook || "",
+        视频口播: item.videoScript?.videoVoiceover || "",
+        视频风格: item.videoScript?.videoStyle || "",
+        视频声音: item.videoScript ? `${item.videoScript.voiceName || ""} / ${item.videoScript.voiceStyle || ""}` : "",
+        视频Broll关键词: item.videoScript?.brollKeywords?.join("；") || "",
+        已生成视频脚本: item.videoScript ? "是" : "否",
         已生成公众号正文: item.officialArticle ? "是" : "否",
         已生成小红书长文: item.xhsArticle ? "是" : "否",
         已生成朋友圈长文: item.momentsArticle ? "是" : "否",
@@ -6754,6 +6929,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         hasMomentsPlan: Boolean(item.moments),
         hasNovel: Boolean(item.novel),
         hasSong: Boolean(item.song),
+        hasVideoScript: Boolean(item.videoScript),
         hasOfficialArticle: Boolean(item.officialArticle),
         hasXhsArticle: Boolean(item.xhsArticle),
         hasMomentsArticle: Boolean(item.momentsArticle),
@@ -6771,6 +6947,20 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         momentsLifestyle: item.moments?.variants?.lifestyle || "",
         novelTitle: item.novel?.novelTitle || "",
         songTitle: item.song?.songTitle || "",
+        videoTitle: item.videoScript?.videoTitle || "",
+        videoHook: item.videoScript?.videoHook || "",
+        videoVoiceover: item.videoScript?.videoVoiceover || "",
+        videoOutline: item.videoScript?.videoOutline?.join("\n") || "",
+        videoStyle: item.videoScript?.videoStyle || "",
+        videoVoiceName: item.videoScript?.voiceName || "",
+        videoVoiceStyle: item.videoScript?.voiceStyle || "",
+        videoBrollKeywords: item.videoScript?.brollKeywords?.join("\n") || "",
+        videoEstimatedDuration: item.videoScript?.estimatedDuration || "",
+        videoCallToAction: item.videoScript?.callToAction || "",
+        videoTaskStatus: item.videoTask?.status || "",
+        videoJobId: item.videoTask?.jobId || "",
+        videoOutputFolder: item.videoTask?.outputFolder || "",
+        videoUrl: item.videoTask?.videoUrl || "",
         officialArticle: item.officialArticle || "",
         xhsArticle: item.xhsArticle || "",
         momentsArticle: item.momentsArticle || "",
@@ -6818,6 +7008,69 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         name: `飞书Base同步包-${dateStamp()}.json`,
         blob: new Blob([content], { type: "application/json;charset=utf-8" })
       }], `AI灵感生成器-飞书Base同步包-${dateStamp()}`);
+    }
+
+    function buildVideoTaskPackage(items) {
+      const tasks = items
+        .filter(item => item.videoScript)
+        .map((item, index) => {
+          const script = normalizeVideoScript(item.videoScript, item);
+          return {
+            id: `idea-${item.id}`,
+            index: index + 1,
+            title: script.videoTitle || item.title || item.direction || `视频任务 ${index + 1}`,
+            sourceText: script.videoVoiceover,
+            hook: script.videoHook,
+            outline: script.videoOutline,
+            voiceName: script.voiceName,
+            voiceStyle: script.voiceStyle,
+            videoStyle: script.videoStyle,
+            outputRoot: VIDEO_DEFAULTS.outputRoot,
+            brollKeywords: script.brollKeywords,
+            estimatedDuration: script.estimatedDuration,
+            callToAction: script.callToAction,
+            sourceIdea: {
+              id: item.id,
+              category: item.category || "",
+              direction: item.direction || "",
+              title: item.title || "",
+              summary: item.summary || "",
+              angle: item.angle || "",
+              audience: item.audience || "",
+              platform: item.platform || "",
+              score: Number(item.score || 0),
+              brief: item.brief || ""
+            }
+          };
+        });
+
+      return {
+        version: 1,
+        app: "AI灵感生成器",
+        source: "ai-inspiration-generator",
+        target: "moneypriturbo/autocut-workflow",
+        exportedAt: new Date().toISOString(),
+        sessionTitle: historyTitle(),
+        note: "本文件用于把已生成的视频号脚本交给本地 moneypriturbo/autocut 工作流；不包含 API Key、管理员配置、用量数据或知识库原文。",
+        defaults: { ...VIDEO_DEFAULTS },
+        taskCount: tasks.length,
+        tasks
+      };
+    }
+
+    async function exportVideoTaskPackage() {
+      const items = selectedItems();
+      if (!items.length) return setStatus("先勾选要导出视频任务包的点子。", true);
+      const ready = items.filter(item => item.videoScript);
+      if (!ready.length) return setStatus("已选点子还没有视频号脚本。请先点击“批量视频号脚本”，再导出视频任务包。", true);
+      if (!(await ensureExportDestination())) return;
+      const skipped = items.length - ready.length;
+      const content = JSON.stringify(buildVideoTaskPackage(ready), null, 2);
+      await saveFiles([{
+        name: `视频任务包-moneypriturbo-${dateStamp()}.json`,
+        blob: new Blob([content], { type: "application/json;charset=utf-8" })
+      }], `AI灵感生成器-视频任务包-${dateStamp()}`);
+      if (skipped) setStatus(`已导出 ${ready.length} 个视频任务，${skipped} 个点子缺少视频号脚本已跳过。`);
     }
 
     async function exportPptOutline(format) {
@@ -6947,6 +7200,18 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
             addList("歌曲结构", item.song.structure);
             addLine("歌词", item.song.lyric);
           }
+          if (item.videoScript) {
+            addHeading("视频号脚本", HeadingLevel.HEADING_2);
+            addLine("视频标题", item.videoScript.videoTitle);
+            addLine("开头钩子", item.videoScript.videoHook);
+            addLine("视频风格", item.videoScript.videoStyle);
+            addLine("声音", `${item.videoScript.voiceName || ""} / ${item.videoScript.voiceStyle || ""}`);
+            addLine("预计时长", `${item.videoScript.estimatedDuration || 90} 秒`);
+            addList("分镜节奏", item.videoScript.videoOutline);
+            addList("B-roll 关键词", item.videoScript.brollKeywords);
+            addBlock("完整口播", item.videoScript.videoVoiceover);
+            addLine("行动引导", item.videoScript.callToAction);
+          }
           addBlock("公众号正文", item.officialArticle);
           addBlock("小红书长文", item.xhsArticle);
           addBlock("朋友圈长文", item.momentsArticle);
@@ -6997,6 +7262,12 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       if (item.song) {
         lines.push("", "## 歌曲方案", "", `歌名：${item.song.songTitle || ""}`, "", `音乐类型：${item.song.musicType || ""}`, "", `风格：${item.song.style || ""}`, "", `曲风说明：${item.song.arrangement || ""}`);
         lines.push("", "### 歌曲结构", ...item.song.structure.map(row => `- ${row}`), "", "### 歌词", "", item.song.lyric || "");
+      }
+      if (item.videoScript) {
+        lines.push("", "## 视频号脚本", "", `视频标题：${item.videoScript.videoTitle || ""}`, "", `开头钩子：${item.videoScript.videoHook || ""}`);
+        lines.push("", `视频风格：${item.videoScript.videoStyle || ""}`, "", `声音：${item.videoScript.voiceName || ""} / ${item.videoScript.voiceStyle || ""}`, "", `预计时长：${item.videoScript.estimatedDuration || 90} 秒`);
+        lines.push("", "### 分镜节奏", ...item.videoScript.videoOutline.map(row => `- ${row}`), "", "### B-roll 关键词", ...item.videoScript.brollKeywords.map(row => `- ${row}`));
+        lines.push("", "### 完整口播", "", item.videoScript.videoVoiceover || "", "", `行动引导：${item.videoScript.callToAction || ""}`);
       }
       if (item.officialArticle) lines.push("", "## 公众号正文", "", item.officialArticle);
       if (item.xhsArticle) lines.push("", "## 小红书长文", "", item.xhsArticle);
@@ -7333,6 +7604,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     $("batchOfficialBtn").addEventListener("click", () => generateOfficial(selectedItems()));
     $("batchXhsBtn").addEventListener("click", () => generateXhs(selectedItems()));
     $("batchMomentsBtn").addEventListener("click", () => generateMoments(selectedItems()));
+    $("batchVideoScriptBtn").addEventListener("click", () => generateVideoScripts(selectedItems()));
     $("batchOfficialArticleBtn").addEventListener("click", () => generateOfficialArticles(selectedItems()));
     $("batchXhsArticleBtn").addEventListener("click", () => generateXhsArticles(selectedItems()));
     $("batchMomentsArticleBtn").addEventListener("click", () => generateMomentsArticles(selectedItems()));
@@ -7351,6 +7623,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     $("txtBtn").addEventListener("click", exportTxtFiles);
     $("xhsPromptBtn").addEventListener("click", exportXhsImagePrompts);
     $("larkBasePackageBtn").addEventListener("click", exportLarkBasePackage);
+    $("videoTaskPackageBtn").addEventListener("click", exportVideoTaskPackage);
     $("pptOutlineBtn").addEventListener("click", () => exportPptOutline(getForm().pptFormat));
     $("chooseFolderBtn").addEventListener("click", chooseExportFolder);
     $("exportMode").addEventListener("change", () => {
