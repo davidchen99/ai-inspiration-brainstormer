@@ -8,9 +8,69 @@ The new need comes from an Obsidian-based workflow. The user already stores many
 
 This is not meant to replace Obsidian. Obsidian remains the knowledge management tool. This app should become a lightweight idea generator that can optionally read selected Markdown knowledge and brainstorm from it.
 
+## Confirmed Product Positioning
+
+The confirmed product positioning is:
+
+```text
+Knowledge-base-driven batch content brainstorming and production tool.
+```
+
+In Chinese product language:
+
+```text
+知识库驱动的批量内容脑暴与生产工具。
+```
+
+The product is not a generic writing toolbox and should not drift into a loose collection of unrelated generators. Its core value is to help the user turn their own knowledge, notes, ideas, and topics into a batch of selectable content assets, then continue those assets into text, images, and videos.
+
+The primary user flow is:
+
+```text
+脑暴 -> 选择 -> 文字 -> 图片/视频 -> 导出
+Brainstorm -> Select -> Text -> Image/Video -> Export
+```
+
+This flow is the product backbone. New features should attach to one of these stages instead of appearing as independent feature piles.
+
+Core capabilities:
+
+- Free-form brainstorming from a short idea.
+- Knowledge-base brainstorming from local Markdown / Obsidian notes.
+- Idea-wall display for scanning, filtering, comparing, and selecting many ideas.
+- Batch continuation from selected ideas into text plans and drafts.
+- Extension from text into image prompts, generated images, video scripts, and video task packages.
+- Export and workflow handoff for files, Lark Base, and local video generation.
+
+Primary content tracks:
+
+- Official-account content.
+- Xiaohongshu content.
+- Moments copy.
+- Video-account scripts and local video task packages.
+- Image generation and image prompt export.
+
+Extension content tracks:
+
+- Fiction.
+- Lyrics / song planning.
+- PPT outlines.
+- Lark Base advanced sync.
+
+The extension tracks should be retained, but they should not compete with the main product flow. Their UI placement should remain in advanced, export, or secondary areas.
+
+Product experience principle:
+
+- Core flow smoothness is more important than adding more generators.
+- The normal user surface should stay restrained and easy to start.
+- Admin settings, provider settings, quotas, backend details, and local-service details should stay out of the main creation flow unless the user explicitly opens them.
+- Every batch action should make its status visible. If a button is disabled, busy, waiting on selection, or blocked by missing prerequisites, the user should understand why.
+
 ## Product Goal
 
-Add an optional knowledge-base mode to the main brainstorming flow.
+The broader product goal is to support a smooth batch content production flow from knowledge and ideas to text, images, video tasks, and export.
+
+Knowledge-base mode is a core input mode in this broader flow, not a side feature. It lets the user's existing Markdown / Obsidian knowledge assets become the source material for brainstorming and later content generation.
 
 When no knowledge base is selected, the app keeps the current behavior:
 
@@ -24,6 +84,14 @@ When a knowledge base is selected, the app changes behavior:
 - The selected Markdown content becomes the source context for brainstorming.
 - Generated ideas should be grounded in the selected knowledge base.
 - The user can turn off the knowledge base mode and return to free-form brainstorming.
+
+After ideas are generated, the user should be able to:
+
+- Scan and compare a batch of ideas in the idea wall.
+- Select promising ideas.
+- Generate text plans and drafts for selected ideas.
+- Continue selected ideas into image or video assets.
+- Export or hand off the generated assets to downstream tools.
 
 ## User Story
 
@@ -251,6 +319,104 @@ Recommended states:
 - A clear/remove action to return to free-form brainstorming.
 
 The interface should stay lightweight. Do not add API configuration, model configuration, token usage, or quota information to the normal user flow.
+
+## Core Flow Experience Requirements
+
+The confirmed core flow is:
+
+```text
+脑暴 -> 选择 -> 文字 -> 图片/视频 -> 导出
+Brainstorm -> Select -> Text -> Image/Video -> Export
+```
+
+Each stage has a clear product job:
+
+1. `脑暴`: Generate a batch of idea directions from free input or selected knowledge-base material.
+2. `选择`: Let the user scan, filter, compare, and select useful ideas from the idea wall.
+3. `文字`: Turn selected ideas into platform-specific plans and complete text drafts.
+4. `图片/视频`: Turn selected text assets into image prompts, generated images, video scripts, or video task packages.
+5. `导出`: Save, copy, sync, or hand off selected assets to downstream workflows.
+
+Product requirements:
+
+- The UI should make the current stage and next useful action clear.
+- The idea wall should display generation states such as brief, plan, draft, image, and video script.
+- Batch operations should be based on selected ideas, and the selected count should remain visible near batch controls.
+- The app should avoid making users guess whether an action is generating, waiting, blocked, or complete.
+- If a downstream action needs an upstream plan, either auto-generate the missing upstream plan or clearly explain what is missing.
+- Export actions should describe the target outcome in user language, while technical formats can be explained in secondary text.
+
+### Batch Task Feedback
+
+Batch task progress is the first-priority experience optimization for the next development phase.
+
+Problem:
+
+- Batch text actions can take time.
+- Buttons may become disabled while the app is working.
+- Without visible progress, users can feel that a click had no effect.
+
+Required behavior:
+
+- All batch text generation actions should share one visible batch-task status component.
+- The component should show task type, current item, total count, completed count, failed count, skipped count, and current idea title when available.
+- The status should appear quickly after the user clicks a batch action.
+- Disabled buttons should be paired with a visible explanation, such as `正在生成`, `先选择点子`, or `缺少前置方案`.
+- When a batch task finishes, show a concise completion summary and the next natural action.
+- If a batch task partially fails, preserve successful results and show which items failed.
+- Batch image generation already has a stronger progress model; text and video-script generation should follow the same product pattern.
+
+Recommended status copy:
+
+```text
+正在批量生成视频号脚本：3 / 10
+当前点子：AI 工具选题如何变成短视频
+成功 2，失败 0，跳过 0
+```
+
+### Feature Layering
+
+Main-line features:
+
+- Knowledge-base / free-form brainstorming.
+- Idea wall scanning, filtering, and selection.
+- Official-account, Xiaohongshu, Moments, and video-account script generation.
+- Complete text drafts for the main text platforms.
+- Image prompts and image generation.
+- Video task package export.
+- Common document and file exports.
+
+Extension features:
+
+- Fiction.
+- Lyrics and song planning.
+- PPT outlines.
+- Lark Base advanced sync.
+
+Rules:
+
+- Extension features should remain available, but they should not crowd the primary user path.
+- Extension features should live in advanced, export, or secondary sections.
+- The first screen should continue to feel like a simple creator, not a control center.
+- Adding new capability should not add new visual complexity to the main input surface unless it directly improves the core flow.
+
+### Knowledge Base As Core Input
+
+Knowledge-base mode is a core product input mode.
+
+The app should communicate:
+
+- Whether the current brainstorm is free-form or knowledge-base-driven.
+- How many Markdown files are selected.
+- How much knowledge context is used in the current generation.
+- That raw Markdown is not saved in browser history.
+- That only relevant snippets should be sent to the AI provider for each generation request.
+
+Future UI improvement:
+
+- Show a lightweight knowledge-use summary after generation.
+- Include file count, approximate used characters, and top matched file names when practical.
+- Keep this summary compact so it improves trust without turning the main UI into a technical log.
 
 ## Full Content Generation Requirement
 
@@ -760,18 +926,27 @@ Privacy rules:
 
 ### Initial Implementation Status
 
-Not implemented in the brainstorm app yet.
+The first brainstorm-app integration step is implemented.
 
 Existing external capability:
 
 - The local `autocut-workflow` already has a usable web console and local API surface for video generation.
 - It supports source text, voice, voice style, video style, output root, progress, history, preview, stop, and folder opening.
 
-Next accepted first step:
+Implemented in the brainstorm app:
 
-- Add video-script fields and prompts to the brainstorm app.
-- Add single and batch actions for generating video scripts.
-- Add `导出视频任务包` as the first integration path.
+- Video-script fields and prompts.
+- Single-idea `视频号脚本` action.
+- Batch `批量视频号脚本` action.
+- `导出视频任务包` as the first integration path.
+- Video-script display and editing in the detail panel.
+- Video-script inclusion in copy, Word, Markdown, TXT, Excel, and Lark Base exports.
+
+Next accepted step:
+
+- Keep the user flow smooth before adding direct local rendering controls.
+- Add a local video-generator connection only after script generation and task package export feel reliable.
+- When direct connection is added, it should feel like a natural continuation of `视频号脚本 -> 本地生成视频`, not a separate technical console.
 
 ## Next-Phase Product Requirements
 
@@ -945,6 +1120,45 @@ Implemented in `index.html`:
 ## Future Optimization Roadmap
 
 The following optimizations are all accepted into the product roadmap. They should be implemented in phases while preserving the current restrained, easy-to-start interface. The normal creation surface should remain focused on input, idea selection, continuation, and export. Admin, provider, quota, sync, and indexing complexity should stay behind backend/admin/offline/advanced surfaces.
+
+### Phase 0: Core Flow Smoothness And Batch Feedback
+
+Priority: highest for user experience.
+
+Problem:
+
+- The product already has many useful capabilities, but users can feel uncertain when batch actions take time or when buttons become disabled.
+- The product's main value depends on moving smoothly through `脑暴 -> 选择 -> 文字 -> 图片/视频 -> 导出`.
+- If this core path feels unclear, adding more generators or integrations will make the product feel heavier instead of stronger.
+
+Goal:
+
+- Make the existing core flow feel responsive, understandable, and confidence-building.
+- Preserve the current restrained style while making batch work visibly traceable.
+
+Required improvements:
+
+- Add one shared batch-task status component for text and video-script generation.
+- Show task type, selected count, current item, total items, success count, failure count, skipped count, and current idea title.
+- Show status immediately after clicking a batch action.
+- Explain disabled buttons or missing prerequisites in the batch area.
+- Keep successful partial results when some items fail.
+- Add a concise completion summary and next-step hint, such as `可以继续生成配图` or `可以导出视频任务包`.
+- Keep extension features available but visually secondary.
+
+Success criteria:
+
+- Users should not feel that a click had no reaction.
+- Users should understand which selected idea is being processed.
+- Users should understand what to do after a batch task finishes.
+- The first screen should remain simple and should not expose admin/provider/internal details.
+
+Implementation status:
+
+- A shared batch-task status panel has been added to the batch area.
+- Batch text and video-script generation now show task type, total count, progress, success, failure, skipped count, and next-step guidance.
+- Auto-complete full-draft preparation now reports when upstream plans are being generated or when items are skipped.
+- Batch action hints now explain whether buttons are locked by an active task or waiting for selected ideas.
 
 ### Phase 1: Cloud Backend Configuration Center
 
@@ -1259,17 +1473,19 @@ Until the split is done:
 
 Recommended implementation order:
 
-1. Cloud backend configuration center.
-2. Real offline desktop app.
-3. Local knowledge-base index and retrieval.
-4. Project-based brainstorm history.
-5. Batch video generation integration.
-6. Export system organization.
-7. Lark Base semi-automatic sync.
-8. Documentation restructure.
+1. Core flow smoothness and batch task feedback.
+2. Cloud backend configuration center.
+3. Real offline desktop app.
+4. Local knowledge-base index and retrieval.
+5. Project-based brainstorm history.
+6. Batch video generation integration.
+7. Export system organization.
+8. Lark Base semi-automatic sync.
+9. Documentation restructure.
 
 Rationale:
 
+- Core flow smoothness protects the product's main value: fast movement from brainstorming to selected text, image/video assets, and export.
 - The backend configuration center stabilizes online shared use.
 - The desktop app stabilizes the user's large local knowledge-base workflow.
 - Retrieval quality matters most after the app can reliably access larger knowledge bases.

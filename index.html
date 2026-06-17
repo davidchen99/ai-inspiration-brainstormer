@@ -1512,6 +1512,35 @@
       padding-top: 12px;
     }
 
+    .batch-task-panel {
+      display: grid;
+      gap: 10px;
+      border: 1px solid #cbd6cb;
+      border-radius: 8px;
+      padding: 11px 12px;
+      margin-bottom: 12px;
+      background: #f8faf6;
+    }
+
+    .batch-task-panel[hidden] {
+      display: none;
+    }
+
+    .batch-task-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      color: #46564e;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .batch-task-top span {
+      color: var(--muted);
+      text-align: right;
+    }
+
     .batch-image-panel {
       display: grid;
       gap: 10px;
@@ -2042,7 +2071,23 @@
       <div class="batch-body">
         <div class="batch-head">
           <div id="selectedCount">已选择 0 个点子</div>
-          <div>常用操作默认收起，需要时再展开。</div>
+          <div id="batchActionHint">常用操作默认收起，需要时再展开。</div>
+        </div>
+        <div class="batch-task-panel" id="batchTaskPanel" hidden>
+          <div class="batch-task-top">
+            <strong id="batchTaskTitle">批量任务</strong>
+            <span id="batchTaskCurrent">等待开始</span>
+          </div>
+          <div class="progress-shell" aria-label="批量文字任务进度">
+            <div class="progress-bar" id="batchTaskProgressBar"></div>
+          </div>
+          <div class="batch-stats" id="batchTaskStats">
+            <span>进度：0 / 0</span>
+            <span>成功：0</span>
+            <span>失败：0</span>
+            <span>跳过：0</span>
+          </div>
+          <div class="image-status" id="batchTaskStatus">批量生成时会在这里显示进度。</div>
         </div>
         <div class="batch-groups">
           <details class="batch-group" open>
@@ -2252,6 +2297,19 @@
         totalChars: 0,
         lastUsedChars: 0,
         lastTruncated: false
+      },
+      batchTask: {
+        active: false,
+        total: 0,
+        done: 0,
+        success: 0,
+        failed: 0,
+        skipped: 0,
+        title: "",
+        current: "",
+        message: "",
+        nextAction: "",
+        isError: false
       },
       batchImage: {
         running: false,
@@ -4411,6 +4469,54 @@ ${context.text}
       updateExportModeUI();
       const abortButton = $("abortBatchImageBtn");
       if (abortButton) abortButton.disabled = !state.batchImage.running || state.batchImage.abortRequested;
+      updateBatchActionHint();
+    }
+
+    function updateBatchActionHint() {
+      const hint = $("batchActionHint");
+      if (!hint) return;
+      const selectedCount = selectedItems().length;
+      if (state.busy) {
+        hint.textContent = state.batchTask.active ? "正在批量生成，按钮暂时锁定。" : "正在处理当前任务，按钮暂时锁定。";
+      } else if (!state.ideas.length) {
+        hint.textContent = "生成点子后，可在这里批量处理和导出。";
+      } else if (!selectedCount) {
+        hint.textContent = "先在点子墙勾选要处理的点子，批量按钮才会启用。";
+      } else {
+        hint.textContent = `已选择 ${selectedCount} 个点子，可以批量生成、配图或导出。`;
+      }
+    }
+
+    function renderBatchTaskPanel() {
+      const panel = $("batchTaskPanel");
+      if (!panel) return;
+      const task = state.batchTask || {};
+      const hasTask = Boolean(task.active || task.message || task.total || task.nextAction);
+      panel.hidden = !hasTask;
+      if (!hasTask) return;
+
+      const total = Number(task.total || 0);
+      const done = Number(task.done || 0);
+      const success = Number(task.success || 0);
+      const failed = Number(task.failed || 0);
+      const skipped = Number(task.skipped || 0);
+      const percent = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
+
+      $("batchTaskTitle").textContent = task.title || "批量任务";
+      $("batchTaskCurrent").textContent = task.current || (task.active ? "正在请求模型..." : "已完成");
+      $("batchTaskProgressBar").style.width = `${percent}%`;
+      $("batchTaskStats").innerHTML = [
+        `进度：${done} / ${total}`,
+        `成功：${success}`,
+        `失败：${failed}`,
+        `跳过：${skipped}`
+      ].map(text => `<span>${escapeHtml(text)}</span>`).join("");
+
+      const status = $("batchTaskStatus");
+      status.classList.toggle("error", Boolean(task.isError || failed));
+      status.classList.toggle("success", Boolean(!task.active && success && !failed));
+      const next = task.nextAction ? ` ${task.nextAction}` : "";
+      status.textContent = `${task.message || "批量生成时会在这里显示进度。"}${next}`;
     }
 
     function render() {
@@ -4437,6 +4543,7 @@ ${context.text}
       document.querySelectorAll(".density-btn").forEach(button => {
         button.classList.toggle("active", button.dataset.layout === state.layoutDensity);
       });
+      renderBatchTaskPanel();
       updateBatchImagePanel();
     }
 
@@ -6289,6 +6396,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     async function runGeneration(items, buildPrompt, applyResult, statusText, doneText) {
       if (!items.length) return setStatus("先选择一个点子。", true);
       const form = getForm();
+      startBatchTask(statusText, items);
       try {
         const prompt = buildPrompt(items, form);
         state.lastPrompt = prompt;
@@ -6296,20 +6404,108 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         setBusy(true, statusText);
         const content = await callDeepSeek(prompt, form);
         const parsed = parseJsonArray(content);
+        const matchedIds = new Set();
+        const expectedIds = new Set(items.map(item => String(item.id)));
         parsed.forEach(applyResult);
+        parsed.forEach(row => {
+          const id = String(row?.id ?? "");
+          if (expectedIds.has(id)) matchedIds.add(id);
+        });
         $("promptBox").style.display = "none";
         saveCurrentHistory();
+        finishBatchTask(statusText, items, parsed, matchedIds);
         render();
         const kbText = form.knowledgeContext?.active ? ` 知识库模式已使用约 ${form.knowledgeContext.usedChars} 字上下文。` : "";
         setStatus(`${doneText(parsed.length)}${kbText}`);
         return parsed;
       } catch (error) {
+        failBatchTask(statusText, items, error.message);
         render();
         setStatus(error.message, true);
         return [];
       } finally {
         setBusy(false);
       }
+    }
+
+    function cleanTaskTitle(text) {
+      return String(text || "批量生成")
+        .replace(/^正在/, "")
+        .replace(/\.\.\.$/, "")
+        .replace(/。$/, "")
+        .trim() || "批量生成";
+    }
+
+    function itemLabel(item, fallback = "") {
+      return item?.title || item?.direction || fallback || "当前点子";
+    }
+
+    function batchNextAction(taskTitle) {
+      if (taskTitle.includes("150 字") || taskTitle.includes("介绍")) return "下一步可以转成公众号、小红书、朋友圈或视频号脚本。";
+      if (taskTitle.includes("公众号方案")) return "下一步可以生成公众号正文。";
+      if (taskTitle.includes("小红书方案")) return "下一步可以生成小红书长文或导出图片 prompt。";
+      if (taskTitle.includes("朋友圈文案")) return "下一步可以生成朋友圈长文。";
+      if (taskTitle.includes("小说架构")) return "下一步可以生成小说正文。";
+      if (taskTitle.includes("歌曲方案")) return "下一步可以生成完整歌词。";
+      if (taskTitle.includes("视频号脚本")) return "下一步可以导出视频任务包。";
+      if (taskTitle.includes("正文") || taskTitle.includes("长文") || taskTitle.includes("歌词")) return "下一步可以复制或导出文档。";
+      return "可以继续生成、配图或导出。";
+    }
+
+    function startBatchTask(statusText, items) {
+      const title = cleanTaskTitle(statusText);
+      state.batchTask = {
+        active: true,
+        total: items.length,
+        done: 0,
+        success: 0,
+        failed: 0,
+        skipped: 0,
+        title,
+        current: `准备处理 ${items.length} 个点子`,
+        message: `${title}已开始，正在请求模型...`,
+        nextAction: "",
+        isError: false
+      };
+      renderBatchTaskPanel();
+    }
+
+    function finishBatchTask(statusText, items, parsed, matchedIds) {
+      const title = cleanTaskTitle(statusText);
+      const expectedCount = items.length;
+      const success = matchedIds.size || Math.min(parsed.length, expectedCount);
+      const skipped = Math.max(0, expectedCount - success);
+      const failed = parsed.length ? 0 : expectedCount;
+      state.batchTask = {
+        active: false,
+        total: expectedCount,
+        done: expectedCount,
+        success,
+        failed,
+        skipped,
+        title,
+        current: success ? `最后处理：${itemLabel(items[Math.max(0, success - 1)])}` : "没有可用结果",
+        message: `${title}完成。成功：${success}，失败：${failed}，跳过：${skipped}。`,
+        nextAction: batchNextAction(title),
+        isError: Boolean(failed)
+      };
+    }
+
+    function failBatchTask(statusText, items, message) {
+      const title = cleanTaskTitle(statusText);
+      state.batchTask = {
+        active: false,
+        total: items.length,
+        done: 0,
+        success: 0,
+        failed: items.length,
+        skipped: 0,
+        title,
+        current: "生成失败",
+        message: `${title}失败：${message}`,
+        nextAction: "请检查 API Key、网络或稍后重试。",
+        isError: true
+      };
     }
 
     function expandBriefs(items) {
@@ -6465,16 +6661,58 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         const prefix = existing
           ? `已选择 ${items.length} 个点子，其中 ${existing} 个已有${config.planName}，`
           : `已选择 ${items.length} 个点子，`;
+        state.batchTask = {
+          active: true,
+          total: items.length,
+          done: existing,
+          success: existing,
+          failed: 0,
+          skipped: 0,
+          title: `补齐${config.planName}`,
+          current: `正在补齐 ${missing.length} 个点子的${config.planName}`,
+          message: `${prefix}正在为 ${missing.length} 个点子补齐${config.planName}，然后生成${config.draftName}...`,
+          nextAction: "",
+          isError: false
+        };
+        renderBatchTaskPanel();
         setStatus(`${prefix}正在为 ${missing.length} 个点子补齐${config.planName}，然后生成${config.draftName}...`, false, true);
         await config.generatePlan(missing);
       }
 
       const ready = items.filter(item => item?.[field]);
       if (!ready.length) {
+        state.batchTask = {
+          active: false,
+          total: items.length,
+          done: 0,
+          success: 0,
+          failed: items.length,
+          skipped: 0,
+          title: `${config.draftName}准备失败`,
+          current: `缺少${config.planName}`,
+          message: `还没有可生成${config.draftName}的${config.planName}。`,
+          nextAction: `请先生成${config.planName}，或稍后重试。`,
+          isError: true
+        };
+        renderBatchTaskPanel();
         setStatus(`还没有可生成${config.draftName}的${config.planName}。补齐失败或模型没有返回可用方案。`, true, true);
         return [];
       }
       if (ready.length < items.length) {
+        state.batchTask = {
+          active: true,
+          total: items.length,
+          done: ready.length,
+          success: ready.length,
+          failed: 0,
+          skipped: items.length - ready.length,
+          title: `准备生成${config.draftName}`,
+          current: `${items.length - ready.length} 个点子缺少${config.planName}`,
+          message: `已选择 ${items.length} 个点子，其中 ${ready.length} 个已有${config.planName}，其余暂时跳过。正在生成${config.draftName}...`,
+          nextAction: "",
+          isError: false
+        };
+        renderBatchTaskPanel();
         setStatus(`已选择 ${items.length} 个点子，其中 ${ready.length} 个已有${config.planName}，其余暂时跳过。正在生成${config.draftName}...`, false, true);
       }
       return ready;
