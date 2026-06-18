@@ -1162,6 +1162,41 @@
       color: #6d574a;
     }
 
+    .asset-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 5px;
+      margin: 10px 0 8px;
+    }
+
+    .asset-pill {
+      border: 1px solid #e1d8cc;
+      border-radius: 7px;
+      padding: 5px 6px;
+      background: #f8f6f1;
+      color: #82786c;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.2;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .asset-pill.ready {
+      border-color: rgba(95, 116, 105, .35);
+      background: var(--mist);
+      color: #4e6259;
+    }
+
+    .next-hint {
+      margin: 8px 0 0;
+      color: #6d574a;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     .empty {
       display: grid;
       place-items: center;
@@ -2025,7 +2060,8 @@
               <button class="icon-btn density-btn" data-layout="standard" type="button" title="标准布局">标准</button>
               <button class="icon-btn density-btn" data-layout="compact" type="button" title="紧凑布局，左侧显示更多点子">紧凑</button>
             </div>
-            <button class="icon-btn" id="selectAllBtn" type="button" title="全选点子">☑ 全选</button>
+            <button class="icon-btn" id="selectVisibleBtn" type="button" title="选择当前筛选出的点子">☑ 全选当前结果</button>
+            <button class="icon-btn" id="selectAllBtn" type="button" title="全选所有点子">☑ 全部</button>
             <button class="icon-btn" id="clearSelectBtn" type="button" title="取消全部选择">☐ 全不选</button>
           </div>
         </div>
@@ -2091,27 +2127,31 @@
         </div>
         <div class="batch-groups">
           <details class="batch-group" open>
-            <summary>内容与方案</summary>
+            <summary>生成方案</summary>
             <div class="batch-group-body">
               <div class="batch-actions">
-                <button id="batchBriefBtn" type="button">批量继续发散</button>
-                <button id="batchOfficialBtn" type="button">批量转公众号</button>
-                <button id="batchXhsBtn" type="button">批量转小红书</button>
-                <button id="batchMomentsBtn" type="button">批量转朋友圈</button>
-                <button id="batchVideoScriptBtn" type="button">批量视频号脚本</button>
+                <button id="batchBriefBtn" type="button">继续发散介绍</button>
+                <button id="batchOfficialBtn" type="button">生成公众号方案</button>
+                <button id="batchXhsBtn" type="button">生成小红书方案</button>
+                <button id="batchMomentsBtn" type="button">生成朋友圈文案</button>
+                <button id="batchVideoScriptBtn" type="button">生成视频号脚本</button>
               </div>
+            </div>
+          </details>
+
+          <details class="batch-group" open>
+            <summary>生成正文</summary>
+            <div class="batch-group-body">
               <div class="batch-actions">
-                <button id="batchOfficialArticleBtn" type="button">批量公众号正文</button>
-                <button id="batchXhsArticleBtn" type="button">批量小红书长文</button>
-                <button id="batchMomentsArticleBtn" type="button">批量朋友圈长文</button>
-                <button id="batchNovelDraftBtn" type="button">批量小说正文</button>
-                <button id="batchSongDraftBtn" type="button">批量完整歌词</button>
+                <button id="batchOfficialArticleBtn" type="button">生成公众号正文</button>
+                <button id="batchXhsArticleBtn" type="button">生成小红书长文</button>
+                <button id="batchMomentsArticleBtn" type="button">生成朋友圈长文</button>
               </div>
             </div>
           </details>
 
           <details class="batch-group">
-            <summary>批量生成配图</summary>
+            <summary>生成图片 / 视频</summary>
             <div class="batch-group-body">
               <div class="batch-image-panel">
                 <div class="note" id="batchImageSummary">使用首页默认生图配置，给已选点子逐张生成配图。</div>
@@ -2135,11 +2175,14 @@
                 <div class="batch-confirm" id="batchImageConfirm" style="display: none;"></div>
                 <div class="batch-failures" id="batchImageFailures" style="display: none;"></div>
               </div>
+              <div class="batch-actions">
+                <button id="videoTaskPackageBtn" type="button">导出视频任务包</button>
+              </div>
             </div>
           </details>
 
           <details class="batch-group">
-            <summary>批量导出</summary>
+            <summary>导出结果</summary>
             <div class="batch-group-body">
               <div class="settings-row">
                 <div class="field">
@@ -2163,13 +2206,12 @@
                 <button id="txtBtn" type="button">批量导出 TXT</button>
                 <button id="xhsPromptBtn" type="button">导出小红书图 prompt</button>
                 <button id="larkBasePackageBtn" type="button">导出飞书 Base 同步包</button>
-                <button id="videoTaskPackageBtn" type="button">导出视频任务包</button>
               </div>
             </div>
           </details>
 
           <details class="batch-group">
-            <summary>高级模式</summary>
+            <summary>高级扩展</summary>
             <div class="batch-group-body">
               <div class="advanced-block">
                 <h3>批量小说</h3>
@@ -2190,6 +2232,7 @@
                   <div class="field">
                     <label>执行</label>
                     <button id="batchNovelBtn" type="button">批量生成小说架构</button>
+                    <button id="batchNovelDraftBtn" type="button">批量小说正文</button>
                   </div>
                 </div>
               </div>
@@ -2237,6 +2280,7 @@
                   <div class="field">
                     <label>执行</label>
                     <button id="batchSongBtn" type="button">批量作曲</button>
+                    <button id="batchSongDraftBtn" type="button">批量完整歌词</button>
                   </div>
                 </div>
               </div>
@@ -3031,17 +3075,21 @@ ${context.text}
       return true;
     }
 
-    function filteredIdeas() {
+    function filteredIdeas(options = {}) {
       const filters = state.ideaFilters;
       const query = filters.query.trim().toLowerCase();
       return orderedIdeas().filter(item => {
         if (filters.category && item.category !== filters.category) return false;
         if (filters.platform && item.platform !== filters.platform) return false;
-        if (filters.selectedOnly && !item.selected) return false;
+        if (!options.ignoreSelectedOnly && filters.selectedOnly && !item.selected) return false;
         if (!itemMatchesStatus(item, filters.status)) return false;
         if (query && !ideaSearchText(item).includes(query)) return false;
         return true;
       });
+    }
+
+    function currentFilterSelectableIdeas() {
+      return filteredIdeas({ ignoreSelectedOnly: true });
     }
 
     function optionListHtml(values, activeValue, emptyLabel) {
@@ -3078,8 +3126,9 @@ ${context.text}
       });
 
       if (meta) {
+        const selectableCount = currentFilterSelectableIdeas().length;
         meta.textContent = hasIdeas
-          ? `当前显示 ${visibleCount} 个 / 共 ${state.ideas.length} 个点子。筛选只影响点子墙显示，不会删除内容。`
+          ? `当前显示 ${visibleCount} 个 / 共 ${state.ideas.length} 个点子。当前筛选结果可选择 ${selectableCount} 个。筛选不会删除内容。`
           : "生成后可以搜索、筛选和只看已选。";
       }
     }
@@ -4441,7 +4490,7 @@ ${context.text}
         const button = $(id);
         if (button) button.disabled = state.busy || !hasSelected;
       });
-      ["selectAllBtn", "clearSelectBtn"].forEach(id => {
+      ["selectVisibleBtn", "selectAllBtn", "clearSelectBtn"].forEach(id => {
         const button = $(id);
         if (button) button.disabled = state.busy || !state.ideas.length;
       });
@@ -4583,6 +4632,7 @@ ${context.text}
           <h3 class="idea-title">${escapeHtml(item.direction || item.title)}</h3>
           <p class="idea-summary">${escapeHtml(item.summary || "未生成一句话简介")}</p>
           <p class="idea-rec">${escapeHtml(item.title || "未生成推荐标题")}</p>
+          ${assetStripHtml(item)}
           <div class="badges">
             <span class="badge">${escapeHtml(item.platform || "都适合")}</span>
             <span class="badge">${escapeHtml(item.category || "未分类")}</span>
@@ -4591,12 +4641,36 @@ ${context.text}
             ${hasFullDraft(item) ? `<span class="badge selected">有正文</span>` : ""}
             ${item.videoScript ? `<span class="badge selected">视频脚本</span>` : ""}
           </div>
+          <p class="next-hint">${escapeHtml(nextStepHint(item))}</p>
         </article>
       `;
     }
 
     function hasFullDraft(item) {
       return Boolean(item.officialArticle || item.xhsArticle || item.momentsArticle || item.novelDraft || item.songDraft);
+    }
+
+    function assetStripHtml(item) {
+      const assets = [
+        ["方案", hasPlan(item)],
+        ["正文", hasFullDraft(item)],
+        ["图片", Boolean(item.imageResult?.url || item.imageResult?.prompt)],
+        ["视频", Boolean(item.videoScript)]
+      ];
+      return `
+        <div class="asset-strip" aria-label="内容资产状态">
+          ${assets.map(([label, ready]) => `<span class="asset-pill ${ready ? "ready" : ""}">${ready ? "已" : "缺"}${escapeHtml(label)}</span>`).join("")}
+        </div>
+      `;
+    }
+
+    function nextStepHint(item) {
+      if (!item.brief) return "下一步：继续发散介绍";
+      if (!hasPlan(item)) return "下一步：生成平台方案";
+      if (!hasFullDraft(item)) return "下一步：生成正文";
+      if (!item.imageResult?.url) return "下一步：生成配图";
+      if (!item.videoScript) return "下一步：生成视频脚本";
+      return "下一步：导出结果";
     }
 
     function renderDetail() {
@@ -7964,6 +8038,14 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       saveCurrentHistory();
       render();
       setStatus(`已全选 ${state.ideas.length} 个点子。`);
+    });
+    $("selectVisibleBtn").addEventListener("click", () => {
+      const visible = currentFilterSelectableIdeas();
+      if (!visible.length) return setStatus("当前筛选结果里没有可选择的点子。", true);
+      visible.forEach(item => item.selected = true);
+      saveCurrentHistory();
+      render();
+      setStatus(`已选择当前筛选结果中的 ${visible.length} 个点子。`);
     });
     $("clearSelectBtn").addEventListener("click", () => {
       state.ideas.forEach(item => item.selected = false);

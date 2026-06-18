@@ -346,6 +346,102 @@ Product requirements:
 - If a downstream action needs an upstream plan, either auto-generate the missing upstream plan or clearly explain what is missing.
 - Export actions should describe the target outcome in user language, while technical formats can be explained in secondary text.
 
+### Action Hierarchy
+
+The current product has many useful actions. The next UI optimization should organize them by user intent instead of presenting every action as a flat button list.
+
+Recommended primary action groups:
+
+1. `生成方案`
+   - Continue selected ideas into platform plans.
+   - Examples: official-account plan, Xiaohongshu plan, Moments copy, video-account script.
+2. `生成正文`
+   - Continue existing plans into complete text drafts.
+   - Examples: official-account article, Xiaohongshu long post, Moments long post.
+3. `生成图片/视频`
+   - Continue text assets into visual or video assets.
+   - Examples: image prompt, generated image, video-account script, video task package.
+4. `导出结果`
+   - Copy, save, sync, or hand off selected assets.
+   - Examples: Word, Markdown, TXT, Excel, image prompts, Lark Base package, video task package.
+5. `高级扩展`
+   - Retain lower-frequency capabilities without letting them dominate the primary flow.
+   - Examples: fiction, lyrics, PPT outline, advanced sync helpers.
+
+Requirements:
+
+- Main-line actions should appear before extension actions.
+- The user should not need to understand implementation terms such as `package`, `schema`, or `Base records` before choosing an action.
+- Technical names can remain in secondary text or downloaded filenames, but visible buttons should emphasize outcomes.
+- The detail panel and batch panel should use the same grouping logic so users do not learn two different mental models.
+- If an action depends on selection, show the selected count and provide a clear path to selecting items.
+
+Recommended label direction:
+
+- Prefer `生成公众号方案` over `批量转公众号` when clarity is more important than compactness.
+- Prefer `生成公众号正文` over ambiguous `长文` labels when the target platform is known.
+- Prefer `交给本地视频生成器` or `导出视频任务包` with a short explanation over a purely technical label.
+
+### Idea Wall As Workbench
+
+The idea wall should be treated as the product's central workbench, not just a generated-result list.
+
+The idea wall should support four jobs:
+
+1. Scan many ideas quickly.
+2. Compare which ideas are worth continuing.
+3. Select a batch for processing.
+4. Understand which assets already exist for each idea.
+
+Required card state indicators:
+
+- Brief generated.
+- Platform plan generated.
+- Complete draft generated.
+- Image prompt or image generated.
+- Video script generated.
+- Export or sync readiness where practical.
+
+Required selection behavior:
+
+- Selection state must remain stable while filtering, searching, and changing layout density.
+- Batch actions should operate on selected ideas, not merely visible ideas, unless a future explicit `visible-only` mode is added.
+- When no ideas are selected, batch controls should show a clear message and offer a low-friction path such as `全选当前结果`.
+- When filters are active, the user should understand whether `全选` applies to all ideas or only the current visible filtered set.
+
+Recommended future workbench improvements:
+
+- Add `全选当前筛选结果` beside existing select/clear controls.
+- Add a compact asset-status row on each card.
+- Add quick filters such as `缺正文`, `缺图片`, `缺视频脚本`, and `已完成`.
+- Add per-card next-step hint, such as `可生成正文`, `可生成配图`, or `可导出视频`.
+
+### Post-Task Guidance And Retry
+
+Batch generation should not end with a dead status message. It should guide the user to the next useful step.
+
+After successful tasks:
+
+- After plan generation, suggest generating the matching complete draft.
+- After complete draft generation, suggest exporting documents or generating images.
+- After video-script generation, suggest exporting the video task package or later sending to the local video generator.
+- After image generation, suggest exporting images or continuing with another selected batch.
+
+After partial failures:
+
+- Preserve successful results.
+- Show the number of failed items.
+- List failed item titles where practical.
+- Provide a `重试失败项` path in a future implementation.
+- Avoid making the user restart the whole batch when only a few items failed.
+
+Recommended retry behavior:
+
+```text
+批量生成完成。成功 8，失败 2。
+可继续：导出已成功结果 / 重试失败项
+```
+
 ### Batch Task Feedback
 
 Batch task progress is the first-priority experience optimization for the next development phase.
@@ -1146,12 +1242,25 @@ Required improvements:
 - Add a concise completion summary and next-step hint, such as `可以继续生成配图` or `可以导出视频任务包`.
 - Keep extension features available but visually secondary.
 
+Next UI refinement requirements:
+
+- Reorganize batch actions into intent-based groups: `生成方案`, `生成正文`, `生成图片/视频`, `导出结果`, and `高级扩展`.
+- Make button labels more outcome-oriented while preserving compact wording where space is limited.
+- Add `全选当前筛选结果` so users can quickly move from browsing to batch processing.
+- Clarify whether selection actions affect all ideas or only currently visible filtered ideas.
+- Add stronger asset-state indicators on idea cards so users can see which ideas have text, image, and video assets.
+- Add next-step hints after generation, such as `可生成正文`, `可生成配图`, `可导出视频任务包`, or `可导出文档`.
+- Add a future `重试失败项` path for partial batch failures.
+- Keep fiction, lyrics, PPT, and advanced sync available but lower in visual priority.
+
 Success criteria:
 
 - Users should not feel that a click had no reaction.
 - Users should understand which selected idea is being processed.
 - Users should understand what to do after a batch task finishes.
 - The first screen should remain simple and should not expose admin/provider/internal details.
+- New users should be able to identify the main path without reading documentation.
+- Power users should still be able to access extension features without those features crowding the main path.
 
 Implementation status:
 
@@ -1159,6 +1268,17 @@ Implementation status:
 - Batch text and video-script generation now show task type, total count, progress, success, failure, skipped count, and next-step guidance.
 - Auto-complete full-draft preparation now reports when upstream plans are being generated or when items are skipped.
 - Batch action hints now explain whether buttons are locked by an active task or waiting for selected ideas.
+- Batch actions are now grouped by intent: `生成方案`, `生成正文`, `生成图片/视频`, `导出结果`, and `高级扩展`.
+- `全选当前筛选结果` is implemented for moving from filtered browsing into batch processing.
+- Idea cards now show compact asset-state indicators for plan, draft, image, and video script.
+- Idea cards now show a next-step hint such as continuing expansion, generating plans, generating drafts, generating images, generating video scripts, or exporting.
+
+Remaining Phase 0 work:
+
+- Failed-item retry has not been implemented yet.
+- Extension features are still present in the same broad batch area and should be visually down-ranked in a future UI pass.
+- Detail-panel action grouping can still be aligned with the new batch-panel grouping.
+- Failed-item titles and retry paths can be made more explicit for partial batch failures.
 
 ### Phase 1: Cloud Backend Configuration Center
 
