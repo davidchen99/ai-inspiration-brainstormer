@@ -1241,9 +1241,29 @@
 
     .detail-actions {
       display: grid;
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .detail-action-group {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdfa;
+      padding: 10px;
+    }
+
+    .detail-action-group summary {
+      cursor: pointer;
+      color: #3f4743;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .detail-action-grid {
+      display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-      margin: 14px 0;
+      padding-top: 10px;
     }
 
     .detail-pager {
@@ -1524,6 +1544,37 @@
       gap: 8px;
     }
 
+    .export-format-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 180px) minmax(160px, 240px) auto;
+      gap: 8px;
+      align-items: end;
+      max-width: 620px;
+    }
+
+    .export-format-row label {
+      align-self: center;
+      color: #3f4743;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .batch-subgroup {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    .batch-subgroup summary {
+      cursor: pointer;
+      color: #3f4743;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .batch-subgroup .batch-actions {
+      padding-top: 10px;
+    }
+
     .batch-groups {
       display: grid;
       gap: 10px;
@@ -1708,8 +1759,9 @@
       }
 
       .toolbar,
-      .detail-actions,
+      .detail-action-grid,
       .batch-actions,
+      .export-format-row,
       .section-tools,
       .settings-row {
         display: grid;
@@ -2200,13 +2252,25 @@
               </div>
               <div class="batch-actions">
                 <button id="copyBtn" type="button">复制已选</button>
-                <button id="excelBtn" type="button">导出 Excel</button>
-                <button id="wordFilesBtn" type="button">批量导出 Word</button>
-                <button id="mdBtn" type="button">批量导出 MD</button>
-                <button id="txtBtn" type="button">批量导出 TXT</button>
-                <button id="xhsPromptBtn" type="button">导出小红书图 prompt</button>
-                <button id="larkBasePackageBtn" type="button">导出飞书 Base 同步包</button>
+                <button id="bodyPackageBtn" type="button">只导出正文</button>
               </div>
+              <div class="export-format-row">
+                <label for="documentExportFormat">导出文档</label>
+                <select id="documentExportFormat">
+                  <option value="word">Word</option>
+                  <option value="md">Markdown</option>
+                  <option value="txt">TXT</option>
+                </select>
+                <button id="documentExportBtn" type="button">导出文档</button>
+              </div>
+              <details class="batch-subgroup">
+                <summary>数据与扩展</summary>
+                <div class="batch-actions">
+                  <button id="excelBtn" type="button">导出 Excel</button>
+                  <button id="xhsPromptBtn" type="button">导出小红书图 prompt</button>
+                  <button id="larkBasePackageBtn" type="button">导出飞书 Base 同步包</button>
+                </div>
+              </details>
             </div>
           </details>
 
@@ -4485,11 +4549,13 @@ ${context.text}
       [
         "batchBriefBtn", "batchOfficialBtn", "batchXhsBtn", "batchMomentsBtn", "batchNovelBtn", "batchSongBtn",
         "batchVideoScriptBtn", "batchOfficialArticleBtn", "batchXhsArticleBtn", "batchMomentsArticleBtn", "batchNovelDraftBtn", "batchSongDraftBtn",
-        "copyBtn", "excelBtn", "wordFilesBtn", "mdBtn", "txtBtn", "xhsPromptBtn", "larkBasePackageBtn", "videoTaskPackageBtn", "pptOutlineBtn"
+        "copyBtn", "bodyPackageBtn", "documentExportBtn", "excelBtn", "xhsPromptBtn", "larkBasePackageBtn", "videoTaskPackageBtn", "pptOutlineBtn"
       ].forEach(id => {
         const button = $(id);
         if (button) button.disabled = state.busy || !hasSelected;
       });
+      const documentExportFormat = $("documentExportFormat");
+      if (documentExportFormat) documentExportFormat.disabled = state.busy || !hasSelected;
       ["selectVisibleBtn", "selectAllBtn", "clearSelectBtn"].forEach(id => {
         const button = $(id);
         if (button) button.disabled = state.busy || !state.ideas.length;
@@ -4647,7 +4713,47 @@ ${context.text}
     }
 
     function hasFullDraft(item) {
-      return Boolean(item.officialArticle || item.xhsArticle || item.momentsArticle || item.novelDraft || item.songDraft);
+      return completeDraftEntries(item).length > 0;
+    }
+
+    function completeDraftEntries(item) {
+      if (!item) return [];
+      return [
+        {
+          key: "officialArticle",
+          label: "公众号正文",
+          title: item.official?.officialTitle || item.title || item.direction,
+          text: item.officialArticle
+        },
+        {
+          key: "xhsArticle",
+          label: "小红书长文",
+          title: item.xhs?.xhsTitle || item.title || item.direction,
+          text: item.xhsArticle
+        },
+        {
+          key: "momentsArticle",
+          label: "朋友圈长文",
+          title: item.title || item.direction,
+          text: item.momentsArticle
+        },
+        {
+          key: "novelDraft",
+          label: "小说正文",
+          title: item.novel?.novelTitle || item.title || item.direction,
+          text: item.novelDraft
+        },
+        {
+          key: "songDraft",
+          label: "完整歌词",
+          title: item.song?.songTitle || item.title || item.direction,
+          text: item.songDraft
+        }
+      ].map(entry => ({
+        ...entry,
+        title: String(entry.title || "未命名").trim(),
+        text: String(entry.text || "").trim()
+      })).filter(entry => entry.text);
     }
 
     function assetStripHtml(item) {
@@ -4703,18 +4809,33 @@ ${context.text}
         <p class="detail-line"><strong>切入角度：</strong>${escapeHtml(item.angle || "未填写")}</p>
         <p class="detail-line"><strong>推荐理由：</strong>${escapeHtml(item.reason || "未填写")}</p>
         <div class="detail-actions">
-          <button id="singleBriefBtn" type="button">继续发散</button>
-          <button id="singleOfficialBtn" type="button">转公众号</button>
-          <button id="singleXhsBtn" type="button">转小红书</button>
-          <button id="singleMomentsBtn" type="button">转朋友圈</button>
-          <button id="singleVideoScriptBtn" type="button">视频号脚本</button>
-          <button id="singleOfficialArticleBtn" type="button">公众号正文</button>
-          <button id="singleXhsArticleBtn" type="button">小红书长文</button>
-          <button id="singleMomentsArticleBtn" type="button">朋友圈长文</button>
-          <button id="singleNovelDraftBtn" type="button">小说正文</button>
-          <button id="singleSongDraftBtn" type="button">完整歌词</button>
-          <button id="copyActiveBtn" type="button">复制当前</button>
-          <button id="editActiveBtn" type="button">编辑内容</button>
+          <details class="detail-action-group" open>
+            <summary>生成方案</summary>
+            <div class="detail-action-grid">
+              <button id="singleBriefBtn" type="button">继续发散</button>
+              <button id="singleOfficialBtn" type="button">公众号方案</button>
+              <button id="singleXhsBtn" type="button">小红书方案</button>
+              <button id="singleMomentsBtn" type="button">朋友圈文案</button>
+              <button id="singleVideoScriptBtn" type="button">视频号脚本</button>
+            </div>
+          </details>
+          <details class="detail-action-group" open>
+            <summary>生成正文</summary>
+            <div class="detail-action-grid">
+              <button id="singleOfficialArticleBtn" type="button">公众号正文</button>
+              <button id="singleXhsArticleBtn" type="button">小红书长文</button>
+              <button id="singleMomentsArticleBtn" type="button">朋友圈长文</button>
+              <button id="singleNovelDraftBtn" type="button">小说正文</button>
+              <button id="singleSongDraftBtn" type="button">完整歌词</button>
+            </div>
+          </details>
+          <details class="detail-action-group">
+            <summary>更多</summary>
+            <div class="detail-action-grid">
+              <button id="copyActiveBtn" type="button">复制当前</button>
+              <button id="editActiveBtn" type="button">编辑内容</button>
+            </div>
+          </details>
         </div>
         ${item.brief ? `<section class="generated"><h3>150 字介绍</h3><p class="detail-summary">${escapeHtml(item.brief)}</p></section>` : ""}
         ${item.official ? officialHtml(item.official) : ""}
@@ -7179,6 +7300,134 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       await saveFiles(files, `AI灵感生成器-TXT-${dateStamp()}`);
     }
 
+    function formatProcessMarkdown(item) {
+      const list = value => Array.isArray(value) ? value : normalizeList(value);
+      const lines = [
+        `# ${item.direction || item.title || "未命名点子"}`,
+        "",
+        `- 分类：${item.category || ""}`,
+        `- 推荐标题：${item.title || ""}`,
+        `- 一句话简介：${item.summary || ""}`,
+        `- 适合平台：${item.platform || ""}`,
+        `- 目标读者：${item.audience || ""}`,
+        `- 切入角度：${item.angle || ""}`,
+        `- 推荐指数：${item.score || ""}`,
+        `- 推荐理由：${item.reason || ""}`
+      ];
+      if (item.brief) lines.push("", "## 150 字介绍", "", item.brief);
+      if (item.official) {
+        lines.push("", "## 公众号方案", "", `### ${item.official.officialTitle || ""}`, "", item.official.abstract || "");
+        lines.push("", `核心观点：${item.official.corePoint || ""}`, "", "### 文章大纲", ...list(item.official.outline).map(row => `- ${row}`));
+        lines.push("", `开头切入：${item.official.opening || ""}`, "", "### 配图建议", ...list(item.official.imageIdeas).map(row => `- ${row}`));
+        lines.push("", `写作口吻：${item.official.tone || ""}`, "", `目标字数：${item.official.targetWords || ""}`);
+      }
+      if (item.xhs) {
+        lines.push("", "## 小红书方案", "", `标题：${item.xhs.xhsTitle || ""}`, "", item.xhs.body || "");
+        lines.push("", "### 图片创意", ...list(item.xhs.imageIdeas).map(row => `- ${row}`), "", `标签：${list(item.xhs.tags).join(" ")}`, "", `评论引导：${item.xhs.commentGuide || ""}`);
+      }
+      if (item.moments) {
+        lines.push("", "## 朋友圈文案", "", item.moments.copy || "", "", `风格：${item.moments.style || ""}`, "", `发布场景：${item.moments.scene || ""}`, "", `互动引导：${item.moments.interaction || ""}`);
+        const variants = momentsVariantRows(item.moments.variants);
+        if (variants.length) {
+          lines.push("", "### 三种朋友圈版本");
+          variants.forEach(([label, text]) => lines.push("", `#### ${label}`, "", text));
+        }
+        lines.push("", "### 配图建议", ...list(item.moments.imageIdeas).map(row => `- ${row}`));
+      }
+      if (item.novel) {
+        lines.push("", "## 小说架构", "", `### ${item.novel.novelTitle || ""}`, "", `一句话故事：${item.novel.logline || ""}`, "", `主题：${item.novel.theme || ""}`, "", `风格：${item.novel.style || ""}`, "", `目标字数：${item.novel.targetWords || ""}`);
+        lines.push("", "### 主要人物", ...list(item.novel.characters).map(row => `- ${row}`), "", "### 故事结构", ...list(item.novel.structure).map(row => `- ${row}`), "", "### 章节大纲", ...list(item.novel.chapterOutline).map(row => `- ${row}`), "", `结尾：${item.novel.ending || ""}`);
+      }
+      if (item.song) {
+        lines.push("", "## 歌曲方案", "", `歌名：${item.song.songTitle || ""}`, "", `音乐类型：${item.song.musicType || ""}`, "", `风格：${item.song.style || ""}`, "", `曲风说明：${item.song.arrangement || ""}`);
+        lines.push("", "### 歌曲结构", ...list(item.song.structure).map(row => `- ${row}`), "", "### 歌词草稿", "", item.song.lyric || "");
+      }
+      if (item.videoScript) {
+        lines.push("", "## 视频号脚本", "", `视频标题：${item.videoScript.videoTitle || ""}`, "", `开头钩子：${item.videoScript.videoHook || ""}`);
+        lines.push("", `视频风格：${item.videoScript.videoStyle || ""}`, "", `声音：${item.videoScript.voiceName || ""} / ${item.videoScript.voiceStyle || ""}`, "", `预计时长：${item.videoScript.estimatedDuration || 90} 秒`);
+        lines.push("", "### 分镜节奏", ...list(item.videoScript.videoOutline).map(row => `- ${row}`), "", "### B-roll 关键词", ...list(item.videoScript.brollKeywords).map(row => `- ${row}`));
+        lines.push("", "### 完整口播", "", item.videoScript.videoVoiceover || "", "", `行动引导：${item.videoScript.callToAction || ""}`);
+      }
+      return `${lines.join("\n").replace(/\n{3,}/g, "\n\n").trim()}\n`;
+    }
+
+    function bodyPackageManifestFile(rows) {
+      if (window.XLSX) {
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        const book = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(book, sheet, "导出清单");
+        const buffer = XLSX.write(book, { bookType: "xlsx", type: "array" });
+        return {
+          name: "导出清单.xlsx",
+          blob: new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+        };
+      }
+      const header = Object.keys(rows[0] || {});
+      const csv = "\ufeff" + [header, ...rows.map(row => header.map(key => row[key]))]
+        .map(row => row.map(cell => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+        .join("\r\n");
+      return {
+        name: "导出清单.csv",
+        blob: new Blob([csv], { type: "text/csv;charset=utf-8" })
+      };
+    }
+
+    async function exportBodyPackage() {
+      const items = selectedItems();
+      if (!items.length) return setStatus("先勾选要导出正文的点子。", true);
+      if (!(await ensureExportDestination())) return;
+
+      const exportTime = new Date().toLocaleString("zh-CN");
+      const files = [];
+      const rows = [];
+      let bodyFileCount = 0;
+      let noDraftCount = 0;
+
+      items.forEach((item, index) => {
+        const number = String(index + 1).padStart(2, "0");
+        const baseTitle = safeFileName(item.direction || item.title || `点子 ${index + 1}`);
+        const processFileName = `草稿构思/${number}-${baseTitle}-草稿构思.md`;
+        const drafts = completeDraftEntries(item);
+        const bodyFileNames = [];
+
+        files.push({
+          name: processFileName,
+          blob: new Blob([formatProcessMarkdown(item)], { type: "text/markdown;charset=utf-8" })
+        });
+
+        drafts.forEach(entry => {
+          const bodyName = `正文/${number}-${safeFileName(entry.title || baseTitle)}-${safeFileName(entry.label)}.md`;
+          bodyFileNames.push(bodyName);
+          bodyFileCount += 1;
+          files.push({
+            name: bodyName,
+            blob: new Blob([`${entry.text}\n`], { type: "text/markdown;charset=utf-8" })
+          });
+        });
+
+        if (!drafts.length) noDraftCount += 1;
+        rows.push({
+          序号: index + 1,
+          点子ID: item.id,
+          选题方向: item.direction || "",
+          主标题: item.official?.officialTitle || item.xhs?.xhsTitle || item.novel?.novelTitle || item.song?.songTitle || item.title || "",
+          正文类型: drafts.map(entry => entry.label).join("；"),
+          正文状态: drafts.length ? "有正文" : "无正文",
+          正文文件名: bodyFileNames.join("\n"),
+          草稿构思文件名: processFileName,
+          平台: item.platform || "",
+          分类: item.category || "",
+          导出时间: exportTime
+        });
+      });
+
+      files.push(bodyPackageManifestFile(rows));
+      const saved = await saveFiles(files, `AI灵感生成器-正文导出-${dateStamp()}`);
+      if (saved) {
+        setStatus(`已导出正文包：${bodyFileCount} 个纯正文文件，${items.length} 个草稿构思文件，${noDraftCount} 个点子无正文。`);
+      }
+    }
+
     function formatXhsImagePrompts(items) {
       const defaults = getImageDefaults();
       const form = {
@@ -7433,16 +7682,9 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         String(value).replace(/\r\n/g, "\n").split(/\n+/).map(row => row.trim()).filter(Boolean)
           .forEach(row => children.push(new Paragraph(row)));
       };
-      const fullDraftEntries = () => [
-        ["公众号正文", item.officialArticle],
-        ["小红书长文", item.xhsArticle],
-        ["朋友圈长文", item.momentsArticle],
-        ["小说正文", item.novelDraft],
-        ["完整歌词", item.songDraft]
-      ].map(([label, value]) => [label, String(value || "").trim()]).filter(([, value]) => value);
       const addFullDraftBlocks = () => {
-        const entries = fullDraftEntries();
-        entries.forEach(([label, value]) => addBlock(label, value));
+        const entries = completeDraftEntries(item);
+        entries.forEach(entry => addBlock(entry.label, entry.text));
         return entries.length;
       };
       const hasProcessMaterial = () => Boolean(item.official || item.xhs || item.moments || item.novel || item.song || item.videoScript);
@@ -7754,7 +7996,13 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
           ? await dirHandle.getDirectoryHandle(folderName, { create: true })
           : dirHandle;
         for (const file of files) {
-          const handle = await target.getFileHandle(file.name, { create: true });
+          const pathParts = exportFilePath(file).split("/").filter(Boolean);
+          const fileName = pathParts.pop() || file.name || "未命名";
+          let parent = target;
+          for (const part of pathParts) {
+            parent = await parent.getDirectoryHandle(part, { create: true });
+          }
+          const handle = await parent.getFileHandle(fileName, { create: true });
           const writable = await handle.createWritable();
           await writable.write(file.blob);
           await writable.close();
@@ -7769,6 +8017,21 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         }
         throw error;
       }
+    }
+
+    function exportFilePath(file) {
+      const raw = String(file.path || file.name || "未命名").replace(/\\/g, "/");
+      return raw.split("/")
+        .map(part => safePathPart(part))
+        .filter(Boolean)
+        .join("/") || "未命名";
+    }
+
+    function safePathPart(text) {
+      return String(text || "未命名")
+        .replace(/[\\/:*?"<>|]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim() || "未命名";
     }
 
     async function downloadOfflinePackage() {
@@ -7828,7 +8091,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       const zip = new JSZip();
       const root = zip.folder(safeFileName(folderName) || "导出") || zip;
       for (const file of files) {
-        root.file(file.name, file.blob);
+        root.file(exportFilePath(file), file.blob);
       }
       const blob = await zip.generateAsync({ type: "blob" });
       downloadBlob(blob, zipName);
@@ -7951,10 +8214,14 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     $("abortBatchImageBtn").addEventListener("click", abortBatchImage);
     $("exportImagesBtn").addEventListener("click", exportSelectedImages);
     $("copyBtn").addEventListener("click", copySelected);
+    $("bodyPackageBtn").addEventListener("click", exportBodyPackage);
     $("excelBtn").addEventListener("click", () => exportExcel());
-    $("wordFilesBtn").addEventListener("click", exportWordFiles);
-    $("mdBtn").addEventListener("click", exportMarkdownFiles);
-    $("txtBtn").addEventListener("click", exportTxtFiles);
+    $("documentExportBtn").addEventListener("click", () => {
+      const format = $("documentExportFormat")?.value || "word";
+      if (format === "md") return exportMarkdownFiles();
+      if (format === "txt") return exportTxtFiles();
+      return exportWordFiles();
+    });
     $("xhsPromptBtn").addEventListener("click", exportXhsImagePrompts);
     $("larkBasePackageBtn").addEventListener("click", exportLarkBasePackage);
     $("videoTaskPackageBtn").addEventListener("click", exportVideoTaskPackage);

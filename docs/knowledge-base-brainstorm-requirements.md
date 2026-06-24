@@ -375,6 +375,8 @@ Requirements:
 - Technical names can remain in secondary text or downloaded filenames, but visible buttons should emphasize outcomes.
 - The detail panel and batch panel should use the same grouping logic so users do not learn two different mental models.
 - If an action depends on selection, show the selected count and provide a clear path to selecting items.
+- Flat button rows should be reduced where they make the interface harder to scan. Use grouped controls, disclosure blocks, or compact selectors to keep actions available without presenting every format and downstream tool as a primary button.
+- UI cleanup must preserve behavior. Consolidating buttons means changing presentation, not removing existing generation, copy, export, or editing capabilities.
 
 Recommended label direction:
 
@@ -615,6 +617,37 @@ Complete drafts should be included in existing copy and export flows:
 - Markdown/TXT export should include generated complete drafts.
 - Copy-current and copy-selected flows should include complete drafts when present.
 - Excel can record whether a complete draft exists, but should avoid dumping very long full text unless the UI explicitly supports it.
+
+### Pure Body Export Package
+
+Accepted requirement:
+
+Add a dedicated `只导出正文` export path for selected ideas that already have complete drafts. This is separate from the existing Word/Markdown/TXT exports, which may continue to include plan, outline, and draft materials when no complete body exists.
+
+The pure-body export package should optimize for downstream writing, publishing, or automation tools that need final body text without process material.
+
+Recommended folder structure:
+
+```text
+AI灵感生成器-正文导出-日期/
+  正文/
+    01-标题.md
+    02-标题.md
+  草稿构思/
+    01-标题-草稿构思.md
+    02-标题-草稿构思.md
+  导出清单.xlsx
+```
+
+Rules:
+
+- `正文/` contains only final generated body text. It must not include plan fields, outlines, recommendation reasons, image ideas, prompts, or status messages.
+- Ideas with a complete draft are written to `正文/` and also get a matching process-material file in `草稿构思/`.
+- Ideas without a complete draft are not written to `正文/`; they are written only to `草稿构思/`.
+- `导出清单.xlsx` should be placed at the package root and include a row per selected idea.
+- The manifest should include at least: index, idea id, direction/title, primary title, draft type, body status (`有正文` / `无正文`), body filename, process-material filename, platform, category, and export time.
+- If multiple complete draft types exist on one idea, prefer the currently relevant or primary text type when the UI makes that clear; otherwise export all complete draft types using clear filenames such as `公众号正文`, `小红书长文`, or `朋友圈长文`.
+- Existing Word/Markdown/TXT exports should remain available for mixed documents that include both complete drafts and supporting materials.
 
 ## Batch Video Generation Requirement
 
@@ -1203,9 +1236,12 @@ Implemented in `index.html`:
 - Complete drafts inherit knowledge-base context when knowledge-base mode is active.
 - Complete draft prompts explicitly treat knowledge-base content as invisible source material to absorb and rewrite, not text to quote, paste, or expose.
 - Copy-current, copy-selected, Word export, Markdown export, and TXT export include generated complete drafts.
+- The dedicated `只导出正文` path exports pure body Markdown files under `正文/`, process-material Markdown files under `草稿构思/`, and a root manifest spreadsheet.
 - Excel export records whether each complete draft type exists, without dumping long body text into the sheet.
 - Complete-draft actions auto-generate missing upstream plans before generating full drafts.
 - The idea wall supports search, category filtering, platform filtering, generation-state filtering, and selected-only view.
+- The detail panel groups actions into `生成方案`, `生成正文`, and `更多` while preserving existing single-item actions.
+- The export panel keeps common actions visible, folds Word/Markdown/TXT behind a `导出文档` selector, and places data/extension exports under a disclosure group.
 - Xiaohongshu image prompts can be exported as a Markdown prompt summary for selected ideas.
 - Local brainstorm history saves and restores ideas, selections, plans, drafts, image prompts, and lightweight image metadata without storing API keys or raw knowledge-base Markdown.
 - Moments copy generation stores three variants: funny, useful, and lifestyle.
@@ -1277,7 +1313,6 @@ Remaining Phase 0 work:
 
 - Failed-item retry has not been implemented yet.
 - Extension features are still present in the same broad batch area and should be visually down-ranked in a future UI pass.
-- Detail-panel action grouping can still be aligned with the new batch-panel grouping.
 - Failed-item titles and retry paths can be made more explicit for partial batch failures.
 
 ### Phase 1: Cloud Backend Configuration Center
@@ -1510,14 +1545,17 @@ Problem:
 
 - Export capabilities are expanding: Excel, Word, Markdown, TXT, PPT outline, Xiaohongshu image prompts, image files, Lark Base package, and video task package.
 - Without grouping, the advanced/export area can become harder to scan.
+- Users also need a clean final-body handoff path where generated bodies are separated from outlines and planning notes.
 
 Goal:
 
 - Organize export actions by user intent without making the main creation flow heavier.
+- Add a dedicated pure-body export path while preserving the existing mixed document exports.
 
 Recommended export groups:
 
 - Content export:
+  - Pure body package (`只导出正文`).
   - Word.
   - Markdown.
   - TXT.
@@ -1532,10 +1570,12 @@ Recommended export groups:
 
 UX requirements:
 
-- Keep common exports visible.
+- Keep common exports visible, especially `复制已选` and the pure-body export path after drafts have been generated.
+- Fold lower-level format choices such as Word/Markdown/TXT behind a compact `导出文档` selector or disclosure control instead of showing every format as a same-priority primary button.
 - Put specialized exports in a compact advanced/export section.
 - Preserve existing export behavior.
 - Do not add nested cards or heavy admin-style panels.
+- The idea detail panel should also consolidate generation buttons into grouped controls, such as `生成方案`, `生成正文`, and `更多`, while keeping all existing actions reachable.
 
 ### Phase 7: Lark Base Semi-Automatic Sync
 
