@@ -220,7 +220,7 @@ Kimi / Moonshot API Key 获取入口：`https://platform.moonshot.cn/console/api
 - “导出 Excel”：导出已选点子的总览表。
 - Excel 会记录公众号正文、小红书长文、朋友圈长文、小说正文、完整歌词是否已经生成，但不塞入长正文。
 - “批量导出 Word”：每个点子导出一个 Word 文件。
-- “批量导出 Word / MD / TXT”：每个点子导出一个文件，并包含已生成的完整正文。
+- “批量导出 Word / MD / TXT”：每个点子导出一个文件，并包含已生成的完整正文；Word 会把完整正文放在方案/大纲之前，并提示有多少个文件实际包含正文。
 - “导出小红书图 prompt”：把已选点子汇总成一份 Markdown，包含小红书封面场景的图片提示词。
 - “导出飞书 Base 同步包”：把已选点子导出为 JSON，包含自动推断的 Base 字段 schema 和一行一个点子的 records；不包含 API Key、后台配置、用量数据或知识库原文。
 - “导出视频任务包”：把已生成视频号脚本的已选点子导出为 moneypriturbo/autocut JSON 任务包；缺少视频号脚本的点子会跳过并提示。

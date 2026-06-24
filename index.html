@@ -7142,7 +7142,14 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
           const prefix = `${String(index + 1).padStart(2, "0")}-${safeFileName(item.direction || item.title)}`;
           files.push({ name: `${prefix}.docx`, blob: await makeDocxBlob(item, "all") });
         }
-        await saveFiles(files, `AI灵感生成器-Word-${dateStamp()}`);
+        const saved = await saveFiles(files, `AI灵感生成器-Word-${dateStamp()}`);
+        if (saved) {
+          const draftCount = items.filter(hasFullDraft).length;
+          const outlineOnlyCount = items.length - draftCount;
+          const draftText = draftCount ? `其中 ${draftCount} 个包含已生成正文` : "当前已选点子还没有已生成正文";
+          const outlineText = outlineOnlyCount ? `，${outlineOnlyCount} 个只有方案/大纲` : "";
+          setStatus(`已导出 ${items.length} 个 Word，${draftText}${outlineText}。`);
+        }
       } catch (error) {
         setStatus(`导出失败：${error.message}`, true);
       } finally {
@@ -7423,9 +7430,22 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       const addBlock = (label, value) => {
         if (!value) return;
         addHeading(label, HeadingLevel.HEADING_2);
-        String(value).split(/\n{2,}/).map(row => row.trim()).filter(Boolean)
+        String(value).replace(/\r\n/g, "\n").split(/\n+/).map(row => row.trim()).filter(Boolean)
           .forEach(row => children.push(new Paragraph(row)));
       };
+      const fullDraftEntries = () => [
+        ["公众号正文", item.officialArticle],
+        ["小红书长文", item.xhsArticle],
+        ["朋友圈长文", item.momentsArticle],
+        ["小说正文", item.novelDraft],
+        ["完整歌词", item.songDraft]
+      ].map(([label, value]) => [label, String(value || "").trim()]).filter(([, value]) => value);
+      const addFullDraftBlocks = () => {
+        const entries = fullDraftEntries();
+        entries.forEach(([label, value]) => addBlock(label, value));
+        return entries.length;
+      };
+      const hasProcessMaterial = () => Boolean(item.official || item.xhs || item.moments || item.novel || item.song || item.videoScript);
 
       if (kind === "official" && item.official) {
         addHeading(item.official.officialTitle || item.direction);
@@ -7463,6 +7483,10 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         addLine("推荐指数", item.score);
         addLine("推荐理由", item.reason);
         if (kind === "all") {
+          const draftCount = addFullDraftBlocks();
+          if (draftCount && hasProcessMaterial()) {
+            addHeading("方案与过程材料", HeadingLevel.HEADING_2);
+          }
           if (item.official) {
             addHeading("公众号方案", HeadingLevel.HEADING_2);
             addLine("标题", item.official.officialTitle);
@@ -7524,11 +7548,6 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
             addBlock("完整口播", item.videoScript.videoVoiceover);
             addLine("行动引导", item.videoScript.callToAction);
           }
-          addBlock("公众号正文", item.officialArticle);
-          addBlock("小红书长文", item.xhsArticle);
-          addBlock("朋友圈长文", item.momentsArticle);
-          addBlock("小说正文", item.novelDraft);
-          addBlock("完整歌词", item.songDraft);
         }
       }
 
@@ -7712,16 +7731,18 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
     }
 
     async function saveFiles(files, folderName) {
-      if (!files.length) return;
+      if (!files.length) return false;
       try {
         const mode = getExportMode();
         if (mode === "folder") {
           const result = await saveFilesToFolder(files, folderName);
-          if (result === "saved" || result === "cancelled") return;
+          if (result === "saved") return true;
+          if (result === "cancelled") return false;
         }
-        await saveFilesAsZip(files, folderName);
+        return await saveFilesAsZip(files, folderName);
       } catch (error) {
         setStatus(`导出失败：${error.message}`, true);
+        return false;
       }
     }
 
@@ -7798,10 +7819,10 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
         if (files.length === 1) {
           downloadBlob(files[0].blob, files[0].name);
           setStatus("ZIP 依赖库还没有加载完成，已按单文件下载。", true);
-          return;
+          return true;
         }
         setStatus("ZIP 依赖库还没有加载完成，请稍后重试。", true);
-        return;
+        return false;
       }
       const zipName = `${safeFileName(folderName || `AI灵感生成器-导出-${dateStamp()}`)}.zip`;
       const zip = new JSZip();
@@ -7812,6 +7833,7 @@ ${JSON.stringify(toFullDraftPromptItems(items), null, 2)}${fullDraftStyleRules(f
       const blob = await zip.generateAsync({ type: "blob" });
       downloadBlob(blob, zipName);
       setStatus(`已将 ${files.length} 个文件打包为 ZIP 下载。`);
+      return true;
     }
 
     function downloadBlob(blob, filename) {

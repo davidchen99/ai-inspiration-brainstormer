@@ -611,7 +611,7 @@ The prompt rule should be explicit: knowledge-base content is source material to
 
 Complete drafts should be included in existing copy and export flows:
 
-- Word export should include generated complete drafts.
+- Word export should include generated complete drafts before plan/outline materials, and report how many selected items actually have complete drafts.
 - Markdown/TXT export should include generated complete drafts.
 - Copy-current and copy-selected flows should include complete drafts when present.
 - Excel can record whether a complete draft exists, but should avoid dumping very long full text unless the UI explicitly supports it.
